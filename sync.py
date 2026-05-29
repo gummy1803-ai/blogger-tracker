@@ -16,7 +16,7 @@ FEISHU_APP_ID       = os.environ["FEISHU_APP_ID"]
 FEISHU_APP_SECRET   = os.environ["FEISHU_APP_SECRET"]
 FEISHU_USER_TOKEN   = os.environ["FEISHU_USER_TOKEN"]
 FEISHU_REFRESH_TOKEN= os.environ["FEISHU_REFRESH_TOKEN"]
-WIKI_TOKEN          = os.environ["SHEET_TOKEN"]   # GguhwBZkMiJQsokq1ZYcPebEnfb
+WIKI_TOKEN          = os.environ["WIKI_TOKEN"]   # GguhwBZkMiJQsokq1ZYcPebEnfb
 
 SUPABASE_URL        = os.environ["SUPABASE_URL"]
 SUPABASE_KEY        = os.environ["SUPABASE_SERVICE_KEY"]
