@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>博主建联看板</title>
+
+<!-- ⚠️ 填入你的 Supabase 配置（第 21-22 行）-->
+<script>
+  const SUPABASE_URL    = "https://YOUR_PROJECT.supabase.co";  // ← 替换
+  const SUPABASE_ANON   = "YOUR_ANON_KEY";                     // ← 替换（anon public key）
+  const MAX_FANS        = 5.0;
+  const STATUS_SUCCESS  = "引导到私域了";
+  const STATUS_CONTACT  = ["抖音私信建联","引导到私域了"];
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg:      #0d0f14;
+  --surf:    #141720;
+  --surf2:   #1a1f2e;
+  --border:  rgba(255,255,255,0.07);
+  --blue:    #5b7fff;
+  --green:   #43d9a4;
+  --red:     #ff6b6b;
+  --gold:    #f5a623;
+  --muted:   #6b7280;
+  --text:    #e8eaf2;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans SC',sans-serif; font-size:14px; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 80% 50% at 20% 10%,rgba(91,127,255,.07) 0%,transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%,rgba(67,217,164,.05) 0%,transparent 60%); pointer-events:none; z-index:0; }
+.shell { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:28px 20px 60px; }
+
+/* header */
+.header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+h1 { font-family:'Syne',sans-serif; font-size:clamp(20px,4vw,30px); font-weight:800; background:linear-gradient(135deg,#fff 30%,rgba(91,127,255,.8)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.header p { color:var(--muted); font-size:12px; margin-top:4px; }
+.badge { background:var(--surf2); border:1px solid var(--border); border-radius:8px; padding:7px 14px; font-family:'Syne',sans-serif; font-size:12px; font-weight:600; color:var(--blue); }
+
+/* tabs */
+.tabs { display:flex; gap:3px; background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:3px; width:fit-content; margin-bottom:22px; }
+.tab { padding:7px 16px; border-radius:7px; border:none; cursor:pointer; font-family:'Noto Sans SC',sans-serif; font-size:13px; background:transparent; color:var(--muted); transition:all .2s; }
+.tab.on { background:var(--blue); color:#fff; box-shadow:0 2px 12px rgba(91,127,255,.4); }
+.tab:hover:not(.on) { color:var(--text); background:var(--surf2); }
+
+/* cards */
+.card { background:var(--surf); border:1px solid var(--border); border-radius:14px; padding:20px; }
+.card + .card, .card + .two-col, .two-col + .card { margin-top:14px; }
+.card-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+/* metrics */
+.metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:14px; }
+.mc { background:var(--surf); border:1px solid var(--border); border-radius:14px; padding:18px; overflow:hidden; position:relative; transition:transform .2s; }
+.mc:hover { transform:translateY(-2px); }
+.mc::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,var(--c) 0%,transparent 70%); opacity:.06; pointer-events:none; }
+.mc-label { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+.mc-val { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; line-height:1; }
+.mc-sub { color:var(--muted); font-size:12px; margin-top:6px; }
+
+/* two-col */
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:680px) { .two-col { grid-template-columns:1fr; } }
+
+/* bar */
+.bars { display:flex; flex-direction:column; gap:11px; }
+.bar-row { display:flex; align-items:center; gap:10px; }
+.bar-lbl { width:68px; font-size:12px; color:var(--muted); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
+.bar-track { flex:1; height:8px; background:rgba(255,255,255,.05); border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; width:0; transition:width 1s cubic-bezier(.22,1,.36,1); }
+.bar-num { width:40px; font-family:'Syne',sans-serif; font-size:12px; text-align:right; flex-shrink:0; }
+
+/* donut */
+.donut-wrap { display:flex; align-items:center; gap:20px; }
+.donut-legend { display:flex; flex-direction:column; gap:10px; }
+.leg { display:flex; align-items:center; gap:8px; font-size:13px; }
+.leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.leg-val { margin-left:auto; font-family:'Syne',sans-serif; font-weight:700; padding-left:12px; }
+
+/* person cards */
+.person-grid { display:flex; flex-direction:column; gap:11px; }
+.pcard { background:var(--surf2); border:1px solid var(--border); border-radius:12px; padding:16px; display:grid; grid-template-columns:1fr auto; gap:12px; transition:border-color .2s; }
+.pcard:hover { border-color:rgba(255,255,255,.14); }
+.pname { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-bottom:4px; }
+.pstats { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; }
+.ps { font-size:12px; }
+.ps em { color:var(--muted); font-style:normal; }
+.ps b { font-weight:500; margin-left:3px; }
+.grade-box { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; width:50px; height:50px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; align-self:center; }
+.gA { background:rgba(67,217,164,.12); color:var(--green); border:1px solid rgba(67,217,164,.3); }
+.gB { background:rgba(91,127,255,.12); color:var(--blue); border:1px solid rgba(91,127,255,.3); }
+.gC { background:rgba(245,166,35,.12); color:var(--gold); border:1px solid rgba(245,166,35,.3); }
+.gD { background:rgba(255,107,107,.12); color:var(--red); border:1px solid rgba(255,107,107,.3); }
+.score-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.score-track { flex:1; height:4px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; }
+.qtag { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:20px; margin-top:6px; }
+.q-ok  { background:rgba(67,217,164,.1);  color:var(--green); }
+.q-bad { background:rgba(255,107,107,.1); color:var(--red); }
+
+/* table */
+.tw { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); padding:0 12px 10px; text-align:left; border-bottom:1px solid var(--border); }
+td { padding:11px 12px; border-bottom:1px solid rgba(255,255,255,.03); font-size:13px; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,.02); }
+.pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; }
+.p-ok   { background:rgba(67,217,164,.12); color:var(--green); }
+.p-ing  { background:rgba(91,127,255,.12);  color:var(--blue); }
+.p-none { background:rgba(255,255,255,.06); color:var(--muted); }
+.fans-warn { color:var(--red); }
+a.lnk { color:var(--blue); text-decoration:none; font-size:12px; opacity:.7; transition:opacity .2s; }
+a.lnk:hover { opacity:1; }
+.nc { max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+
+/* filters */
+.fbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.fbtn { padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; transition:all .2s; font-family:'Noto Sans SC',sans-serif; }
+.fbtn.on { background:var(--surf2); color:var(--text); border-color:rgba(255,255,255,.18); }
+.fbtn:hover:not(.on) { border-color:rgba(255,255,255,.14); color:var(--text); }
+
+/* misc */
+.sec-lbl { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:20px 0 12px; }
+.empty { text-align:center; color:var(--muted); padding:32px; font-size:13px; }
+.loading { text-align:center; color:var(--muted); padding:60px; font-size:14px; }
+.spin { display:inline-block; width:18px; height:18px; border:2px solid rgba(255,255,255,.1); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; margin-right:8px; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.anim { animation:fadeUp .45s ease both; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div>
+      <h1>博主建联看板</h1>
+      <p>数据来源：飞书电子表格 · Supabase 实时同步</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="badge" id="syncTime">加载中…</div>
+      <div class="badge" id="dateBadge"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('overview',this)">总览</button>
+    <button class="tab"    onclick="switchTab('team',this)">跟进人</button>
+    <button class="tab"    onclick="switchTab('bloggers',this)">博主列表</button>
+    <button class="tab"    onclick="switchTab('trend',this)">趋势</button>
+  </div>
+
+  <div id="pane-overview"><div class="loading"><span class="spin"></span>加载数据中…</div></div>
+  <div id="pane-team"     style="display:none"></div>
+  <div id="pane-bloggers" style="display:none"></div>
+  <div id="pane-trend"    style="display:none"></div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// Supabase 简易客户端（不依赖 npm）
+// ══════════════════════════════════════════
+const SB = {
+  async query(table, params = {}) {
+    const qs = new URLSearchParams();
+    if (params.select)  qs.set("select",  params.select);
+    if (params.order)   qs.set("order",   params.order);
+    if (params.limit)   qs.set("limit",   params.limit);
+    if (params.gte_date) qs.set("record_date", `gte.${params.gte_date}`);
+    if (params.eq_date)  qs.set("record_date", `eq.${params.eq_date}`);
+    const url = `${SUPABASE_URL}/rest/v1/${table}?${qs}`;
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` }
+    });
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+    return res.json();
+  }
+};
+
+// ══════════════════════════════════════════
+// 工具函数
+// ══════════════════════════════════════════
+const fmtRate = (n,d) => d ? (n/d*100).toFixed(1)+"%" : "—";
+const fmtF    = f => f.toFixed(1)+"万";
+const today   = new Date().toISOString().split("T")[0];
+const weekStart = (() => {
+  const d = new Date(); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().split("T")[0];
+})();
+
+function calcStats(rows) {
+  const bk = {};
+  rows.forEach(r => {
+    const o = r.owner || "未分配";
+    if (!bk[o]) bk[o]={total:0,contacted:0,success:0,fans:[]};
+    bk[o].total++;
+    if (STATUS_CONTACT.includes(r.status)) bk[o].contacted++;
+    if (r.status === STATUS_SUCCESS) bk[o].success++;
+    if (r.followers > 0) bk[o].fans.push(r.followers);
+  });
+  const res = {};
+  for (const [o,b] of Object.entries(bk)) {
+    const af = b.fans.length ? b.fans.reduce((a,c)=>a+c,0)/b.fans.length : 0;
+    res[o] = {...b, avg_fans:af, quality_ok: af<=MAX_FANS, rate: b.contacted?b.success/b.contacted:0};
+  }
+  return res;
+}
+
+function calcKPI(stats) {
+  const avgs = Object.values(stats).map(s=>s.contacted);
+  const team = avgs.length ? avgs.reduce((a,c)=>a+c,0)/avgs.length : 1;
+  const res  = {};
+  for (const [o,s] of Object.entries(stats)) {
+    const act  = Math.min(s.contacted/Math.max(team,1),2)/2;
+    const qual = s.quality_ok ? 1 : Math.max(0,1-(s.avg_fans-MAX_FANS)/MAX_FANS);
+    const sc   = Math.round((s.rate*.4+qual*.3+act*.3)*1000)/10;
+    res[o] = {score:sc, grade: sc>=80?"A":sc>=60?"B":sc>=40?"C":"D"};
+  }
+  return res;
+}
+
+function sums(s) {
+  return [Object.values(s).reduce((a,v)=>a+v.total,0),
+          Object.values(s).reduce((a,v)=>a+v.contacted,0),
+          Object.values(s).reduce((a,v)=>a+v.success,0)];
+}
+
+function animBars() {
+  requestAnimationFrame(()=>{
+    document.querySelectorAll(".bar-fill[data-w]").forEach(el => el.style.width = el.dataset.w+"%");
+  });
+}
+
+// ══════════════════════════════════════════
+// 数据加载
+// ══════════════════════════════════════════
+let ALL_ROWS = [], REPORTS = [];
+
+async function loadData() {
+  try {
+    [ALL_ROWS, REPORTS] = await Promise.all([
+      SB.query("bloggers", {
+        select: "link,name,status,followers,owner,record_date",
+        order:  "record_date.desc",
+        gte_date: weekStart   // 只拉本周+今天，效率高
+      }),
+      SB.query("daily_reports", {
+        select: "report_date,total,contacted,success,rate,w_total,w_contacted,w_success,w_rate",
+        order:  "report_date.desc",
+        limit:  "14"
+      })
+    ]);
+    document.getElementById("syncTime").textContent = `最后同步 ${new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}`;
+  } catch(e) {
+    document.getElementById("pane-overview").innerHTML =
+      `<div class="card"><div class="empty">⚠️ 连接 Supabase 失败，请检查配置<br><small style="color:var(--muted)">${e.message}</small></div></div>`;
+    throw e;
+  }
+}
+
+// ══════════════════════════════════════════
+// 总览
+// ══════════════════════════════════════════
+function renderOverview() {
+  const todayRows = ALL_ROWS.filter(r=>r.record_date===today);
+  const weekRows  = ALL_ROWS;
+
+  const ts = calcStats(todayRows), ws = calcStats(weekRows);
+  const [tt,tc,tsx] = sums(ts), [wt,wc,wsx] = sums(ws);
+
+  const dN = todayRows.filter(r=>r.status==="没回").length;
+  const dC = todayRows.filter(r=>r.status==="抖音私信建联").length;
+  const dS = todayRows.filter(r=>r.status===STATUS_SUCCESS).length;
+  const qOk = todayRows.filter(r=>r.followers<=MAX_FANS).length;
+
+  const el = document.getElementById("pane-overview");
+  el.innerHTML = `
+  <div class="metrics anim">
+    <div class="mc" style="--c:#5b7fff">
+      <div class="mc-label">今日录入博主</div>
+      <div class="mc-val">${tt}</div>
+      <div class="mc-sub">本周共 ${wt} 人</div>
+    </div>
+    <div class="mc" style="--c:#43d9a4">
+      <div class="mc-label">今日引导成功</div>
+      <div class="mc-val" style="color:var(--green)">${tsx}</div>
+      <div class="mc-sub">转化率 ${fmtRate(tsx,tc)}</div>
+    </div>
+    <div class="mc" style="--c:#5b7fff">
+      <div class="mc-label">今日已联系</div>
+      <div class="mc-val" style="color:var(--blue)">${tc}</div>
+      <div class="mc-sub">暂未回 ${dN} 人</div>
+    </div>
+    <div class="mc" style="--c:#f5a623">
+      <div class="mc-label">博主质量达标</div>
+      <div class="mc-val" style="color:var(--gold)">${tt?Math.round(qOk/tt*100):0}%</div>
+      <div class="mc-sub">均粉 ≤ 5万</div>
+    </div>
+  </div>
+
+  <div class="two-col anim">
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>今日状态分布</div>
+      ${renderDonut(dS,dC,dN)}
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>本周每日成功数</div>
+      ${renderWeekBars()}
+    </div>
+  </div>
+
+  <div class="card anim">
+    <div class="card-title"><div class="dot" style="background:var(--gold)"></div>本周汇总</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px">
+      ${wStat("录入总量",wt,"人")} ${wStat("已联系",wc,"人")} ${wStat("建联成功",wsx,"人")} ${wStat("周转化率",fmtRate(wsx,wc),"","#43d9a4",true)}
+    </div>
+  </div>`;
+  setTimeout(animBars, 60);
+}
+
+function wStat(label,val,unit,color,raw=false) {
+  return `<div style="text-align:center">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">${label}</div>
+    <div style="font-family:Syne,sans-serif;font-size:26px;font-weight:800;${color?`color:${color}`:""}">
+      ${raw?val:val}<span style="font-size:13px;color:var(--muted);margin-left:2px">${unit}</span>
+    </div>
+  </div>`;
+}
+
+function renderDonut(s,c,n) {
+  const total=s+c+n||1, R=50, cx=60, cy=60, sw=14, circ=2*Math.PI*R;
+  const arc=(pct,off,col)=>{
+    const len=pct*circ, gap=circ-len;
+    return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${col}" stroke-width="${sw}"
+      stroke-dasharray="${len} ${gap}" stroke-dashoffset="${-off*circ}"
+      stroke-linecap="round" style="transform-origin:${cx}px ${cy}px;transform:rotate(-90deg)"/>`;
+  };
+  return `<div class="donut-wrap">
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="${sw}"/>
+      ${arc(n/total,0,"rgba(255,255,255,.15)")}
+      ${arc(c/total,n/total,"rgba(91,127,255,.8)")}
+      ${arc(s/total,(n+c)/total,"#43d9a4")}
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
+        style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;fill:#fff">${total}</text>
+    </svg>
+    <div class="donut-legend">
+      <div class="leg"><div class="leg-dot" style="background:#43d9a4"></div>引导私域<span class="leg-val" style="color:#43d9a4">${s}</span></div>
+      <div class="leg"><div class="leg-dot" style="background:#5b7fff"></div>私信建联<span class="leg-val" style="color:#5b7fff">${c}</span></div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(255,255,255,.2)"></div>暂未回复<span class="leg-val">${n}</span></div>
+    </div>
+  </div>`;
+}
+
+function renderWeekBars() {
+  const days = [];
+  for (let i=6;i>=0;i--) { const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().split("T")[0]); }
+  const maxV = Math.max(...days.map(d=>ALL_ROWS.filter(r=>r.record_date===d&&r.status===STATUS_SUCCESS).length),1);
+  return `<div class="bars">${days.map(d=>{
+    const cnt = ALL_ROWS.filter(r=>r.record_date===d&&r.status===STATUS_SUCCESS).length;
+    const lbl = d.slice(5).replace("-","/");
+    return `<div class="bar-row">
+      <div class="bar-lbl">${lbl}</div>
+      <div class="bar-track"><div class="bar-fill" data-w="${cnt/maxV*100}" style="background:linear-gradient(90deg,#43d9a4,#5b7fff)"></div></div>
+      <div class="bar-num">${cnt}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// ══════════════════════════════════════════
+// 跟进人
+// ══════════════════════════════════════════
+function renderTeam() {
+  const todayRows = ALL_ROWS.filter(r=>r.record_date===today);
+  const ts = calcStats(todayRows), ws = calcStats(ALL_ROWS), k = calcKPI(ts);
+  const owners = Object.keys(ts).sort((a,b)=>ts[b].contacted-ts[a].contacted);
+  const gradeColor = {A:"#43d9a4",B:"#5b7fff",C:"#f5a623",D:"#ff6b6b"};
+  const maxC = Math.max(...owners.map(o=>ts[o].contacted),1);
+
+  const el = document.getElementById("pane-team");
+  el.innerHTML = `
+  <div class="card anim">
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>今日联系量对比</div>
+    <div class="bars">${owners.map(o=>`
+      <div class="bar-row">
+        <div class="bar-lbl" style="color:var(--text);font-weight:500">${o}</div>
+        <div class="bar-track"><div class="bar-fill" data-w="${ts[o].contacted/maxC*100}" style="background:linear-gradient(90deg,var(--blue),var(--green))"></div></div>
+        <div class="bar-num">${ts[o].contacted}</div>
+      </div>`).join("")}
+    </div>
+  </div>
+
+  <div class="sec-lbl">个人详情 & 考评</div>
+  <div class="person-grid anim">
+    ${owners.map(o=>{
+      const d=ts[o], w=ws[o]||{contacted:0,success:0}, ki=k[o]||{score:0,grade:"D"};
+      const gc=gradeColor[ki.grade];
+      return `<div class="pcard">
+        <div>
+          <div class="pname">${o}</div>
+          <div class="qtag ${d.quality_ok?"q-ok":"q-bad"}">${d.quality_ok?"✓ 博主质量达标":"⚠ 均粉超标"} · 均${fmtF(d.avg_fans)}</div>
+          <div class="pstats">
+            <div class="ps"><em>今日联系</em><b>${d.contacted}</b></div>
+            <div class="ps"><em>今日成功</em><b style="color:var(--green)">${d.success}</b></div>
+            <div class="ps"><em>转化率</em><b>${fmtRate(d.success,d.contacted)}</b></div>
+            <div class="ps"><em>本周联系</em><b>${w.contacted}</b></div>
+            <div class="ps"><em>本周成功</em><b>${w.success}</b></div>
+          </div>
+          <div class="score-row">
+            <div class="score-track"><div class="bar-fill" data-w="${ki.score}" style="background:${gc}"></div></div>
+            <div style="font-size:12px;color:var(--muted);width:44px;text-align:right">${ki.score}分</div>
+          </div>
+        </div>
+        <div class="grade-box g${ki.grade}">${ki.grade}</div>
+      </div>`;
+    }).join("")}
+  </div>
+
+  <div class="card anim" style="margin-top:14px">
+    <div class="card-title"><div class="dot" style="background:var(--gold)"></div>考评说明</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      ${[["A","≥80分","#43d9a4"],["B","≥60分","#5b7fff"],["C","≥40分","#f5a623"],["D","<40分","#ff6b6b"]].map(([g,s,c])=>
+        `<div style="background:var(--surf2);border-radius:8px;padding:11px;border-left:3px solid ${c}">
+          <div style="font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:${c}">${g}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px">${s}</div>
+        </div>`).join("")}
+    </div>
+    <div style="margin-top:12px;color:var(--muted);font-size:12px;line-height:2">
+      转化率 40% + 博主质量 30% + 活跃度 30%<br>
+      质量：均粉 ≤ 5万满分，每超1万扣20%<br>
+      活跃度：个人联系量 ÷ 团队均值（上限2倍）
+    </div>
+  </div>`;
+  setTimeout(animBars, 60);
+}
+
+// ══════════════════════════════════════════
+// 博主列表
+// ══════════════════════════════════════════
+let filterStatus = "all", filterOwner = "all";
+
+function renderBloggers() {
+  const owners = [...new Set(ALL_ROWS.map(r=>r.owner))];
+  const el = document.getElementById("pane-bloggers");
+  el.innerHTML = `
+  <div class="card anim">
+    <div class="card-title"><div class="dot" style="background:var(--red)"></div>博主列表（本周）</div>
+    <div class="fbar" id="sf">
+      <button class="fbtn on" onclick="setF('all',this,'s')">全部状态</button>
+      <button class="fbtn" onclick="setF('没回',this,'s')">没回</button>
+      <button class="fbtn" onclick="setF('抖音私信建联',this,'s')">私信建联</button>
+      <button class="fbtn" onclick="setF('引导到私域了',this,'s')">已引导私域</button>
+    </div>
+    <div class="fbar" id="of">
+      <button class="fbtn on" onclick="setF('all',this,'o')">所有跟进人</button>
+      ${owners.map(o=>`<button class="fbtn" onclick="setF('${o}',this,'o')">${o}</button>`).join("")}
+    </div>
+    <div class="tw"><table>
+      <thead><tr>
+        <th>博主名</th><th>状态</th><th>粉丝量</th><th>跟进人</th><th>录入日期</th><th>主页</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>`;
+  refreshTable();
+}
+
+function setF(val,btn,type) {
+  if (type==="s") { filterStatus=val; document.querySelectorAll("#sf .fbtn").forEach(b=>b.classList.remove("on")); }
+  else           { filterOwner=val;  document.querySelectorAll("#of .fbtn").forEach(b=>b.classList.remove("on")); }
+  btn.classList.add("on"); refreshTable();
+}
+
+function refreshTable() {
+  const tbody = document.getElementById("tbody");
+  if (!tbody) return;
+  let rows = [...ALL_ROWS].sort((a,b)=>b.record_date.localeCompare(a.record_date));
+  if (filterStatus!=="all") rows=rows.filter(r=>r.status===filterStatus);
+  if (filterOwner!=="all")  rows=rows.filter(r=>r.owner===filterOwner);
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty">暂无数据</div></td></tr>`; return; }
+  const si={
+    "没回":        {cls:"p-none",lbl:"没回"},
+    "抖音私信建联":{cls:"p-ing",lbl:"已私信"},
+    "引导到私域了":{cls:"p-ok",lbl:"✓ 引导成功"},
+    "":            {cls:"p-none",lbl:"未填写"},
+  };
+  tbody.innerHTML = rows.map(r=>{
+    const s=si[r.status]||{cls:"p-none",lbl:r.status||"—"};
+    const fw=r.followers>MAX_FANS?"fans-warn":"";
+    return `<tr>
+      <td class="nc" title="${r.name}">${r.name}</td>
+      <td><span class="pill ${s.cls}">${s.lbl}</span></td>
+      <td><span class="${fw}">${fmtF(r.followers)}</span>${r.followers>MAX_FANS?` <span style="font-size:10px;color:var(--red)">超标</span>`:""}
+      <td style="color:var(--muted)">${r.owner}</td>
+      <td style="color:var(--muted)">${r.record_date}</td>
+      <td><a class="lnk" href="${r.link}" target="_blank">主页↗</a></td>
+    </tr>`;
+  }).join("");
+}
+
+// ══════════════════════════════════════════
+// 趋势（7日日报快照）
+// ══════════════════════════════════════════
+function renderTrend() {
+  const el = document.getElementById("pane-trend");
+  if (!REPORTS.length) {
+    el.innerHTML=`<div class="card"><div class="empty">暂无历史日报数据<br><small style="color:var(--muted)">每天运行同步脚本后会自动生成</small></div></div>`;
+    return;
+  }
+  const reports = [...REPORTS].reverse();
+  const maxS = Math.max(...reports.map(r=>r.success||0),1);
+  const maxC = Math.max(...reports.map(r=>r.contacted||0),1);
+
+  el.innerHTML = `
+  <div class="card anim">
+    <div class="card-title"><div class="dot" style="background:var(--green)"></div>近期每日成功数</div>
+    <div class="bars">${reports.map(r=>{
+      const lbl=(r.report_date||"").slice(5).replace("-","/");
+      return `<div class="bar-row">
+        <div class="bar-lbl">${lbl}</div>
+        <div class="bar-track"><div class="bar-fill" data-w="${(r.success||0)/maxS*100}" style="background:linear-gradient(90deg,#43d9a4,#5b7fff)"></div></div>
+        <div class="bar-num">${r.success||0}</div>
+      </div>`;
+    }).join("")}</div>
+  </div>
+  <div class="card anim" style="margin-top:14px">
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>近期每日联系数</div>
+    <div class="bars">${reports.map(r=>{
+      const lbl=(r.report_date||"").slice(5).replace("-","/");
+      return `<div class="bar-row">
+        <div class="bar-lbl">${lbl}</div>
+        <div class="bar-track"><div class="bar-fill" data-w="${(r.contacted||0)/maxC*100}" style="background:var(--blue)"></div></div>
+        <div class="bar-num">${r.contacted||0}</div>
+      </div>`;
+    }).join("")}</div>
+  </div>
+  <div class="card anim" style="margin-top:14px">
+    <div class="card-title"><div class="dot" style="background:var(--gold)"></div>历史日报记录</div>
+    <div class="tw"><table>
+      <thead><tr><th>日期</th><th>录入</th><th>联系</th><th>成功</th><th>转化率</th></tr></thead>
+      <tbody>${[...reports].reverse().map(r=>`<tr>
+        <td style="color:var(--muted)">${r.report_date}</td>
+        <td>${r.total||0}</td>
+        <td>${r.contacted||0}</td>
+        <td style="color:var(--green)">${r.success||0}</td>
+        <td>${r.contacted?(r.success/r.contacted*100).toFixed(1)+"%":"—"}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>
+  </div>`;
+  setTimeout(animBars, 60);
+}
+
+// ══════════════════════════════════════════
+// Tab & 初始化
+// ══════════════════════════════════════════
+const TABS = {
+  overview: renderOverview,
+  team:     renderTeam,
+  bloggers: renderBloggers,
+  trend:    renderTrend,
+};
+let rendered = new Set();
+
+function switchTab(tab, btn) {
+  Object.keys(TABS).forEach(t => document.getElementById("pane-"+t).style.display = t===tab?"":"none");
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
+}
+
+async function init() {
+  const now = new Date();
+  document.getElementById("dateBadge").textContent =
+    `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
+
+  await loadData();
+  renderOverview();
+  rendered.add("overview");
+}
+
+init();
+</script>
+</body>
+</html>

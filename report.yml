@@ -1,0 +1,36 @@
+name: 博主建联日报
+
+on:
+  # 每天北京时间 09:00 自动触发（UTC 01:00）
+  schedule:
+    - cron: '0 1 * * *'
+
+  # 支持在 GitHub Actions 页面手动触发（随时按需输出）
+  workflow_dispatch:
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 运行日报脚本
+        env:
+          FEISHU_APP_ID:     ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          SHEET_TOKEN:       ${{ secrets.SHEET_TOKEN }}
+          SHEET_ID:          ${{ secrets.SHEET_ID }}
+          WECOM_WEBHOOK:     ${{ secrets.WECOM_WEBHOOK }}
+          SERVERCHAN_KEY:    ${{ secrets.SERVERCHAN_KEY }}
+        run: python main.py
