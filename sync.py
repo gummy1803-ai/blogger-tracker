@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 博主建联管理工具 v2
-流程：飞书 Sheet → Supabase → 企微 + 微信播报
+流程：飞书知识库电子表格（每天一个Sheet）→ Supabase → 企微 + 微信播报
 """
 
-import os, sys, json, requests
+import os, sys, requests
 from datetime import datetime, timedelta, date
 from collections import defaultdict
 
@@ -14,33 +14,29 @@ from collections import defaultdict
 # ══════════════════════════════════════════
 FEISHU_APP_ID     = os.environ["FEISHU_APP_ID"]
 FEISHU_APP_SECRET = os.environ["FEISHU_APP_SECRET"]
-SHEET_TOKEN       = os.environ["SHEET_TOKEN"]
-SHEET_ID          = os.environ.get("SHEET_ID", "Sheet1")
+WIKI_TOKEN        = os.environ["SHEET_TOKEN"]   # 知识库节点ID：GguhwBZkMiJQsokq1ZYcPebEnfb
 
-SUPABASE_URL      = os.environ["SUPABASE_URL"]          # https://xxxx.supabase.co
-SUPABASE_KEY      = os.environ["SUPABASE_SERVICE_KEY"]  # service_role key（可写）
+SUPABASE_URL      = os.environ["SUPABASE_URL"]
+SUPABASE_KEY      = os.environ["SUPABASE_SERVICE_KEY"]
 
 WECOM_WEBHOOK     = os.environ.get("WECOM_WEBHOOK", "")
 SERVERCHAN_KEY    = os.environ.get("SERVERCHAN_KEY", "")
 
 # ══════════════════════════════════════════
-#  列映射（对应实际飞书表格）
-#  A=数量  B=博主链接  C=回复情况  D=博主名
-#  E=粉丝量(万)  F=联系方式  G=跟进人  H=录入日期
+#  列映射（A=0 B=1 C=2 D=3 E=4 F=5 G=6）
+#  A:数量 B:博主链接 C:回复情况 D:博主名 E:粉丝量(万) F:联系方式 G:跟进人
 # ══════════════════════════════════════════
 COL = {
     "link":      1,   # B
     "status":    2,   # C
     "name":      3,   # D
-    "followers": 4,   # E（单位：万人）
+    "followers": 4,   # E（万人）
     "owner":     6,   # G
-    "date":      7,   # H
 }
 
 MAX_AVG_FOLLOWERS = 5.0
 STATUS_SUCCESS  = "引导到私域了"
-STATUS_CONTACT  = {"抖音私信建联", "引导到私域了"}
-
+STATUS_CONTACT  = {"抖音私信建联", "引导到私域了", "没引导到私域"}
 W_SUCCESS = 0.40; W_QUALITY = 0.30; W_ACTIVITY = 0.30
 
 
@@ -58,13 +54,54 @@ def feishu_token() -> str:
     return d["tenant_access_token"]
 
 
-def read_feishu(token: str) -> list:
-    url = (f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets"
-           f"/{SHEET_TOKEN}/values/{SHEET_ID}!A2:H2000")
+def get_spreadsheet_token(token: str, wiki_token: str) -> str:
+    """从知识库节点ID获取电子表格Token"""
+    url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/get_node?token={wiki_token}"
     r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
     r.raise_for_status()
     d = r.json()
-    if d.get("code") != 0: raise RuntimeError(f"读取表格失败: {d}")
+    if d.get("code") != 0: raise RuntimeError(f"获取wiki节点失败: {d}")
+    obj_token = d["data"]["node"]["obj_token"]
+    print(f"  电子表格Token: {obj_token}")
+    return obj_token
+
+
+def get_sheet_list(token: str, spreadsheet_token: str) -> list:
+    """获取所有Sheet页签列表"""
+    url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    r.raise_for_status()
+    d = r.json()
+    if d.get("code") != 0: raise RuntimeError(f"获取Sheet列表失败: {d}")
+    return d["data"]["sheets"]
+
+
+def find_today_sheet(sheets: list, today: date) -> dict | None:
+    """找到今天对应的Sheet（格式：M.D，如5.29）"""
+    # 生成多种可能的名称格式
+    candidates = [
+        f"{today.month}.{today.day}",           # 5.29
+        f"{today.month:02d}.{today.day:02d}",   # 05.29
+        f"{today.month}/{today.day}",            # 5/29
+        today.strftime("%m.%d"),                 # 05.29
+    ]
+    for sheet in sheets:
+        title = sheet.get("title", "").strip()
+        if title in candidates:
+            print(f"  找到今日Sheet: {title} (id={sheet['sheet_id']})")
+            return sheet
+    print(f"  ⚠️ 未找到今日Sheet，现有页签: {[s['title'] for s in sheets]}")
+    return None
+
+
+def read_sheet_data(token: str, spreadsheet_token: str, sheet_id: str) -> list:
+    """读取指定Sheet的数据"""
+    range_str = f"{sheet_id}!A3:G500"  # 从第3行开始（跳过标题行和表头）
+    url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values/{range_str}"
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    r.raise_for_status()
+    d = r.json()
+    if d.get("code") != 0: raise RuntimeError(f"读取Sheet数据失败: {d}")
     return d.get("data", {}).get("valueRange", {}).get("values", []) or []
 
 
@@ -78,7 +115,7 @@ def parse_followers(raw) -> float:
     except: return 0.0
 
 
-def parse_rows(rows: list) -> list:
+def parse_rows(rows: list, record_date: str) -> list:
     records = []
     for row in rows:
         if not row or all(not c for c in row): continue
@@ -88,28 +125,26 @@ def parse_rows(rows: list) -> list:
 
         name  = get(COL["name"])
         link  = get(COL["link"])
-        owner = get(COL["owner"]) or "未分配"
-        rdate = get(COL["date"])
-
-        # 日期格式校验
-        try: datetime.strptime(rdate, "%Y-%m-%d")
-        except: rdate = None
-
         if not (name or link): continue
+
+        # 跳过非博主数据行（如"加微信数量"统计行）
+        seq = get(0)
+        try: int(seq)
+        except: continue
 
         records.append({
             "link":        link,
             "name":        name,
             "status":      get(COL["status"]),
             "followers":   parse_followers(row[COL["followers"]] if len(row) > COL["followers"] else 0),
-            "owner":       owner,
-            "record_date": rdate,
+            "owner":       get(COL["owner"]) or "未分配",
+            "record_date": record_date,
         })
     return records
 
 
 # ════════════════════════════════════════
-#  Supabase API
+#  Supabase
 # ════════════════════════════════════════
 
 def supa_headers():
@@ -117,75 +152,38 @@ def supa_headers():
         "apikey":        SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type":  "application/json",
-        "Prefer":        "resolution=merge-duplicates",  # upsert
+        "Prefer":        "resolution=merge-duplicates",
     }
-
 
 def upsert_bloggers(records: list) -> int:
-    """批量 upsert 博主记录，返回写入条数"""
     if not records: return 0
-    # 过滤掉没有日期的记录（无法 upsert）
-    valid = [r for r in records if r["record_date"]]
-    if not valid: return 0
+    r = requests.post(
+        f"{SUPABASE_URL}/rest/v1/bloggers",
+        headers=supa_headers(), json=records, timeout=15)
+    if r.status_code not in (200, 201):
+        print(f"  ⚠️ Supabase写入错误: {r.status_code} {r.text[:200]}")
+        return 0
+    return len(records)
 
-    # 分批（Supabase 单次建议 ≤500 条）
-    batch = 500
-    written = 0
-    for i in range(0, len(valid), batch):
-        chunk = valid[i:i+batch]
-        r = requests.post(
-            f"{SUPABASE_URL}/rest/v1/bloggers",
-            headers=supa_headers(),
-            json=chunk,
-            timeout=15,
-        )
-        if r.status_code not in (200, 201):
-            print(f"  ⚠️ Supabase upsert 错误: {r.status_code} {r.text[:200]}")
-        else:
-            written += len(chunk)
-    return written
-
-
-def save_daily_report(today: date, today_rows, week_rows, report_text: str):
-    """将今日日报快照写入 daily_reports 表"""
-    def counts(rows):
-        cont = sum(1 for r in rows if r["status"] in STATUS_CONTACT)
-        succ = sum(1 for r in rows if r["status"] == STATUS_SUCCESS)
-        return len(rows), cont, succ
-
-    t_total, t_cont, t_succ = counts(today_rows)
-    w_total, w_cont, w_succ = counts(week_rows)
-
+def save_daily_report(today: date, records: list, report_text: str):
+    cont = sum(1 for r in records if r["status"] in STATUS_CONTACT)
+    succ = sum(1 for r in records if r["status"] == STATUS_SUCCESS)
     payload = {
         "report_date": str(today),
-        "total":       t_total, "contacted":   t_cont,  "success":   t_succ,
-        "rate":        round(t_succ/t_cont, 4) if t_cont else 0,
-        "w_total":     w_total, "w_contacted": w_cont,  "w_success": w_succ,
-        "w_rate":      round(w_succ/w_cont, 4) if w_cont else 0,
+        "total": len(records), "contacted": cont, "success": succ,
+        "rate": round(succ/cont, 4) if cont else 0,
+        "w_total": len(records), "w_contacted": cont, "w_success": succ,
+        "w_rate": round(succ/cont, 4) if cont else 0,
         "report_text": report_text,
     }
-    r = requests.post(
-        f"{SUPABASE_URL}/rest/v1/daily_reports",
-        headers=supa_headers(),
-        json=payload,
-        timeout=10,
-    )
-    if r.status_code not in (200, 201):
-        print(f"  ⚠️ 日报快照写入失败: {r.status_code} {r.text[:200]}")
-    else:
-        print("  ✓ 日报快照已写入 Supabase")
+    r = requests.post(f"{SUPABASE_URL}/rest/v1/daily_reports",
+                      headers=supa_headers(), json=payload, timeout=10)
+    print(f"  日报快照: {r.status_code}")
 
 
 # ════════════════════════════════════════
 #  统计 & 考评
 # ════════════════════════════════════════
-
-def filter_date(records, target: date):
-    return [r for r in records if r["record_date"] == str(target)]
-
-def filter_week(records, today: date):
-    ws = str(today - timedelta(days=today.weekday()))
-    return [r for r in records if r["record_date"] and ws <= r["record_date"] <= str(today)]
 
 def calc_stats(rows):
     bk = defaultdict(lambda: {"total":0,"contacted":0,"success":0,"fans":[]})
@@ -214,48 +212,36 @@ def calc_kpi(stats):
         out[o] = {"score": sc, "grade": "A"if sc>=80 else"B"if sc>=60 else"C"if sc>=40 else"D"}
     return out
 
-
-# ════════════════════════════════════════
-#  报告生成
-# ════════════════════════════════════════
-
 def fmt_rate(n, d): return f"{n/d*100:.1f}%" if d else "—"
 def fmt_f(f): return f"{f:.1f}万"
-def sums(s): return sum(v["total"] for v in s.values()), sum(v["contacted"] for v in s.values()), sum(v["success"] for v in s.values())
+def sums(s): return (sum(v["total"] for v in s.values()),
+                     sum(v["contacted"] for v in s.values()),
+                     sum(v["success"] for v in s.values()))
 
-def build_report(today_stats, week_stats, kpi, today: date) -> str:
+def build_report(stats, kpi, today: date, total_records: int) -> str:
     dl = today.strftime("%m月%d日")
-    ws = (today-timedelta(days=today.weekday())).strftime("%m/%d")
-    we = today.strftime("%m/%d")
-    tt,tc,ts = sums(today_stats); wt,wc,ws2 = sums(week_stats)
+    tt, tc, ts = sums(stats)
     grade_emoji = {"A":"⭐","B":"✅","C":"⚠️","D":"❌"}
-
     lines = [
         f"📊 博主建联日报 · {dl}",
         "━"*24,
-        "📅 今日总览",
-        f"  录入博主：{tt} 人",
+        f"  今日录入博主：{total_records} 人",
         f"  已联系：{tc} 人",
         f"  引导私域成功：{ts} 人",
         f"  今日转化率：{fmt_rate(ts,tc)}",
         "",
-        f"📆 本周累计（{ws} ~ {we}）",
-        f"  录入：{wt} 人  联系：{wc} 人  成功：{ws2} 人",
-        f"  周转化率：{fmt_rate(ws2,wc)}",
-        "",
         "👥 跟进人进度 & 考评",
         "━"*24,
     ]
-    for o in sorted(today_stats, key=lambda x: today_stats[x]["contacted"], reverse=True):
-        ds = today_stats[o]; ws3 = week_stats.get(o,{"contacted":0,"success":0}); k = kpi.get(o,{"score":0,"grade":"D"})
-        q = "✅ 达标" if ds["quality_ok"] else f"⚠️ 超标（均{fmt_f(ds['avg_fans'])}）"
+    for o in sorted(stats, key=lambda x: stats[x]["contacted"], reverse=True):
+        s = stats[o]; k = kpi.get(o, {"score":0,"grade":"D"})
+        q = "✅ 达标" if s["quality_ok"] else f"⚠️ 超标（均{fmt_f(s['avg_fans'])}）"
         lines += [
-            f"👤 {o}    {grade_emoji.get(k['grade'],'')} {k['grade']}级  {k['score']}分",
-            f"  今日：联系{ds['contacted']}人 · 成功{ds['success']}人 · {fmt_rate(ds['success'],ds['contacted'])}",
-            f"  本周：联系{ws3['contacted']}人 · 成功{ws3['success']}人",
-            f"  博主均粉：{fmt_f(ds['avg_fans'])}  {q}","",
+            f"👤 {o}  {grade_emoji.get(k['grade'],'')} {k['grade']}级 {k['score']}分",
+            f"  联系{s['contacted']}人 · 成功{s['success']}人 · {fmt_rate(s['success'],s['contacted'])}",
+            f"  均粉：{fmt_f(s['avg_fans'])}  {q}", "",
         ]
-    lines += ["━"*24,"📌 A≥80 B≥60 C≥40 D<40  |  转化40%+质量30%+活跃30%"]
+    lines += ["━"*24, "A≥80 B≥60 C≥40 D<40 | 转化40%+质量30%+活跃30%"]
     return "\n".join(lines)
 
 
@@ -283,35 +269,44 @@ def main():
     today = date.today()
     print(f"▶ 开始同步  {today}")
 
-    # 1. 从飞书读取
-    token   = feishu_token()
-    rows    = read_feishu(token)
-    records = parse_rows(rows)
-    print(f"  飞书读取: {len(records)} 条有效记录")
+    # 1. 飞书认证
+    token = feishu_token()
+    print("  ✓ 飞书认证成功")
 
-    # 2. 写入 Supabase
+    # 2. 知识库节点 → 电子表格Token
+    spreadsheet_token = get_spreadsheet_token(token, WIKI_TOKEN)
+
+    # 3. 获取所有Sheet，找今天的
+    sheets = get_sheet_list(token, spreadsheet_token)
+    today_sheet = find_today_sheet(sheets, today)
+
+    if not today_sheet:
+        print(f"  ⚠️ 今日({today.month}.{today.day})无对应Sheet，退出")
+        sys.exit(0)
+
+    # 4. 读取今日数据
+    rows = read_sheet_data(token, spreadsheet_token, today_sheet["sheet_id"])
+    records = parse_rows(rows, str(today))
+    print(f"  今日有效记录: {len(records)} 条")
+
+    if not records:
+        print("  ⚠️ 今日无数据"); sys.exit(0)
+
+    # 5. 写入 Supabase
     written = upsert_bloggers(records)
     print(f"  Supabase upsert: {written} 条")
 
-    if not records:
-        print("  ⚠️ 无数据，跳过报告"); sys.exit(0)
-
-    # 3. 统计 & 考评
-    today_rows  = filter_date(records, today)
-    week_rows   = filter_week(records, today)
-    today_stats = calc_stats(today_rows)
-    week_stats  = calc_stats(week_rows)
-    kpi         = calc_kpi(today_stats)
-
-    # 4. 生成 & 保存报告
-    report = build_report(today_stats, week_stats, kpi, today)
+    # 6. 统计 & 考评 & 报告
+    stats  = calc_stats(records)
+    kpi    = calc_kpi(stats)
+    report = build_report(stats, kpi, today, len(records))
     print("\n" + "="*40 + "\n" + report + "\n" + "="*40)
-    save_daily_report(today, today_rows, week_rows, report)
 
-    # 5. 推送
+    # 7. 保存日报 & 推送
+    save_daily_report(today, records, report)
     push_wecom(report)
     push_serverchan(f"博主建联日报·{today.strftime('%m/%d')}", report)
-    print("✓ 全部完成")
+    print("✓ 完成")
 
 
 if __name__ == "__main__":
