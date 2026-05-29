@@ -14,17 +14,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests
+      - run: pip install requests PyNaCl
       - name: 同步飞书数据
         env:
           FEISHU_APP_ID:          ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET:      ${{ secrets.FEISHU_APP_SECRET }}
           FEISHU_USER_TOKEN:      ${{ secrets.FEISHU_USER_TOKEN }}
           FEISHU_REFRESH_TOKEN:   ${{ secrets.FEISHU_REFRESH_TOKEN }}
-          SHEET_TOKEN:            ${{ secrets.SHEET_TOKEN }}
+          WIKI_TOKEN:             ${{ secrets.WIKI_TOKEN }}
           SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
           WECOM_WEBHOOK:          ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_KEY:         ${{ secrets.SERVERCHAN_KEY }}
-          WIKI_TOKEN:             ${{ secrets.WIKI_TOKEN }}
+          GITHUB_TOKEN:           ${{ secrets.GH_PAT }}
         run: python sync.py
