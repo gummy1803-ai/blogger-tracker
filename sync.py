@@ -1,36 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-博主建联管理工具 v4
-用用户身份Token读取飞书知识库表格
+博主建联管理工具 v5
+- 自动刷新飞书 User Token 并写回 GitHub Secrets
+- 用用户身份读取知识库表格
 """
 
-import os, sys, json, requests
+import os, sys, json, requests, base64
 from datetime import datetime, timedelta, date
 from collections import defaultdict
 
 # ══════════════════════════════════════════
 #  配置
 # ══════════════════════════════════════════
-FEISHU_APP_ID       = os.environ["FEISHU_APP_ID"]
-FEISHU_APP_SECRET   = os.environ["FEISHU_APP_SECRET"]
-FEISHU_USER_TOKEN   = os.environ["FEISHU_USER_TOKEN"]
-FEISHU_REFRESH_TOKEN= os.environ["FEISHU_REFRESH_TOKEN"]
-WIKI_TOKEN          = os.environ["WIKI_TOKEN"]   # GguhwBZkMiJQsokq1ZYcPebEnfb
+FEISHU_APP_ID        = os.environ["FEISHU_APP_ID"]
+FEISHU_APP_SECRET    = os.environ["FEISHU_APP_SECRET"]
+FEISHU_USER_TOKEN    = os.environ["FEISHU_USER_TOKEN"]
+FEISHU_REFRESH_TOKEN = os.environ["FEISHU_REFRESH_TOKEN"]
+WIKI_TOKEN           = os.environ["WIKI_TOKEN"]
 
-SUPABASE_URL        = os.environ["SUPABASE_URL"]
-SUPABASE_KEY        = os.environ["SUPABASE_SERVICE_KEY"]
-WECOM_WEBHOOK       = os.environ.get("WECOM_WEBHOOK", "")
-SERVERCHAN_KEY      = os.environ.get("SERVERCHAN_KEY", "")
+SUPABASE_URL         = os.environ["SUPABASE_URL"]
+SUPABASE_KEY         = os.environ["SUPABASE_SERVICE_KEY"]
+WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
+SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
 
-COL = {
-    "link":      1,   # B
-    "status":    2,   # C
-    "name":      3,   # D
-    "followers": 4,   # E（万人）
-    "owner":     6,   # G
-}
+GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
+GITHUB_REPO          = "gummy1803-ai/blogger-tracker"
 
+COL = {"link":1, "status":2, "name":3, "followers":4, "owner":6}
 MAX_AVG_FOLLOWERS = 5.0
 STATUS_SUCCESS  = "引导到私域了"
 STATUS_CONTACT  = {"抖音私信建联", "引导到私域了", "没引导到私域"}
@@ -38,70 +35,106 @@ W_SUCCESS = 0.40; W_QUALITY = 0.30; W_ACTIVITY = 0.30
 
 
 # ════════════════════════════════════════
-#  刷新 User Token
+#  GitHub Secrets 更新
 # ════════════════════════════════════════
 
-def refresh_user_token() -> str:
-    """用 refresh_token 获取新的 user_access_token"""
-    # 先拿 app_access_token
+def get_repo_public_key():
+    r = requests.get(
+        f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key",
+        headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"})
+    return r.json()
+
+def encrypt_secret(public_key_b64: str, secret_value: str) -> str:
+    from base64 import b64encode
+    try:
+        from nacl import encoding, public
+        pk = public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder)
+        box = public.SealedBox(pk)
+        encrypted = box.encrypt(secret_value.encode())
+        return b64encode(encrypted).decode()
+    except ImportError:
+        # 如果没有 nacl，返回 None 让调用方跳过
+        return None
+
+def update_github_secret(secret_name: str, secret_value: str):
+    try:
+        pk_data = get_repo_public_key()
+        encrypted = encrypt_secret(pk_data["key"], secret_value)
+        if not encrypted:
+            print(f"  ⚠️ nacl未安装，跳过Secret更新")
+            return
+        r = requests.put(
+            f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}",
+            headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"},
+            json={"encrypted_value": encrypted, "key_id": pk_data["key_id"]})
+        if r.status_code in (201, 204):
+            print(f"  ✓ GitHub Secret {secret_name} 已更新")
+        else:
+            print(f"  ⚠️ Secret更新失败: {r.status_code} {r.text[:100]}")
+    except Exception as e:
+        print(f"  ⚠️ Secret更新异常: {e}")
+
+
+# ════════════════════════════════════════
+#  飞书 Token 刷新
+# ════════════════════════════════════════
+
+def get_app_token() -> str:
     r = requests.post(
         "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
         json={"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET}, timeout=10)
-    app_token = r.json().get("app_access_token", "")
+    return r.json().get("app_access_token", "")
 
-    # 用 refresh_token 换新 user_access_token
-    r2 = requests.post(
+def refresh_user_token() -> str:
+    app_token = get_app_token()
+    r = requests.post(
         "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
         headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
         json={"grant_type": "refresh_token", "refresh_token": FEISHU_REFRESH_TOKEN},
         timeout=10)
-    d = r2.json()
+    d = r.json()
     if d.get("code") == 0:
-        token = d["data"]["access_token"]
-        print(f"  ✓ Token刷新成功")
-        return token
+        data = d["data"]
+        new_user_token    = data["access_token"]
+        new_refresh_token = data["refresh_token"]
+        print(f"  ✓ Token刷新成功，有效期 {data.get('expires_in',0)//3600} 小时")
+        # 写回 GitHub Secrets
+        update_github_secret("FEISHU_USER_TOKEN",    new_user_token)
+        update_github_secret("FEISHU_REFRESH_TOKEN", new_refresh_token)
+        return new_user_token
     else:
-        print(f"  Token刷新失败: {d}, 使用原Token")
+        print(f"  ⚠️ Token刷新失败({d.get('code')}): {d.get('message','')}, 使用原Token")
         return FEISHU_USER_TOKEN
 
 
 # ════════════════════════════════════════
-#  读取飞书数据
+#  飞书数据读取
 # ════════════════════════════════════════
 
 def get_spreadsheet_token(user_token: str) -> str:
-    """从wiki节点获取spreadsheet token"""
     url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/get_node?token={WIKI_TOKEN}"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
     d = r.json()
-    print(f"  Wiki节点: code={d.get('code')}, msg={d.get('msg','')}")
+    print(f"  Wiki节点: code={d.get('code')}")
     if d.get("code") != 0:
-        raise RuntimeError(f"获取wiki节点失败: {d}")
-    obj_token = d["data"]["node"]["obj_token"]
-    print(f"  spreadsheet_token: {obj_token}")
-    return obj_token
-
+        raise RuntimeError(f"获取wiki节点失败: {d.get('msg','')}")
+    return d["data"]["node"]["obj_token"]
 
 def get_today_sheet(user_token: str, spreadsheet_token: str, today: date) -> dict:
-    """获取今日对应的sheet"""
     url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
     d = r.json()
     if d.get("code") != 0:
         raise RuntimeError(f"获取sheet列表失败: {d}")
-
     sheets = d["data"]["sheets"]
     candidates = [f"{today.month}.{today.day}", f"{today.month:02d}.{today.day:02d}"]
     for s in sheets:
         if s.get("title","").strip() in candidates:
-            print(f"  找到今日sheet: {s['title']}")
+            print(f"  ✓ 找到今日sheet: {s['title']}")
             return s
-    print(f"  可用sheets: {[s['title'] for s in sheets]}")
-    raise RuntimeError(f"未找到今日sheet: {today.month}.{today.day}")
-
+    raise RuntimeError(f"未找到今日sheet '{today.month}.{today.day}'，现有: {[s['title'] for s in sheets]}")
 
 def read_sheet_data(user_token: str, spreadsheet_token: str, sheet_id: str) -> list:
-    """读取sheet数据"""
     range_str = f"{sheet_id}!A3:G300"
     url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values/{range_str}"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
@@ -127,16 +160,14 @@ def parse_rows(rows: list, record_date: str) -> list:
         def get(i, d=""):
             try: v=row[i]; return str(v).strip() if v is not None else d
             except IndexError: return d
-        name = get(COL["name"]); link = get(COL["link"])
+        name=get(COL["name"]); link=get(COL["link"])
         if not (name or link): continue
         try: int(float(get(0)))
         except: continue
         records.append({
-            "link":        link,
-            "name":        name,
-            "status":      get(COL["status"]),
-            "followers":   parse_followers(row[COL["followers"]] if len(row)>COL["followers"] else 0),
-            "owner":       get(COL["owner"]) or "未分配",
+            "link": link, "name": name, "status": get(COL["status"]),
+            "followers": parse_followers(row[COL["followers"]] if len(row)>COL["followers"] else 0),
+            "owner": get(COL["owner"]) or "未分配",
             "record_date": record_date,
         })
     return records
@@ -160,16 +191,14 @@ def upsert_bloggers(records):
     return len(records)
 
 def save_daily_report(today, records, report_text):
-    cont = sum(1 for r in records if r["status"] in STATUS_CONTACT)
-    succ = sum(1 for r in records if r["status"] == STATUS_SUCCESS)
-    payload = {"report_date": str(today), "total": len(records),
-               "contacted": cont, "success": succ,
-               "rate": round(succ/cont,4) if cont else 0,
-               "w_total": len(records), "w_contacted": cont, "w_success": succ,
-               "w_rate": round(succ/cont,4) if cont else 0,
-               "report_text": report_text}
-    r = requests.post(f"{SUPABASE_URL}/rest/v1/daily_reports",
-                      headers=supa_headers(), json=payload, timeout=10)
+    cont=sum(1 for r in records if r["status"] in STATUS_CONTACT)
+    succ=sum(1 for r in records if r["status"]==STATUS_SUCCESS)
+    payload={"report_date":str(today),"total":len(records),"contacted":cont,"success":succ,
+             "rate":round(succ/cont,4) if cont else 0,
+             "w_total":len(records),"w_contacted":cont,"w_success":succ,
+             "w_rate":round(succ/cont,4) if cont else 0,"report_text":report_text}
+    r=requests.post(f"{SUPABASE_URL}/rest/v1/daily_reports",
+                    headers=supa_headers(),json=payload,timeout=10)
     print(f"  日报快照: {r.status_code}")
 
 
@@ -178,7 +207,7 @@ def save_daily_report(today, records, report_text):
 # ════════════════════════════════════════
 
 def calc_stats(rows):
-    bk = defaultdict(lambda: {"total":0,"contacted":0,"success":0,"fans":[]})
+    bk=defaultdict(lambda:{"total":0,"contacted":0,"success":0,"fans":[]})
     for r in rows:
         o=r["owner"]; bk[o]["total"]+=1
         if r["status"] in STATUS_CONTACT: bk[o]["contacted"]+=1
@@ -206,7 +235,7 @@ def sums(s): return (sum(v["total"] for v in s.values()),
                      sum(v["contacted"] for v in s.values()),
                      sum(v["success"] for v in s.values()))
 
-def build_report(stats, kpi, today, total):
+def build_report(stats,kpi,today,total):
     dl=today.strftime("%m月%d日"); tt,tc,ts=sums(stats)
     ge={"A":"⭐","B":"✅","C":"⚠️","D":"❌"}
     lines=[f"📊 博主建联日报 · {dl}","━"*24,
@@ -247,29 +276,19 @@ def main():
     today = date.today()
     print(f"▶ 开始同步  {today}")
 
-    # 1. 刷新用户Token
-    user_token = refresh_user_token()
-
-    # 2. 获取spreadsheet token
+    user_token        = refresh_user_token()
     spreadsheet_token = get_spreadsheet_token(user_token)
-
-    # 3. 找今日sheet
-    today_sheet = get_today_sheet(user_token, spreadsheet_token, today)
-
-    # 4. 读取数据
-    rows = read_sheet_data(user_token, spreadsheet_token, today_sheet["sheet_id"])
-    records = parse_rows(rows, str(today))
+    today_sheet       = get_today_sheet(user_token, spreadsheet_token, today)
+    rows              = read_sheet_data(user_token, spreadsheet_token, today_sheet["sheet_id"])
+    records           = parse_rows(rows, str(today))
     print(f"  有效记录: {len(records)} 条")
 
     if not records:
-        print("  ⚠️ 今日无数据")
-        sys.exit(0)
+        print("  ⚠️ 今日无数据"); sys.exit(0)
 
-    # 5. 写入Supabase
     written = upsert_bloggers(records)
     print(f"  Supabase: {written} 条")
 
-    # 6. 报告
     stats  = calc_stats(records)
     kpi    = calc_kpi(stats)
     report = build_report(stats, kpi, today, len(records))
@@ -279,7 +298,6 @@ def main():
     push_wecom(report)
     push_serverchan(f"博主建联日报·{today.strftime('%m/%d')}", report)
     print("✓ 完成")
-
 
 if __name__ == "__main__":
     main()
