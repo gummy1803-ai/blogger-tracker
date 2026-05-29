@@ -1,0 +1,20 @@
+name: 获取飞书User Token
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: 获取Token
+        env:
+          FEISHU_APP_ID:     ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_AUTH_CODE:  ${{ secrets.FEISHU_AUTH_CODE }}
+        run: python get_user_token.py
