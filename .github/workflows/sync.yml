@@ -26,4 +26,5 @@ jobs:
           SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
           WECOM_WEBHOOK:          ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_KEY:         ${{ secrets.SERVERCHAN_KEY }}
+          WIKI_TOKEN:             ${{ secrets.WIKI_TOKEN }}
         run: python sync.py
