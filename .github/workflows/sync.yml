@@ -26,3 +26,4 @@ jobs:
           WECOM_WEBHOOK:          ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_KEY:         ${{ secrets.SERVERCHAN_KEY }}
         run: python sync.py
+ 
