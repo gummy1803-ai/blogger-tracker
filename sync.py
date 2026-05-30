@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-博主建联管理工具 v5
+博主建联管理工具 v7
 - 自动刷新飞书 User Token 并写回 GitHub Secrets
-- 用用户身份读取知识库表格
+- 每次同步所有 sheet 数据（历史数据自动更新）
+- 日报基于昨日数据推送
 """
 
-import os, sys, json, requests, base64
+import os, sys, requests, re
 from datetime import datetime, timedelta, date
 from collections import defaultdict
 
@@ -98,7 +99,6 @@ def refresh_user_token() -> str:
         new_user_token    = data["access_token"]
         new_refresh_token = data["refresh_token"]
         print(f"  ✓ Token刷新成功，有效期 {data.get('expires_in',0)//3600} 小时")
-        # 写回 GitHub Secrets
         update_github_secret("FEISHU_USER_TOKEN",    new_user_token)
         update_github_secret("FEISHU_REFRESH_TOKEN", new_refresh_token)
         return new_user_token
@@ -120,19 +120,26 @@ def get_spreadsheet_token(user_token: str) -> str:
         raise RuntimeError(f"获取wiki节点失败: {d.get('msg','')}")
     return d["data"]["node"]["obj_token"]
 
-def get_today_sheet(user_token: str, spreadsheet_token: str, today: date) -> dict:
+def get_all_sheets(user_token: str, spreadsheet_token: str) -> list:
     url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
     d = r.json()
     if d.get("code") != 0:
         raise RuntimeError(f"获取sheet列表失败: {d}")
-    sheets = d["data"]["sheets"]
-    candidates = [f"{today.month}.{today.day}", f"{today.month:02d}.{today.day:02d}"]
-    for s in sheets:
-        if s.get("title","").strip() in candidates:
-            print(f"  ✓ 找到今日sheet: {s['title']}")
-            return s
-    raise RuntimeError(f"未找到今日sheet '{today.month}.{today.day}'，现有: {[s['title'] for s in sheets]}")
+    return d["data"]["sheets"]
+
+def sheet_title_to_date(title: str) -> str:
+    title = title.strip()
+    m = re.match(r'^(\d{1,2})\.(\d{1,2})$', title)
+    if not m:
+        return None
+    month, day = int(m.group(1)), int(m.group(2))
+    year = date.today().year
+    try:
+        d = date(year, month, day)
+        return str(d)
+    except ValueError:
+        return None
 
 def read_sheet_data(user_token: str, spreadsheet_token: str, sheet_id: str) -> list:
     range_str = f"{sheet_id}!A3:G300"
@@ -190,10 +197,10 @@ def upsert_bloggers(records):
         return 0
     return len(records)
 
-def save_daily_report(today, records, report_text):
+def save_daily_report(report_date, records, report_text):
     cont=sum(1 for r in records if r["status"] in STATUS_CONTACT)
     succ=sum(1 for r in records if r["status"]==STATUS_SUCCESS)
-    payload={"report_date":str(today),"total":len(records),"contacted":cont,"success":succ,
+    payload={"report_date":str(report_date),"total":len(records),"contacted":cont,"success":succ,
              "rate":round(succ/cont,4) if cont else 0,
              "w_total":len(records),"w_contacted":cont,"w_success":succ,
              "w_rate":round(succ/cont,4) if cont else 0,"report_text":report_text}
@@ -235,20 +242,21 @@ def sums(s): return (sum(v["total"] for v in s.values()),
                      sum(v["contacted"] for v in s.values()),
                      sum(v["success"] for v in s.values()))
 
-def build_report(stats,kpi,today,total):
-    dl=today.strftime("%m月%d日"); tt,tc,ts=sums(stats)
-    ge={"A":"⭐","B":"✅","C":"⚠️","D":"❌"}
-    lines=[f"📊 博主建联日报 · {dl}","━"*24,
-           f"  录入博主：{total} 人",f"  已联系：{tc} 人",
-           f"  引导私域成功：{ts} 人",f"  转化率：{fmt_rate(ts,tc)}","",
-           "👥 跟进人进度 & 考评","━"*24]
-    for o in sorted(stats,key=lambda x:stats[x]["contacted"],reverse=True):
-        s=stats[o]; k=kpi.get(o,{"score":0,"grade":"D"})
-        q="✅ 达标" if s["quality_ok"] else f"⚠️ 超标（均{fmt_f(s['avg_fans'])}）"
-        lines+=[f"👤 {o}  {ge.get(k['grade'],'')} {k['grade']}级 {k['score']}分",
-                f"  联系{s['contacted']}人 · 成功{s['success']}人 · {fmt_rate(s['success'],s['contacted'])}",
-                f"  均粉：{fmt_f(s['avg_fans'])}  {q}",""]
-    lines+=["━"*24,"A≥80 B≥60 C≥40 D<40 | 转化40%+质量30%+活跃30%"]
+def build_report(stats, kpi, report_date, total):
+    dl = report_date.strftime("%m月%d日")
+    tt, tc, ts = sums(stats)
+    ge = {"A":"⭐","B":"✅","C":"⚠️","D":"❌"}
+    lines = [f"📊 博主建联日报 · {dl}","━"*24,
+             f"  录入博主：{total} 人", f"  已联系：{tc} 人",
+             f"  引导私域成功：{ts} 人", f"  转化率：{fmt_rate(ts,tc)}","",
+             "👥 跟进人进度 & 考评","━"*24]
+    for o in sorted(stats, key=lambda x: stats[x]["contacted"], reverse=True):
+        s = stats[o]; k = kpi.get(o, {"score":0,"grade":"D"})
+        q = "✅ 达标" if s["quality_ok"] else f"⚠️ 超标（均{fmt_f(s['avg_fans'])}）"
+        lines += [f"👤 {o}  {ge.get(k['grade'],'')} {k['grade']}级 {k['score']}分",
+                  f"  联系{s['contacted']}人 · 成功{s['success']}人 · {fmt_rate(s['success'],s['contacted'])}",
+                  f"  均粉：{fmt_f(s['avg_fans'])}  {q}",""]
+    lines += ["━"*24,"A≥80 B≥60 C≥40 D<40 | 转化40%+质量30%+活跃30%"]
     return "\n".join(lines)
 
 
@@ -258,13 +266,13 @@ def build_report(stats,kpi,today,total):
 
 def push_wecom(content):
     if not WECOM_WEBHOOK: return
-    r=requests.post(WECOM_WEBHOOK,json={"msgtype":"text","text":{"content":content}},timeout=10)
+    r = requests.post(WECOM_WEBHOOK, json={"msgtype":"text","text":{"content":content}}, timeout=10)
     print(f"  [企微] {r.status_code}")
 
-def push_serverchan(title,content):
+def push_serverchan(title, content):
     if not SERVERCHAN_KEY: return
-    r=requests.post(f"https://sctapi.ftqq.com/{SERVERCHAN_KEY}.send",
-                    data={"title":title,"desp":content.replace("\n","\n\n")},timeout=10)
+    r = requests.post(f"https://sctapi.ftqq.com/{SERVERCHAN_KEY}.send",
+                      data={"title":title,"desp":content.replace("\n","\n\n")}, timeout=10)
     print(f"  [Server酱] {r.status_code}")
 
 
@@ -273,30 +281,54 @@ def push_serverchan(title,content):
 # ════════════════════════════════════════
 
 def main():
-    today = date.today()
-    print(f"▶ 开始同步  {today}")
+    today     = date.today()
+    yesterday = today - timedelta(days=1)
+    print(f"▶ 开始同步  今天:{today}  日报日期:{yesterday}")
 
     user_token        = refresh_user_token()
     spreadsheet_token = get_spreadsheet_token(user_token)
-    today_sheet       = get_today_sheet(user_token, spreadsheet_token, today)
-    rows              = read_sheet_data(user_token, spreadsheet_token, today_sheet["sheet_id"])
-    records           = parse_rows(rows, str(today))
-    print(f"  有效记录: {len(records)} 条")
 
-    if not records:
-        print("  ⚠️ 今日无数据"); sys.exit(0)
+    all_sheets = get_all_sheets(user_token, spreadsheet_token)
+    print(f"  共找到 {len(all_sheets)} 个 sheet")
 
-    written = upsert_bloggers(records)
-    print(f"  Supabase: {written} 条")
+    all_records      = []
+    yesterday_records = []
 
-    stats  = calc_stats(records)
+    for sheet in all_sheets:
+        title = sheet.get("title", "").strip()
+        record_date = sheet_title_to_date(title)
+        if not record_date:
+            print(f"  跳过 sheet: {title}（非日期格式）")
+            continue
+
+        rows = read_sheet_data(user_token, spreadsheet_token, sheet["sheet_id"])
+        records = parse_rows(rows, record_date)
+        if not records:
+            print(f"  {title} → 无有效数据")
+            continue
+
+        print(f"  {title} → {record_date}: {len(records)} 条")
+        all_records.extend(records)
+        if record_date == str(yesterday):
+            yesterday_records = records
+
+    # 全量写入 Supabase
+    written = upsert_bloggers(all_records)
+    print(f"  Supabase 总写入: {written} 条")
+
+    # 日报基于昨日数据
+    if not yesterday_records:
+        print(f"  ⚠️ 昨日（{yesterday}）无数据，跳过日报推送")
+        sys.exit(0)
+
+    stats  = calc_stats(yesterday_records)
     kpi    = calc_kpi(stats)
-    report = build_report(stats, kpi, today, len(records))
+    report = build_report(stats, kpi, yesterday, len(yesterday_records))
     print("\n" + "="*40 + "\n" + report + "\n" + "="*40)
 
-    save_daily_report(today, records, report)
+    save_daily_report(yesterday, yesterday_records, report)
     push_wecom(report)
-    push_serverchan(f"博主建联日报·{today.strftime('%m/%d')}", report)
+    push_serverchan(f"博主建联日报·{yesterday.strftime('%m/%d')}", report)
     print("✓ 完成")
 
 if __name__ == "__main__":
