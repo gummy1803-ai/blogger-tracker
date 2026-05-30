@@ -42,37 +42,37 @@ def get_repo_public_key():
     r = requests.get(
         f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key",
         headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"})
-    return r.json()
+    d = r.json()
+    print(f"  公钥获取: status={r.status_code}, keys={list(d.keys())}")
+    return d
 
 def encrypt_secret(public_key_b64: str, secret_value: str) -> str:
     from base64 import b64encode
-    try:
-        from nacl import encoding, public
-        pk = public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder)
-        box = public.SealedBox(pk)
-        encrypted = box.encrypt(secret_value.encode())
-        return b64encode(encrypted).decode()
-    except ImportError:
-        # 如果没有 nacl，返回 None 让调用方跳过
-        return None
+    from nacl import encoding, public
+    pk = public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder)
+    box = public.SealedBox(pk)
+    encrypted = box.encrypt(secret_value.encode())
+    return b64encode(encrypted).decode()
 
 def update_github_secret(secret_name: str, secret_value: str):
     try:
         pk_data = get_repo_public_key()
-        encrypted = encrypt_secret(pk_data["key"], secret_value)
-        if not encrypted:
-            print(f"  ⚠️ nacl未安装，跳过Secret更新")
+        key    = pk_data.get("key", "")
+        key_id = pk_data.get("key_id", "")
+        if not key:
+            print(f"  ⚠️ 公钥为空，跳过 {secret_name}")
             return
+        encrypted = encrypt_secret(key, secret_value)
         r = requests.put(
             f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}",
             headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"},
-            json={"encrypted_value": encrypted, "key_id": pk_data["key_id"]})
+            json={"encrypted_value": encrypted, "key_id": key_id})
         if r.status_code in (201, 204):
             print(f"  ✓ GitHub Secret {secret_name} 已更新")
         else:
-            print(f"  ⚠️ Secret更新失败: {r.status_code} {r.text[:100]}")
+            print(f"  ⚠️ Secret更新失败: {r.status_code} {r.text[:200]}")
     except Exception as e:
-        print(f"  ⚠️ Secret更新异常: {e}")
+        print(f"  ⚠️ Secret更新异常: {type(e).__name__}: {e}")
 
 
 # ════════════════════════════════════════
