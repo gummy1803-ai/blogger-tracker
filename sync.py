@@ -242,12 +242,14 @@ def sums(s): return (sum(v["total"] for v in s.values()),
                      sum(v["contacted"] for v in s.values()),
                      sum(v["success"] for v in s.values()))
 
-def build_report(stats, kpi, report_date, total):
+def build_report(stats, kpi, report_date, total, dup_count=0):
     dl = report_date.strftime("%m月%d日")
     tt, tc, ts = sums(stats)
     ge = {"A":"⭐","B":"✅","C":"⚠️","D":"❌"}
+    dup_line = [f"  ⚠️ 去重 {dup_count} 条（重复博主不重复计算）"] if dup_count else []
     lines = [f"📊 博主建联日报 · {dl}","━"*24,
-             f"  录入博主：{total} 人", f"  已联系：{tc} 人",
+             f"  录入博主：{total} 人", *dup_line,
+             f"  已联系：{tc} 人",
              f"  引导私域成功：{ts} 人", f"  转化率：{fmt_rate(ts,tc)}","",
              "👥 跟进人进度 & 考评","━"*24]
     for o in sorted(stats, key=lambda x: stats[x]["contacted"], reverse=True):
@@ -312,18 +314,45 @@ def main():
         if record_date == str(yesterday):
             yesterday_records = records
 
-    # 全量写入 Supabase
-    written = upsert_bloggers(all_records)
+    # ── 全量去重后写入 Supabase ──
+    # 同一天同名博主只保留首条（key = name + record_date）
+    seen_keys = set()
+    deduped_all = []
+    total_dup = 0
+    for r in all_records:
+        key = (r["name"].replace(" ", "").lower(), r["record_date"])
+        if key in seen_keys:
+            total_dup += 1
+        else:
+            seen_keys.add(key)
+            deduped_all.append(r)
+    if total_dup:
+        print(f"  ⚠️ 全量去重：跳过 {total_dup} 条重复记录")
+
+    written = upsert_bloggers(deduped_all)
     print(f"  Supabase 总写入: {written} 条")
 
-    # 日报基于昨日数据
+    # 日报基于昨日数据（去重后）
     if not yesterday_records:
         print(f"  ⚠️ 昨日（{yesterday}）无数据，跳过日报推送")
         sys.exit(0)
 
-    stats  = calc_stats(yesterday_records)
+    seen_y = set()
+    deduped_yesterday = []
+    dup_count = 0
+    for r in yesterday_records:
+        key = r["name"].replace(" ", "").lower()
+        if key in seen_y:
+            dup_count += 1
+        else:
+            seen_y.add(key)
+            deduped_yesterday.append(r)
+    if dup_count:
+        print(f"  昨日去重：跳过 {dup_count} 条重复记录")
+
+    stats  = calc_stats(deduped_yesterday)
     kpi    = calc_kpi(stats)
-    report = build_report(stats, kpi, yesterday, len(yesterday_records))
+    report = build_report(stats, kpi, yesterday, len(yesterday_records), dup_count)
     print("\n" + "="*40 + "\n" + report + "\n" + "="*40)
 
     save_daily_report(yesterday, yesterday_records, report)
