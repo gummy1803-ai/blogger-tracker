@@ -248,9 +248,13 @@ const SB = {
 const fmtRate = (n,d) => d ? (n/d*100).toFixed(1)+"%" : "—";
 const fmtF    = f => f.toFixed(1)+"万";
 const esc     = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-const today   = new Date().toISOString().split("T")[0];
+function localDateStr(d) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+const today   = localDateStr(new Date());
 const weekStart = (() => {
-  const d = new Date(); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().split("T")[0];
+  const d = new Date(); d.setDate(d.getDate()-d.getDay()+1); return localDateStr(d);
 })();
 
 // 时间范围筛选
@@ -261,9 +265,9 @@ function getPeriodLabel(period) {
 
 function filterByPeriod(rows, period) {
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-  const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const todayStr = localDateStr(now);
+  const weekStartD = new Date(now); weekStartD.setDate(now.getDate()-now.getDay()+1);
+  const weekStartStr = localDateStr(weekStartD);
   const monthStartStr = todayStr.slice(0,7) + "-01";
   if (period === "today") return rows.filter(r => r.record_date === todayStr);
   if (period === "week")  return rows.filter(r => r.record_date >= weekStartStr && r.record_date <= todayStr);
@@ -476,9 +480,11 @@ function renderWeekBars() {
 // ══════════════════════════════════════════
 // 跟进人
 // ══════════════════════════════════════════
+let teamPeriod = "all";
 function renderTeam() {
-  const todayRows = ALL_ROWS.filter(r=>r.record_date===today);
-  const ts = calcStats(todayRows), ws = calcStats(ALL_ROWS), k = calcKPI(ts);
+  const periodRows = filterByPeriod(ALL_ROWS, teamPeriod);
+  const todayRows  = ALL_ROWS.filter(r=>r.record_date===today);
+  const ts = calcStats(periodRows), ws = calcStats(ALL_ROWS), k = calcKPI(ts);
   const owners = Object.keys(ts).sort((a,b)=>ts[b].contacted-ts[a].contacted);
   const gradeColor = {A:"#43d9a4",B:"#5b7fff",C:"#f5a623",D:"#ff6b6b"};
   const maxC = Math.max(...owners.map(o=>ts[o].contacted),1);
@@ -504,15 +510,15 @@ function renderTeam() {
   <div class="sec-lbl">个人详情 & 考评</div>
   <div class="person-grid anim">
     ${owners.map(o=>{
-      const d=ts[o], w=ws[o]||{contacted:0,success:0}, ki=k[o]||{score:0,grade:"D"};
+      const d=ts[o], tday=calcStats(todayRows)[o]||{contacted:0,success:0}, w=ws[o]||{contacted:0,success:0}, ki=k[o]||{score:0,grade:"D"};
       const gc=gradeColor[ki.grade];
       return `<div class="pcard">
         <div>
           <div class="pname">${o}</div>
           <div class="qtag ${d.quality_ok?"q-ok":"q-bad"}">${d.quality_ok?"✓ 博主质量达标":"⚠ 均粉超标"} · 均${fmtF(d.avg_fans)}</div>
           <div class="pstats">
-            <div class="ps"><em>今日联系</em><b>${d.contacted}</b></div>
-            <div class="ps"><em>今日成功</em><b style="color:var(--green)">${d.success}</b></div>
+            <div class="ps"><em>今日联系</em><b>${tday.contacted}</b></div>
+            <div class="ps"><em>今日成功</em><b style="color:var(--green)">${tday.success}</b></div>
             <div class="ps"><em>转化率</em><b>${fmtRate(d.success,d.contacted)}</b></div>
             <div class="ps"><em>本周联系</em><b>${w.contacted}</b></div>
             <div class="ps"><em>本周成功</em><b>${w.success}</b></div>
