@@ -557,7 +557,7 @@ let filterStatus = "all", filterOwner = "all", bloggerPeriod = "all";
 
 function renderBloggers() {
   const filteredByPeriod = filterByPeriod(ALL_ROWS, bloggerPeriod);
-  const owners = [...new Set(filteredByPeriod.map(r=>r.owner))];
+  const owners = [...new Set(filteredByPeriod.map(r=>r.owner).filter(o=>o&&o!=="null"&&o!=="未分配"))];
   const el = document.getElementById("pane-bloggers");
   el.innerHTML = `
   <div class="period-btns" style="margin-bottom:14px">
