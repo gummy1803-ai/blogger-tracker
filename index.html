@@ -598,7 +598,7 @@ function refreshTable() {
   const tbody = document.getElementById("tbody");
   if (!tbody) return;
   let rows = [...filterByPeriod(ALL_ROWS, bloggerPeriod)].sort((a,b)=>b.record_date.localeCompare(a.record_date));
-  if (filterStatus!=="all") rows=rows.filter(r=>r.status===filterStatus);
+  if (filterStatus!=="all") rows=rows.filter(r=>(r.status||"没回")===filterStatus);
   if (filterOwner!=="all")  rows=rows.filter(r=>r.owner===filterOwner);
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9"><div class="empty">暂无数据</div></td></tr>`; return; }
   const si={
@@ -608,7 +608,7 @@ function refreshTable() {
     "":             {cls:"p-none",lbl:"未填写"},
   };
   tbody.innerHTML = rows.map(r=>{
-    const s=si[r.status]||{cls:"p-none",lbl:r.status||"—"};
+    const s=si[r.status||"没回"]||{cls:"p-none",lbl:r.status||"没回"};
     const fw=r.followers>MAX_FANS?"fans-warn":"";
     const platformIcon = {"抖音":"🎵","视频号":"📹","小红书":"📕","知乎":"💡","微博":"🐦","B站":"📺"}[r.platform]||"🔗";
     return `<tr>
