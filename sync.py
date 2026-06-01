@@ -49,7 +49,7 @@ COL_NOTE      = 9   # J: 备注
 COL_TYPE      = 10  # K: 博主类型
 
 STATUS_SUCCESS = "引导到私域了"
-STATUS_CONTACT = {"抖音私信建联", "引导到私域了", "没引导到私域"}
+STATUS_CONTACT = {"抖音私信建联", "小红书私信建联", "微信建联", "微信私信建联", "引导到私域了", "没引导到私域"}
 STATUS_NO_REPLY = {"没回", "未回"}
 
 W_SUCCESS  = 0.40

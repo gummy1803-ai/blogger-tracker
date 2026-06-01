@@ -10,7 +10,7 @@
   const SUPABASE_ANON   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0Zm1oZnBqZ29saXl6c296ZmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjE2NjYsImV4cCI6MjA5NTU5NzY2Nn0.FxMCYutcjxm4YdwW3rGj0rALQYEeagS6D0vEINxb8Vc";
   const MAX_FANS        = 5.0;
   const STATUS_SUCCESS  = "引导到私域了";
-  const STATUS_CONTACT  = ["抖音私信建联","引导到私域了"];
+  const STATUS_CONTACT  = ["抖音私信建联","小红书私信建联","微信建联","微信私信建联","引导到私域了"];
 
   // ★ 查重工具后端地址（你的 Vercel 地址）
   const DUP_API = "";
@@ -373,7 +373,7 @@ function renderOverview() {
   const ts = calcStats(todayRows), ws = calcStats(weekRows);
   const [tt,tc,tsx] = sums(ts), [wt,wc,wsx] = sums(ws);
   const dN = todayRows.filter(r=>r.status==="没回").length;
-  const dC = todayRows.filter(r=>r.status==="抖音私信建联").length;
+  const dC = todayRows.filter(r=>STATUS_CONTACT.includes(r.status)&&r.status!==STATUS_SUCCESS).length;
   const dS = todayRows.filter(r=>r.status===STATUS_SUCCESS).length;
   const qOk = todayRows.filter(r=>r.followers<=MAX_FANS).length;
   const replied = todayRows.filter(r=>r.status&&r.status!=="没回"&&r.status!=="未回"&&r.status!=="").length;
@@ -571,7 +571,7 @@ function renderBloggers() {
     <div class="fbar" id="sf">
       <button class="fbtn on" onclick="setF('all',this,'s')">全部状态</button>
       <button class="fbtn" onclick="setF('没回',this,'s')">没回</button>
-      <button class="fbtn" onclick="setF('抖音私信建联',this,'s')">私信建联</button>
+      <button class="fbtn" onclick="setF('私信建联',this,'s')">私信建联</button>
       <button class="fbtn" onclick="setF('引导到私域了',this,'s')">已引导私域</button>
     </div>
     <div class="fbar" id="of">
@@ -598,12 +598,21 @@ function refreshTable() {
   const tbody = document.getElementById("tbody");
   if (!tbody) return;
   let rows = [...filterByPeriod(ALL_ROWS, bloggerPeriod)].sort((a,b)=>b.record_date.localeCompare(a.record_date));
-  if (filterStatus!=="all") rows=rows.filter(r=>(r.status||"没回")===filterStatus);
+  if (filterStatus!=="all") {
+    if (filterStatus==="私信建联") {
+      rows=rows.filter(r=>STATUS_CONTACT.includes(r.status||"没回")&&(r.status||"没回")!==STATUS_SUCCESS);
+    } else {
+      rows=rows.filter(r=>(r.status||"没回")===filterStatus);
+    }
+  }
   if (filterOwner!=="all")  rows=rows.filter(r=>r.owner===filterOwner);
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9"><div class="empty">暂无数据</div></td></tr>`; return; }
   const si={
     "没回":         {cls:"p-none",lbl:"没回"},
     "抖音私信建联": {cls:"p-ing", lbl:"已私信"},
+    "小红书私信建联": {cls:"p-ing", lbl:"已私信"},
+    "微信建联": {cls:"p-ing", lbl:"已私信"},
+    "微信私信建联": {cls:"p-ing", lbl:"已私信"},
     "引导到私域了": {cls:"p-ok",  lbl:"✓ 引导成功"},
     "":             {cls:"p-none",lbl:"未填写"},
   };
