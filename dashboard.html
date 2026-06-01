@@ -207,6 +207,7 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('bloggers',this)">博主列表</button>
     <button class="tab"     onclick="switchTab('revisit',this)">⏰ 回访</button>
     <button class="tab"     onclick="switchTab('trend',this)">趋势</button>
+    <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
 
   </div>
 
@@ -214,6 +215,7 @@ a.lnk:hover { opacity:1; }
   <div id="pane-team"     style="display:none"></div>
   <div id="pane-bloggers" style="display:none"></div>
   <div id="pane-revisit"  style="display:none"></div>
+  <div id="pane-guide"    style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
 
 
@@ -932,12 +934,84 @@ function showDupErr(msg) {
 // ══════════════════════════════════════════
 // Tab & 初始化
 // ══════════════════════════════════════════
+function renderGuide() {
+  const el = document.getElementById("pane-guide");
+  el.innerHTML = `
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>系统简介</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2">
+      本系统为飞羽出书团队定制，解决博主建联工作中数据分散、进度不透明、考评缺乏依据三大问题。<br>
+      完全基于免费工具搭建，零服务器成本，实现从数据录入到日报推送的全链路自动化。<br><br>
+      <b style="color:var(--text)">数据流向：</b>飞书电子表格 → GitHub Actions → Supabase 数据库 → 本看板
+    </div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--orange)"></div>🔍 查重规则</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2.2">
+      <b style="color:var(--text)">查重方式：</b>按博主链接和抖音号查重（不是博主名字，同一个博主换个名字也会被查出来）<br>
+      <b style="color:var(--text)">查重时间：</b>每天 21:00 - 24:00，每15分钟自动查一次<br>
+      <b style="color:var(--text)">查重结果：</b>重复的行在飞书表格 H 列自动写入"已重复"<br>
+      <b style="color:var(--text)">推送通知：</b>每次查重完成后推送报告到微信<br>
+      <b style="color:var(--text)">锁表时间：</b>0:00 最后一次查重后，当天工作表自动锁定，只有管理员可编辑<br>
+      <b style="color:var(--text)">工作量统计：</b>H 列标注"已重复"的行不计入工作量，重复数据作废<br><br>
+      <span style="color:var(--danger)">⚠️ 重复数据不仅不计入工作量，还会影响考评分数，请认真核查后再录入</span>
+    </div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--green)"></div>📊 考评规则</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2.2">
+      <b style="color:var(--text)">考评公式：</b>转化率 × 40% + 上级质量评分 × 30% + 活跃度 × 30%<br>
+      <b style="color:var(--text)">转化率：</b>引导私域成功数 ÷ 已联系数<br>
+      <b style="color:var(--text)">上级质量评分：</b>由负责人在飞书表格 I 列手动打分（满分100）<br>
+      <b style="color:var(--text)">活跃度：</b>个人联系量 ÷ 团队平均联系量（上限2倍）<br>
+      <b style="color:var(--text)">重复扣分：</b>重复率每超过10%扣10%活跃度分<br><br>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px">
+        ${[["A","≥80分","#43d9a4"],["B","≥60分","#5b7fff"],["C","≥40分","#f5a623"],["D","<40分","#ff6b6b"]].map(([g,s,c])=>`
+        <div style="background:var(--surf2);border-radius:8px;padding:12px;border-left:3px solid ${c};text-align:center">
+          <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;color:${c}">${g}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">${s}</div>
+        </div>`).join("")}
+      </div>
+    </div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--gold)"></div>⏰ 回访规则</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2.2">
+      <b style="color:var(--text)">待二次回访：</b>博主2天无回复，在"回访"Tab 中列出，可以再联系一次<br>
+      <b style="color:var(--text)">建议放弃：</b>博主4天无回复，在"回访"Tab 中列出，建议不再跟进<br>
+      <b style="color:var(--text)">回访成功：</b>回访成功算在回访当天的工作量，直接修改原行状态为"引导到私域了"<br>
+      <b style="color:var(--text)">有效回复率：</b>有回复的博主 ÷ 总录入博主数，反映博主意向程度
+    </div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--teal)"></div>📝 新同学操作指南</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2.2">
+      <b style="color:var(--text)">第一步：</b>打开飞书表格，找到今天日期的工作表（格式：月.日，如 6.1）<br>
+      <b style="color:var(--text)">第二步：</b>在自己负责的区块录入博主信息（B列链接、C列回复情况、D列博主名、E列粉丝数、F列抖音号、K列博主类型）<br>
+      <b style="color:var(--text)">第三步：</b>录入前先检查 D 列有没有变红，变红说明和其他工作表重复了，需要删除<br>
+      <b style="color:var(--text)">第四步：</b>每天 21:00 系统会自动查重，H 列会写入"已重复"，请在 0:00 前完成修正<br>
+      <b style="color:var(--text)">第五步：</b>0:00 后表格锁定，无法修改，次日早上9点日报推送后解锁<br><br>
+      <b style="color:var(--text)">表格列说明：</b><br>
+      A-数量 &nbsp; B-博主链接 &nbsp; C-回复情况 &nbsp; D-博主名 &nbsp; E-粉丝量(万) &nbsp; F-博主号 &nbsp; G-跟进人 &nbsp; H-查重结果 &nbsp; I-质量评分 &nbsp; J-备注 &nbsp; K-博主类型
+    </div>
+  </div>
+
+  <div style="text-align:center;color:var(--muted);font-size:12px;padding:1rem 0">
+    系统由内部团队自主搭建 · 如需功能调整请联系系统负责人
+  </div>`;
+}
+
 const TABS = {
   overview: renderOverview,
   team:     renderTeam,
   bloggers: renderBloggers,
   revisit:  renderRevisit,
   trend:    renderTrend,
+  guide:    renderGuide,
 };
 let rendered = new Set();
 
