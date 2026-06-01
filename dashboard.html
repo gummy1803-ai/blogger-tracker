@@ -180,6 +180,11 @@ a.lnk:hover { opacity:1; }
 .occ-first { opacity:.45; font-style:italic; }
 .ok-box { background:rgba(67,217,164,.07); border:1px solid rgba(67,217,164,.2); border-radius:10px; padding:20px; text-align:center; color:#86efac; font-size:14px; }
 .dup-sec-lbl { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin:12px 0 6px; }
+
+.period-btns { display:flex; gap:3px; background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:3px; width:fit-content; margin-bottom:16px; }
+.pbtn { padding:6px 16px; border-radius:7px; border:none; background:transparent; color:var(--muted2); font-size:13px; font-family:inherit; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.pbtn:hover:not(.active) { color:var(--text); background:var(--surf2); }
+.pbtn.active { background:var(--blue); color:#fff; box-shadow:0 2px 12px rgba(91,127,255,.4); }
 </style>
 </head>
 <body>
@@ -246,6 +251,41 @@ const weekStart = (() => {
   const d = new Date(); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().split("T")[0];
 })();
 
+// 时间范围筛选
+
+function getPeriodLabel(period) {
+  return {"all":"历史","today":"今日","week":"本周","month":"本月"}[period] || "今日";
+}
+
+function filterByPeriod(rows, period) {
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const monthStartStr = todayStr.slice(0,7) + "-01";
+  if (period === "today") return rows.filter(r => r.record_date === todayStr);
+  if (period === "week")  return rows.filter(r => r.record_date >= weekStartStr && r.record_date <= todayStr);
+  if (period === "month") return rows.filter(r => r.record_date >= monthStartStr && r.record_date <= todayStr);
+  return rows; // all
+}
+
+function periodBtns(current, onChange) {
+  const periods = [["all","全部历史"],["today","今天"],["week","本周"],["month","本月"]];
+  return `<div class="period-btns" style="margin-bottom:14px">${periods.map(([v,l])=>
+    `<button class="pbtn${current===v?' active':''}" onclick="(${onChange})('${v}',this)">${l}</button>`
+  ).join("")}</div>`;
+}
+
+function activatePeriodBtns(containerId, cb) {
+  document.querySelectorAll(`#${containerId} .pbtn`).forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll(`#${containerId} .pbtn`).forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      cb(b.dataset.period || b.textContent);
+    };
+  });
+}
+
 function calcStats(rows) {
   const bk = {};
   rows.forEach(r => {
@@ -300,7 +340,7 @@ async function loadData() {
       SB.query("bloggers", {
         select: "link,name,status,followers,owner,record_date,platform,blogger_type,account,note",
         order:  "record_date.desc",
-        gte_date: weekStart
+        limit:  "10000"
       }),
       SB.query("daily_reports", {
         select: "report_date,total,contacted,success,rate,w_total,w_contacted,w_success,w_rate",
@@ -319,48 +359,57 @@ async function loadData() {
 // ══════════════════════════════════════════
 // 总览
 // ══════════════════════════════════════════
+let overviewPeriod = "today";
 function renderOverview() {
-  const todayRows = ALL_ROWS.filter(r=>r.record_date===today);
-  const weekRows  = ALL_ROWS;
+  const rows = filterByPeriod(ALL_ROWS, overviewPeriod);
+  const todayRows = rows;
+  const weekRows  = rows;
   const ts = calcStats(todayRows), ws = calcStats(weekRows);
   const [tt,tc,tsx] = sums(ts), [wt,wc,wsx] = sums(ws);
   const dN = todayRows.filter(r=>r.status==="没回").length;
   const dC = todayRows.filter(r=>r.status==="抖音私信建联").length;
   const dS = todayRows.filter(r=>r.status===STATUS_SUCCESS).length;
   const qOk = todayRows.filter(r=>r.followers<=MAX_FANS).length;
-  const replied = todayRows.filter(r=>r.status&&r.status!=="没回"&&r.status!=="未回").length;
+  const replied = todayRows.filter(r=>r.status&&r.status!=="没回"&&r.status!=="未回"&&r.status!=="").length;
+  const repliedTotal = todayRows.length;
 
   const el = document.getElementById("pane-overview");
   el.innerHTML = `
+  <div class="period-btns" style="margin-bottom:14px">
+    ${["all","today","week","month"].map((v,i)=>{
+      const labels=["全部历史","今天","本周","本月"];
+      return `<button class="pbtn${overviewPeriod===v?' active':''}" onclick="overviewPeriod='${v}';renderOverview()">${labels[i]}</button>`;
+    }).join("")}
+  </div>
   <div class="metrics anim">
     <div class="mc" style="--c:#5b7fff">
-      <div class="mc-label">今日录入博主</div>
+      <div class="mc-label">${getPeriodLabel(overviewPeriod)}录入博主</div>
       <div class="mc-val">${tt}</div>
-      <div class="mc-sub">本周共 ${wt} 人</div>
+      <div class="mc-sub">共 ${wt} 人</div>
     </div>
     <div class="mc" style="--c:#43d9a4">
-      <div class="mc-label">今日引导成功</div>
+      <div class="mc-label">${getPeriodLabel(overviewPeriod)}引导成功</div>
       <div class="mc-val" style="color:var(--green)">${tsx}</div>
       <div class="mc-sub">转化率 ${fmtRate(tsx,tc)}</div>
     </div>
     <div class="mc" style="--c:#5b7fff">
-      <div class="mc-label">今日已联系</div>
+      <div class="mc-label">${getPeriodLabel(overviewPeriod)}已联系</div>
       <div class="mc-val" style="color:var(--blue)">${tc}</div>
       <div class="mc-sub">暂未回 ${dN} 人</div>
     </div>
     <div class="mc" style="--c:#f5a623">
       <div class="mc-label">有效回复率</div>
-      <div class="mc-val" style="color:var(--gold)">${tc?Math.round(replied/tc*100):0}%</div>
+      <div class="mc-val" style="color:var(--gold)">${repliedTotal?Math.round(replied/repliedTotal*100):0}%</div>
       <div class="mc-sub">有意向博主占比</div>
     </div>
   </div>
   <div class="two-col anim">
     <div class="card">
-      <div class="card-title"><div class="dot" style="background:var(--green)"></div>今日状态分布</div>
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>${getPeriodLabel(overviewPeriod)}状态分布</div>
       ${renderDonut(dS,dC,dN)}
     </div>
     <div class="card">
-      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>今日平台分布</div>
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>${getPeriodLabel(overviewPeriod)}平台分布</div>
       ${renderPlatformBars(todayRows)}
     </div>
   </div>
@@ -397,7 +446,7 @@ function renderDonut(s,c,n) {
       ${arc(c/total,n/total,"rgba(91,127,255,.8)")}
       ${arc(s/total,(n+c)/total,"#43d9a4")}
       <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
-        style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;fill:#fff">${total}</text>
+        style="font-family:Syne,sans-serif;font-size:${total>999?10:total>99?13:16}px;font-weight:700;fill:#fff;letter-spacing:-1px">${total}</text>
     </svg>
     <div class="donut-legend">
       <div class="leg"><div class="leg-dot" style="background:#43d9a4"></div>引导私域<span class="leg-val" style="color:#43d9a4">${s}</span></div>
@@ -434,8 +483,14 @@ function renderTeam() {
 
   const el = document.getElementById("pane-team");
   el.innerHTML = `
+  <div class="period-btns" style="margin-bottom:14px">
+    ${["all","today","week","month"].map((v,i)=>{
+      const labels=["全部历史","今天","本周","本月"];
+      return `<button class="pbtn${teamPeriod===v?' active':''}" onclick="teamPeriod='${v}';renderTeam()">${labels[i]}</button>`;
+    }).join("")}
+  </div>
   <div class="card anim">
-    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>今日联系量对比</div>
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>联系量对比</div>
     <div class="bars">${owners.map(o=>`
       <div class="bar-row">
         <div class="bar-lbl" style="color:var(--text);font-weight:500">${o}</div>
@@ -490,14 +545,21 @@ function renderTeam() {
 // ══════════════════════════════════════════
 // 博主列表
 // ══════════════════════════════════════════
-let filterStatus = "all", filterOwner = "all";
+let filterStatus = "all", filterOwner = "all", bloggerPeriod = "all";
 
 function renderBloggers() {
-  const owners = [...new Set(ALL_ROWS.map(r=>r.owner))];
+  const filteredByPeriod = filterByPeriod(ALL_ROWS, bloggerPeriod);
+  const owners = [...new Set(filteredByPeriod.map(r=>r.owner))];
   const el = document.getElementById("pane-bloggers");
   el.innerHTML = `
+  <div class="period-btns" style="margin-bottom:14px">
+    ${["all","today","week","month"].map((v,i)=>{
+      const labels=["全部历史","今天","本周","本月"];
+      return `<button class="pbtn${bloggerPeriod===v?' active':''}" onclick="bloggerPeriod='${v}';renderBloggers()">${labels[i]}</button>`;
+    }).join("")}
+  </div>
   <div class="card anim">
-    <div class="card-title"><div class="dot" style="background:var(--red)"></div>博主列表（本周）</div>
+    <div class="card-title"><div class="dot" style="background:var(--red)"></div>博主列表</div>
     <div class="fbar" id="sf">
       <button class="fbtn on" onclick="setF('all',this,'s')">全部状态</button>
       <button class="fbtn" onclick="setF('没回',this,'s')">没回</button>
@@ -527,7 +589,7 @@ function setF(val,btn,type) {
 function refreshTable() {
   const tbody = document.getElementById("tbody");
   if (!tbody) return;
-  let rows = [...ALL_ROWS].sort((a,b)=>b.record_date.localeCompare(a.record_date));
+  let rows = [...filterByPeriod(ALL_ROWS, bloggerPeriod)].sort((a,b)=>b.record_date.localeCompare(a.record_date));
   if (filterStatus!=="all") rows=rows.filter(r=>r.status===filterStatus);
   if (filterOwner!=="all")  rows=rows.filter(r=>r.owner===filterOwner);
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9"><div class="empty">暂无数据</div></td></tr>`; return; }
