@@ -208,7 +208,18 @@ def parse_followers(raw):
 def get_cell(row, idx, default=""):
     try:
         v = row[idx]
-        return str(v).strip() if v is not None else default
+        if v is None:
+            return default
+        # 飞书超链接格式：{'link': 'https://...', 'text': '...'}
+        if isinstance(v, dict):
+            return (v.get("link") or v.get("text") or "").strip()
+        # 飞书超链接列表格式
+        if isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict) and item.get("link"):
+                    return item["link"].strip()
+            return default
+        return str(v).strip()
     except IndexError:
         return default
 
