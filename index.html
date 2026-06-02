@@ -186,6 +186,8 @@ a.lnk:hover { opacity:1; }
 .pbtn:hover:not(.active) { color:var(--text); background:var(--surf2); }
 .pbtn.active { background:var(--blue); color:#fff; box-shadow:0 2px 12px rgba(91,127,255,.4); }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -246,7 +248,7 @@ const SB = {
 // 工具函数
 // ══════════════════════════════════════════
 const fmtRate = (n,d) => d ? (n/d*100).toFixed(1)+"%" : "—";
-const fmtF    = f => f.toFixed(1)+"万";
+const fmtF    = f => (f==null||isNaN(f)) ? "—" : Number(f).toFixed(1)+"万";
 const esc     = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 function localDateStr(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
@@ -1032,7 +1034,14 @@ function renderGuide() {
       <select id="kb-category" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-bottom:8px">
         <option>通用</option><option>考评规则</option><option>录入规范</option><option>查重规则</option><option>常见问题</option>
       </select>
-      <textarea id="kb-content" placeholder="材料内容..." rows="5" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+      <div onclick="document.getElementById('kb-file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:8px;cursor:pointer">
+        <div style="font-size:22px;margin-bottom:4px">📎</div>
+        <div style="font-size:13px;color:var(--muted)">点击上传文件（支持 txt / md / pdf / docx）</div>
+        <div id="kb-file-name" style="font-size:12px;color:var(--blue);margin-top:4px"></div>
+      </div>
+      <input type="file" id="kb-file" accept=".txt,.md,.pdf,.docx" style="display:none" onchange="handleKbFile(this)">
+      <div id="kb-file-status" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
+      <textarea id="kb-content" placeholder="材料内容（可手动输入，也可上传文件自动填充）..." rows="5" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
       <button onclick="saveKbItem()" style="margin-top:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">保存</button>
       <button onclick="toggleKbEditor()" style="margin-top:8px;margin-left:8px;background:var(--surf2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">取消</button>
     </div>
@@ -1107,9 +1116,54 @@ async function loadKbList() {
   }
 }
 
+async function handleKbFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("kb-file-status");
+  const nameEl = document.getElementById("kb-file-name");
+  nameEl.textContent = file.name;
+  statusEl.textContent = "解析中...";
+  statusEl.style.color = "var(--muted)";
+  const titleEl = document.getElementById("kb-title");
+  if (!titleEl.value) titleEl.value = file.name.replace(/\.[^.]+$/, "");
+  try {
+    let text = "";
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (ext === "txt" || ext === "md") {
+      text = await file.text();
+    } else if (ext === "pdf") {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfjsLib = window["pdfjs-dist/build/pdf"];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        pages.push(tc.items.map(function(s) { return s.str; }).join(" "));
+      }
+      text = pages.join("\n");
+    } else if (ext === "docx") {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+      text = result.value;
+    }
+    document.getElementById("kb-content").value = text;
+    statusEl.textContent = "✓ 解析完成，共 " + text.length + " 字";
+    statusEl.style.color = "var(--green)";
+  } catch(e) {
+    statusEl.textContent = "解析失败：" + e.message;
+    statusEl.style.color = "var(--danger)";
+  }
+}
+
 function toggleKbEditor() {
   const ed = document.getElementById("kb-editor");
   ed.style.display = ed.style.display === "none" ? "block" : "none";
+  if (ed.style.display === "none") {
+    document.getElementById("kb-file-name").textContent = "";
+    document.getElementById("kb-file-status").textContent = "";
+  }
 }
 
 async function saveKbItem() {
