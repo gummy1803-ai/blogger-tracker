@@ -1051,7 +1051,7 @@ function renderGuide() {
 
   <div style="text-align:center;color:var(--muted);font-size:12px;padding:1rem 0">
     系统由内部团队自主搭建 · 如需功能调整请联系系统负责人
-  </div>\`;
+  </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -1083,16 +1083,16 @@ async function loadKbList() {
       el.innerHTML = '<div style="color:var(--muted);padding:10px 0">暂无材料，点击「+ 添加材料」开始录入</div>';
       return;
     }
-    el.innerHTML = kbItems.map(item => \`
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-          <span style="font-weight:600;color:var(--text)">\${item.title}</span>
-          <span style="font-size:11px;background:var(--surf2);color:var(--muted);padding:2px 8px;border-radius:10px">\${item.category}</span>
-          <button onclick="deleteKbItem('\${item.id}')" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px">删除</button>
-        </div>
-        <div style="color:var(--muted2);font-size:12px;white-space:pre-wrap">\${item.content.slice(0,100)}\${item.content.length>100?'...':''}</div>
-      </div>
-    \`).join("");
+    el.innerHTML = kbItems.map(function(item) {
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+        + '<span style="font-weight:600;color:var(--text)">' + item.title + '</span>'
+        + '<span style="font-size:11px;background:var(--surf2);color:var(--muted);padding:2px 8px;border-radius:10px">' + item.category + '</span>'
+        + '<button onclick="deleteKbItem(\'' + item.id + '\')" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px">删除</button>'
+        + '</div>'
+        + '<div style="color:var(--muted2);font-size:12px;white-space:pre-wrap">' + item.content.slice(0,100) + (item.content.length>100?'...':'') + '</div>'
+        + '</div>';
+    }).join("");
   } catch(e) {
     document.getElementById("kb-list").innerHTML = '<span style="color:var(--muted)">加载失败</span>';
   }
@@ -1109,7 +1109,7 @@ async function saveKbItem() {
   const category = document.getElementById("kb-category").value;
   if (!title || !content) { alert("标题和内容不能为空"); return; }
   try {
-    const resp = await fetch(\`\${SUPABASE_URL}/rest/v1/knowledge_base\`, {
+    const resp = await fetch(SUPABASE_URL + "/rest/v1/knowledge_base", {
       method: "POST",
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
       body: JSON.stringify({ title, content, category })
@@ -1130,7 +1130,7 @@ async function saveKbItem() {
 async function deleteKbItem(id) {
   if (!confirm("确认删除这条材料？")) return;
   try {
-    await fetch(\`\${SUPABASE_URL}/rest/v1/knowledge_base?id=eq.\${id}\`, {
+    await fetch(SUPABASE_URL + "/rest/v1/knowledge_base?id=eq." + id, {
       method: "DELETE",
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
     });
@@ -1147,40 +1147,42 @@ async function askAI() {
   input.value = "";
 
   const history = document.getElementById("qa-history");
-  // 显示用户问题
-  history.innerHTML += \`<div style="align-self:flex-end;background:var(--blue);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;max-width:80%;font-size:13px">\${q}</div>\`;
-  // 显示等待
-  const loadId = "qa-load-" + Date.now();
-  history.innerHTML += \`<div id="\${loadId}" style="align-self:flex-start;background:var(--surf2);color:var(--muted);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px">思考中...</div>\`;
+  const qDiv = document.createElement("div");
+  qDiv.style.cssText = "align-self:flex-end;background:var(--blue);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;max-width:80%;font-size:13px";
+  qDiv.textContent = q;
+  history.appendChild(qDiv);
+
+  const loadDiv = document.createElement("div");
+  loadDiv.style.cssText = "align-self:flex-start;background:var(--surf2);color:var(--muted);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px";
+  loadDiv.textContent = "思考中...";
+  history.appendChild(loadDiv);
   history.scrollTop = history.scrollHeight;
 
   try {
-    // 拼装知识库内容作为上下文
     const kbContext = kbItems.length > 0
-      ? kbItems.map(i => \`【\${i.category}·\${i.title}】\n\${i.content}\`).join("\n\n")
+      ? kbItems.map(function(i) { return "【" + i.category + "·" + i.title + "】\n" + i.content; }).join("\n\n")
       : "（暂无知识库材料）";
 
-    const systemPrompt = \`你是博主建联管理系统的智能助手，只根据以下提供的材料回答问题。如果问题超出材料范围，回复"这个问题超出我的知识范围，请询问管理员"。回答简洁明了，100字以内。
+    const systemPrompt = "你是博主建联管理系统的智能助手，只根据以下提供的材料回答问题。如果问题超出材料范围，回复\"这个问题超出我的知识范围，请询问管理员\"。回答简洁明了，100字以内。\n\n【知识库材料】\n" + kbContext;
 
-【知识库材料】
-\${kbContext}\`;
-
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer sk-78a6a00bf38c48dab8b94303f2bae165" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: q }]
+        model: "deepseek-chat",
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: q }
+        ]
       })
     });
     const data = await resp.json();
-    const answer = data.content?.[0]?.text || "抱歉，暂时无法回答，请询问管理员";
-    document.getElementById(loadId).innerHTML = answer;
-    document.getElementById(loadId).style.color = "var(--text)";
+    const answer = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "抱歉，暂时无法回答，请询问管理员";
+    loadDiv.textContent = answer;
+    loadDiv.style.color = "var(--text)";
   } catch(e) {
-    document.getElementById(loadId).innerHTML = "请求失败，请稍后重试";
+    loadDiv.textContent = "请求失败，请稍后重试";
   }
   history.scrollTop = history.scrollHeight;
 }
