@@ -1015,9 +1015,174 @@ function renderGuide() {
     </div>
   </div>
 
+  <div id="ai-summary-card" class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--gold)"></div>🤖 AI 建联策略总结</div>
+    <div id="ai-summary-content" style="color:var(--muted2);font-size:14px;line-height:1.9">
+      <div style="color:var(--muted)">加载中...</div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-top:10px" id="ai-summary-date"></div>
+  </div>
+
+  <div id="kb-card" class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>📚 知识库管理
+      <button onclick="toggleKbEditor()" style="margin-left:auto;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 14px;font-size:12px;cursor:pointer">+ 添加材料</button>
+    </div>
+    <div id="kb-editor" style="display:none;margin-bottom:14px">
+      <input id="kb-title" placeholder="材料标题" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-bottom:8px;box-sizing:border-box">
+      <select id="kb-category" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-bottom:8px">
+        <option>通用</option><option>考评规则</option><option>录入规范</option><option>查重规则</option><option>常见问题</option>
+      </select>
+      <textarea id="kb-content" placeholder="材料内容..." rows="5" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+      <button onclick="saveKbItem()" style="margin-top:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">保存</button>
+      <button onclick="toggleKbEditor()" style="margin-top:8px;margin-left:8px;background:var(--surf2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">取消</button>
+    </div>
+    <div id="kb-list" style="color:var(--muted2);font-size:13px">加载中...</div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--green)"></div>💬 AI 答疑</div>
+    <div id="qa-history" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px"></div>
+    <div style="display:flex;gap:8px">
+      <input id="qa-input" placeholder="请输入你的问题..." style="flex:1;padding:10px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px"
+        onkeydown="if(event.key==='Enter')askAI()">
+      <button onclick="askAI()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer;white-space:nowrap">发送</button>
+    </div>
+  </div>
+
   <div style="text-align:center;color:var(--muted);font-size:12px;padding:1rem 0">
     系统由内部团队自主搭建 · 如需功能调整请联系系统负责人
-  </div>`;
+  </div>\`;
+}
+
+// ══════════════════════════════════════════
+// AI 功能
+// ══════════════════════════════════════════
+async function loadAISummary() {
+  try {
+    const resp = await SB.query("ai_summaries", { order: "summary_date.desc", limit: "1" });
+    const el = document.getElementById("ai-summary-content");
+    const dateEl = document.getElementById("ai-summary-date");
+    if (resp && resp.length > 0) {
+      el.innerHTML = resp[0].content.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+      dateEl.textContent = "生成日期：" + resp[0].summary_date;
+    } else {
+      el.innerHTML = '<span style="color:var(--muted)">暂无AI总结，将在下次同步后生成</span>';
+    }
+  } catch(e) {
+    document.getElementById("ai-summary-content").innerHTML = '<span style="color:var(--muted)">加载失败</span>';
+  }
+}
+
+let kbItems = [];
+async function loadKbList() {
+  try {
+    const items = await SB.query("knowledge_base", { order: "created_at.desc", limit: "50" });
+    kbItems = items || [];
+    const el = document.getElementById("kb-list");
+    if (!kbItems.length) {
+      el.innerHTML = '<div style="color:var(--muted);padding:10px 0">暂无材料，点击「+ 添加材料」开始录入</div>';
+      return;
+    }
+    el.innerHTML = kbItems.map(item => \`
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-weight:600;color:var(--text)">\${item.title}</span>
+          <span style="font-size:11px;background:var(--surf2);color:var(--muted);padding:2px 8px;border-radius:10px">\${item.category}</span>
+          <button onclick="deleteKbItem('\${item.id}')" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px">删除</button>
+        </div>
+        <div style="color:var(--muted2);font-size:12px;white-space:pre-wrap">\${item.content.slice(0,100)}\${item.content.length>100?'...':''}</div>
+      </div>
+    \`).join("");
+  } catch(e) {
+    document.getElementById("kb-list").innerHTML = '<span style="color:var(--muted)">加载失败</span>';
+  }
+}
+
+function toggleKbEditor() {
+  const ed = document.getElementById("kb-editor");
+  ed.style.display = ed.style.display === "none" ? "block" : "none";
+}
+
+async function saveKbItem() {
+  const title = document.getElementById("kb-title").value.trim();
+  const content = document.getElementById("kb-content").value.trim();
+  const category = document.getElementById("kb-category").value;
+  if (!title || !content) { alert("标题和内容不能为空"); return; }
+  try {
+    const resp = await fetch(\`\${SUPABASE_URL}/rest/v1/knowledge_base\`, {
+      method: "POST",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify({ title, content, category })
+    });
+    if (resp.ok) {
+      document.getElementById("kb-title").value = "";
+      document.getElementById("kb-content").value = "";
+      toggleKbEditor();
+      await loadKbList();
+    } else {
+      alert("保存失败，请重试");
+    }
+  } catch(e) {
+    alert("保存失败：" + e.message);
+  }
+}
+
+async function deleteKbItem(id) {
+  if (!confirm("确认删除这条材料？")) return;
+  try {
+    await fetch(\`\${SUPABASE_URL}/rest/v1/knowledge_base?id=eq.\${id}\`, {
+      method: "DELETE",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
+    });
+    await loadKbList();
+  } catch(e) {
+    alert("删除失败");
+  }
+}
+
+async function askAI() {
+  const input = document.getElementById("qa-input");
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = "";
+
+  const history = document.getElementById("qa-history");
+  // 显示用户问题
+  history.innerHTML += \`<div style="align-self:flex-end;background:var(--blue);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;max-width:80%;font-size:13px">\${q}</div>\`;
+  // 显示等待
+  const loadId = "qa-load-" + Date.now();
+  history.innerHTML += \`<div id="\${loadId}" style="align-self:flex-start;background:var(--surf2);color:var(--muted);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px">思考中...</div>\`;
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    // 拼装知识库内容作为上下文
+    const kbContext = kbItems.length > 0
+      ? kbItems.map(i => \`【\${i.category}·\${i.title}】\n\${i.content}\`).join("\n\n")
+      : "（暂无知识库材料）";
+
+    const systemPrompt = \`你是博主建联管理系统的智能助手，只根据以下提供的材料回答问题。如果问题超出材料范围，回复"这个问题超出我的知识范围，请询问管理员"。回答简洁明了，100字以内。
+
+【知识库材料】
+\${kbContext}\`;
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: q }]
+      })
+    });
+    const data = await resp.json();
+    const answer = data.content?.[0]?.text || "抱歉，暂时无法回答，请询问管理员";
+    document.getElementById(loadId).innerHTML = answer;
+    document.getElementById(loadId).style.color = "var(--text)";
+  } catch(e) {
+    document.getElementById(loadId).innerHTML = "请求失败，请稍后重试";
+  }
+  history.scrollTop = history.scrollHeight;
 }
 
 const TABS = {
@@ -1035,6 +1200,7 @@ function switchTab(tab, btn) {
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
+  if (tab === 'guide') { loadAISummary(); loadKbList(); }
 }
 
 async function init() {

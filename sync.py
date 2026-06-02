@@ -29,6 +29,7 @@ WIKI_TOKEN           = os.environ["WIKI_TOKEN"]
 SUPABASE_URL         = os.environ["SUPABASE_URL"]
 SUPABASE_KEY         = os.environ["SUPABASE_SERVICE_KEY"]
 SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
+SERVERCHAN_KEY_BOSS  = "SCT358143TXBXKvtb4ZE18Za42J2xyfmX4"  # 上级
 WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
 DEEPSEEK_API_KEY     = os.environ.get("DEEPSEEK_API_KEY", "")
 
@@ -451,7 +452,7 @@ def calc_kpi(stats):
 # ════════════════════════════════════════
 
 def ai_summarize_types(success_records):
-    """用 DeepSeek 总结建联成功的博主类型规律"""
+    """用 DeepSeek 总结昨日建联成功的博主类型规律（用于日报）"""
     if not DEEPSEEK_API_KEY:
         return ""
     if not success_records:
@@ -471,17 +472,88 @@ def ai_summarize_types(success_records):
         r = requests.post(
             "https://api.deepseek.com/chat/completions",
             headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": "deepseek-chat",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 150,
-            },
+            json={"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt}], "max_tokens": 150},
             timeout=15,
         )
         return r.json()["choices"][0]["message"]["content"].strip()
     except Exception as e:
         print(f"  ⚠️ AI总结失败: {e}")
         return ""
+
+
+def ai_full_summary(all_records):
+    """基于全量历史数据，分析哪类博主最适合建联，结果存入 Supabase"""
+    if not DEEPSEEK_API_KEY:
+        print("  ⚠️ 无 DEEPSEEK_API_KEY，跳过全量AI总结")
+        return
+
+    success_records = [r for r in all_records if r.get("status") == STATUS_SUCCESS]
+    if len(success_records) < 5:
+        print("  ⚠️ 成功记录不足5条，跳过全量AI总结")
+        return
+
+    # 统计成功博主的类型、平台、粉丝段分布
+    types = [r.get("blogger_type", "") for r in success_records if r.get("blogger_type")]
+    platforms = [r.get("platform", "") for r in success_records]
+    fans_list = [r.get("followers", 0) / 10000 for r in success_records if r.get("followers", 0) > 0]
+
+    # 粉丝段分布
+    fan_buckets = {"0-1万": 0, "1-5万": 0, "5-10万": 0, "10-50万": 0, "50万+": 0}
+    for f in fans_list:
+        if f < 1: fan_buckets["0-1万"] += 1
+        elif f < 5: fan_buckets["1-5万"] += 1
+        elif f < 10: fan_buckets["5-10万"] += 1
+        elif f < 50: fan_buckets["10-50万"] += 1
+        else: fan_buckets["50万+"] += 1
+
+    # 总体联系 vs 成功对比
+    total = len([r for r in all_records if not r.get("is_dup")])
+    success_count = len(success_records)
+    rate = round(success_count / total * 100, 1) if total else 0
+
+    prompt = f"""你是一位新媒体运营顾问。以下是一个团队的博主建联历史数据，请深度分析并给出策略建议。
+
+【数据概览】
+总联系博主：{total} 人
+建联成功：{success_count} 人（成功率 {rate}%）
+
+【成功博主平台分布】
+{dict_count(platforms)}
+
+【成功博主类型分布】
+{dict_count(types) if types else "（博主类型数据暂未完整填写）"}
+
+【成功博主粉丝量分布】
+{fan_buckets}
+粉丝均值：{round(sum(fans_list)/len(fans_list), 1) if fans_list else 0}万
+
+请从以下角度给出分析（每点2-3句，总字数300字以内）：
+1. 最适合建联的博主画像（平台、粉丝量级、类型）
+2. 当前策略的优势与潜在盲区
+3. 下阶段建议重点拓展的方向"""
+
+    try:
+        r = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
+            json={"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt}], "max_tokens": 600},
+            timeout=30,
+        )
+        summary = r.json()["choices"][0]["message"]["content"].strip()
+        print(f"  ✓ 全量AI总结生成完毕（{len(summary)}字）")
+
+        # 存入 Supabase ai_summaries 表
+        payload = {"summary_date": str(date.today()), "content": summary}
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        }
+        resp = requests.post(f"{SUPABASE_URL}/rest/v1/ai_summaries", headers=headers, json=payload, timeout=10)
+        print(f"  AI总结存储: {resp.status_code}")
+    except Exception as e:
+        print(f"  ⚠️ 全量AI总结失败: {e}")
 
 def dict_count(lst):
     d = {}
@@ -507,7 +579,7 @@ def sums(s):
         sum(v["success"] for v in s.values()),
     )
 
-def build_report(stats, kpi, records, report_date, revisit, abandon, ai_summary):
+def build_report(stats, kpi, records, report_date, revisit, abandon, ai_summary, failed_dates=None):
     dl  = report_date.strftime("%m月%d日")
     tt, tc, ts = sums(stats)
     total_raw  = sum(v["total"] for v in stats.values())
@@ -582,6 +654,11 @@ def build_report(stats, kpi, records, report_date, revisit, abandon, ai_summary)
             lines.append(f"  {r['owner']} · {r['name']} · 已{r['days']}天无回复")
         lines.append("")
 
+    if failed_dates:
+        lines += ["", f"⚠️ 以下日期数据同步失败，请检查："]
+        for d in failed_dates:
+            lines.append(f"  · {d}")
+
     lines += [
         "━" * 24,
         "A≥80 B≥60 C≥40 D<40",
@@ -613,6 +690,14 @@ def push_serverchan(title, content):
         timeout=10)
     print(f"  [Server酱] {r.status_code}")
 
+def push_serverchan_boss(title, content):
+    """推送给上级"""
+    r = requests.post(
+        f"https://sctapi.ftqq.com/{SERVERCHAN_KEY_BOSS}.send",
+        data={"title": title, "desp": content.replace("\n", "\n\n")},
+        timeout=10)
+    print(f"  [Server酱-上级] {r.status_code}")
+
 
 # ════════════════════════════════════════
 #  主入口
@@ -631,6 +716,7 @@ def main():
     all_records       = []
     yesterday_records = []
     all_quality_map   = {}
+    failed_dates      = []
 
     for sheet in all_sheets:
         title       = sheet.get("title", "").strip()
@@ -654,10 +740,14 @@ def main():
             yesterday_records = records
 
         # 按日期单独写入 Supabase
-        upsert_bloggers_by_date(record_date, records)
+        ok = upsert_bloggers_by_date(record_date, records)
+        if ok == 0:
+            failed_dates.append(record_date)
 
     written = len(all_records)
     print(f"  Supabase 总处理: {written} 条")
+    if failed_dates:
+        print(f"  ⚠️ 写入失败日期: {', '.join(failed_dates)}")
 
     if not yesterday_records:
         print(f"  ⚠️ 昨日（{yesterday}）无数据，跳过日报推送")
@@ -676,12 +766,16 @@ def main():
     ai_summary      = ai_summarize_types(success_records)
 
     # 生成日报
-    report = build_report(stats, kpi, yesterday_records, yesterday, revisit, abandon, ai_summary)
+    report = build_report(stats, kpi, yesterday_records, yesterday, revisit, abandon, ai_summary, failed_dates)
     print("\n" + "=" * 40 + "\n" + report + "\n" + "=" * 40)
 
     save_daily_report(yesterday, yesterday_records, report)
     push_wecom(report)
     push_serverchan(f"博主建联日报·{yesterday.strftime('%m/%d')}", report)
+    push_serverchan_boss(f"博主建联日报·{yesterday.strftime('%m/%d')}", report)
+
+    # 全量AI总结（基于所有历史数据）
+    ai_full_summary(all_records)
     print("✓ 完成")
 
 if __name__ == "__main__":
