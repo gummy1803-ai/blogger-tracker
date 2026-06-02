@@ -340,17 +340,24 @@ def supa_headers():
         "Prefer":        "resolution=merge-duplicates",
     }
 
-def upsert_bloggers(records):
+def upsert_bloggers_by_date(record_date, records):
+    """按日期单独写入，方便定位问题"""
     if not records:
         return 0
-    # 去掉内部字段 is_dup
     payload = [{k: v for k, v in r.items() if k != "is_dup"} for r in records]
+    headers = {
+        "apikey":        SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type":  "application/json",
+        "Prefer":        "resolution=merge-duplicates,return=minimal",
+    }
     r = requests.post(
         f"{SUPABASE_URL}/rest/v1/bloggers",
-        headers=supa_headers(), json=payload, timeout=15)
+        headers=headers, json=payload, timeout=30)
     if r.status_code not in (200, 201):
-        print(f"  ⚠️ Supabase错误: {r.status_code} {r.text[:200]}")
+        print(f"  ⚠️ [{record_date}] Supabase错误: {r.status_code} {r.text[:150]}")
         return 0
+    print(f"  ✓ [{record_date}] 写入 {len(payload)} 条")
     return len(payload)
 
 def save_daily_report(report_date, records, report_text):
@@ -646,9 +653,11 @@ def main():
         if record_date == str(yesterday):
             yesterday_records = records
 
-    # 全量写入 Supabase
-    written = upsert_bloggers(all_records)
-    print(f"  Supabase 总写入: {written} 条")
+        # 按日期单独写入 Supabase
+        upsert_bloggers_by_date(record_date, records)
+
+    written = len(all_records)
+    print(f"  Supabase 总处理: {written} 条")
 
     if not yesterday_records:
         print(f"  ⚠️ 昨日（{yesterday}）无数据，跳过日报推送")
