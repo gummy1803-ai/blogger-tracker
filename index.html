@@ -519,11 +519,14 @@ function renderTeam() {
           <div class="pname">${o}</div>
           <div class="qtag ${d.quality_ok?"q-ok":"q-bad"}">${d.quality_ok?"✓ 博主质量达标":"⚠ 均粉超标"} · 均${fmtF(d.avg_fans)}</div>
           <div class="pstats">
-            <div class="ps"><em>今日联系</em><b>${tday.contacted}</b></div>
-            <div class="ps"><em>今日成功</em><b style="color:var(--green)">${tday.success}</b></div>
-            <div class="ps"><em>转化率</em><b>${fmtRate(d.success,d.contacted)}</b></div>
-            <div class="ps"><em>本周联系</em><b>${w.contacted}</b></div>
-            <div class="ps"><em>本周成功</em><b>${w.success}</b></div>
+            <div class="ps"><em>建联总数</em><b>${d.contacted}</b></div>
+            <div class="ps"><em>合作成功</em><b style="color:var(--green)">${d.success}</b></div>
+            <div class="ps"><em>建联成功率</em><b style="color:var(--blue)">${fmtRate(d.contacted,d.total)}</b></div>
+            <div class="ps"><em>合作成功率</em><b style="color:var(--green)">${fmtRate(d.success,d.contacted)}</b></div>
+            <div class="ps"><em>今日建联</em><b>${tday.contacted}</b></div>
+            <div class="ps"><em>今日合作</em><b>${tday.success}</b></div>
+            <div class="ps"><em>本周建联</em><b>${w.contacted}</b></div>
+            <div class="ps"><em>本周合作</em><b>${w.success}</b></div>
           </div>
           <div class="score-row">
             <div class="score-track"><div class="bar-fill" data-w="${ki.score}" style="background:${gc}"></div></div>
@@ -1042,6 +1045,19 @@ function renderGuide() {
       <input type="file" id="kb-file" accept=".txt,.md,.pdf,.docx" style="display:none" onchange="handleKbFile(this)">
       <div id="kb-file-status" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
       <textarea id="kb-content" placeholder="材料内容（可手动输入，也可上传文件自动填充）..." rows="5" style="width:100%;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+      <div id="kb-summary-bar" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(91,127,255,.08);border:1px solid rgba(91,127,255,.2);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--blue)">🤖 AI 一键总结</span>
+          <span style="font-size:12px;color:var(--muted)">字数：</span>
+          <select id="kb-summary-len" style="padding:4px 8px;background:var(--surf2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
+            <option value="200">约200字</option>
+            <option value="500" selected>约500字</option>
+            <option value="1000">约1000字</option>
+          </select>
+          <button onclick="genFileSummary()" id="kb-summary-btn" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer">生成摘要</button>
+          <span id="kb-summary-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+      </div>
       <button onclick="saveKbItem()" style="margin-top:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">保存</button>
       <button onclick="toggleKbEditor()" style="margin-top:8px;margin-left:8px;background:var(--surf2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">取消</button>
     </div>
@@ -1151,6 +1167,7 @@ async function handleKbFile(input) {
     document.getElementById("kb-content").value = text;
     statusEl.textContent = "✓ 解析完成，共 " + text.length + " 字";
     statusEl.style.color = "var(--green)";
+    document.getElementById("kb-summary-bar").style.display = "block";
   } catch(e) {
     statusEl.textContent = "解析失败：" + e.message;
     statusEl.style.color = "var(--danger)";
@@ -1163,6 +1180,8 @@ function toggleKbEditor() {
   if (ed.style.display === "none") {
     document.getElementById("kb-file-name").textContent = "";
     document.getElementById("kb-file-status").textContent = "";
+    document.getElementById("kb-summary-bar").style.display = "none";
+    document.getElementById("kb-summary-status").textContent = "";
   }
 }
 
@@ -1230,6 +1249,47 @@ async function deleteKbItem(id) {
     await loadKbList();
   } catch(e) {
     alert("删除失败");
+  }
+}
+
+async function genFileSummary() {
+  const content = document.getElementById("kb-content").value.trim();
+  if (!content) { alert("请先上传文件或输入内容"); return; }
+  const wordLen = document.getElementById("kb-summary-len").value;
+  const btn = document.getElementById("kb-summary-btn");
+  const statusEl = document.getElementById("kb-summary-status");
+  btn.disabled = true;
+  btn.textContent = "生成中...";
+  statusEl.textContent = "";
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        messages: [{
+          role: "user",
+          content: "请将以下内容总结为约" + wordLen + "字的摘要，保留核心要点，语言简洁清晰：\n\n" + content.slice(0, 8000)
+        }]
+      })
+    });
+    const data = await resp.json();
+    const summary = data.content && data.content[0] && data.content[0].text;
+    if (summary) {
+      document.getElementById("kb-content").value = summary;
+      statusEl.textContent = "✓ 摘要生成完成（" + summary.length + "字）";
+      statusEl.style.color = "var(--green)";
+    } else {
+      statusEl.textContent = "生成失败，请重试";
+      statusEl.style.color = "var(--red)";
+    }
+  } catch(e) {
+    statusEl.textContent = "请求失败：" + e.message;
+    statusEl.style.color = "var(--red)";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "生成摘要";
   }
 }
 
