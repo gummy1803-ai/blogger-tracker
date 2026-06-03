@@ -486,7 +486,8 @@ let teamPeriod = "all";
 function renderTeam() {
   const periodRows = filterByPeriod(ALL_ROWS, teamPeriod);
   const todayRows  = ALL_ROWS.filter(r=>r.record_date===today);
-  const ts = calcStats(periodRows), ws = calcStats(ALL_ROWS), k = calcKPI(ts);
+  const weekRows2 = filterByPeriod(ALL_ROWS, 'week');
+  const ts = calcStats(periodRows), ws = calcStats(weekRows2), k = calcKPI(ts);
   const owners = Object.keys(ts).sort((a,b)=>ts[b].contacted-ts[a].contacted);
   const gradeColor = {A:"#43d9a4",B:"#5b7fff",C:"#f5a623",D:"#ff6b6b"};
   const maxC = Math.max(...owners.map(o=>ts[o].contacted),1);
@@ -1262,11 +1263,11 @@ async function genFileSummary() {
   btn.textContent = "生成中...";
   statusEl.textContent = "";
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer sk-78a6a00bf38c48dab8b94303f2bae165" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "deepseek-chat",
         max_tokens: 1500,
         messages: [{
           role: "user",
@@ -1275,7 +1276,7 @@ async function genFileSummary() {
       })
     });
     const data = await resp.json();
-    const summary = data.content && data.content[0] && data.content[0].text;
+    const summary = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
     if (summary) {
       document.getElementById("kb-content").value = summary;
       statusEl.textContent = "✓ 摘要生成完成（" + summary.length + "字）";
