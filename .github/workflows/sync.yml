@@ -9,23 +9,17 @@ jobs:
   sync-and-report:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: write        # 允许更新 Secrets
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests PyNaCl
+      - run: pip install requests
       - name: 同步飞书数据 & 生成播报
         env:
           FEISHU_APP_ID:          ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET:      ${{ secrets.FEISHU_APP_SECRET }}
-          FEISHU_USER_TOKEN:      ${{ secrets.FEISHU_USER_TOKEN }}
-          FEISHU_REFRESH_TOKEN:   ${{ secrets.FEISHU_REFRESH_TOKEN }}
           WIKI_TOKEN:             ${{ secrets.WIKI_TOKEN }}
-          GITHUB_TOKEN:           ${{ github.token }}
           SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
           WECOM_WEBHOOK:          ${{ secrets.WECOM_WEBHOOK }}
