@@ -266,7 +266,14 @@ def supa_headers():
 def upsert_bloggers_by_date(record_date, records):
     if not records:
         return 0
-    payload = [{k: v for k, v in r.items() if k != "is_dup"} for r in records]
+    # 按 (link, record_date) 去重，同一天同一链接只保留最后一条
+    seen = {}
+    for r in records:
+        key = (r.get("link") or r.get("name", ""), r.get("record_date", ""))
+        seen[key] = {k: v for k, v in r.items() if k != "is_dup"}
+    payload = list(seen.values())
+    if len(payload) < len(records):
+        print(f"  ℹ️ [{record_date}] 去重 {len(records)-len(payload)} 条重复链接")
     headers = {
         "apikey":        SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
