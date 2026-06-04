@@ -14,6 +14,21 @@
 
   // ★ 查重工具后端地址（你的 Vercel 地址）
   const DUP_API = "";
+
+  // ★ 本地代理地址（运行 proxy.py 后生效，解决 CORS）
+  const PROXY = "http://localhost:8765";
+
+  // 统一的 Anthropic API 调用（自动走代理）
+  async function callClaude(messages, maxTokens=1000, tools=[]) {
+    const body = { model:"claude-sonnet-4-20250514", max_tokens:maxTokens, messages };
+    if (tools.length) body.tools = tools;
+    const resp = await fetch(PROXY + "/anthropic/v1/messages", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "anthropic-version":"2023-06-01" },
+      body: JSON.stringify(body)
+    });
+    return resp.json();
+  }
 </script>
 
 <style>
@@ -1097,19 +1112,13 @@ async function anFetchOne(row, idx) {
   container.appendChild(card);
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 600,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: `请访问以下博主主页，提取关键特征，严格按JSON格式返回，不要任何其他文字：
+    const data = await callClaude(
+      [{ role: 'user', content: `请访问以下博主主页，提取关键特征，严格按JSON格式返回，不要任何其他文字：
 {"platform":"平台名","name":"博主名","followers":"粉丝量","content_type":"内容类型（1-3个标签，逗号分隔）","style":"风格特征（简洁）","audience":"受众群体","verified":"是否认证(true/false)","note":"其他关键信息"}
 如无法访问则返回：{"error":"原因"}
-网址：${row.link}` }]
-      })
-    });
-    const data = await resp.json();
+网址：${row.link}` }],
+      600, [{ type: 'web_search_20250305', name: 'web_search' }]
+    );
     const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
     let profile = {};
     try {
@@ -1172,12 +1181,8 @@ async function anRunAI() {
   ).join('\n');
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 2000,
-        messages: [{ role: 'user', content: `以下是我们团队建联成功（引导到私域）的 ${validProfiles.length} 位博主的公开信息：
+    const data = await callClaude(
+      [{ role: 'user', content: `以下是我们团队建联成功（引导到私域）的 ${validProfiles.length} 位博主的公开信息：
 
 ${profileSummary}
 
@@ -1199,10 +1204,9 @@ ${profileSummary}
 - 话术/切入点建议（根据博主特征）
 - 下一步行动计划（3条具体建议）
 
-语言简洁专业，使用数据支撑结论。` }]
-      })
-    });
-    const data = await resp.json();
+语言简洁专业，使用数据支撑结论。` }],
+      2000
+    );
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
     document.getElementById('an-report').style.display = 'block';
     document.getElementById('an-report-body').textContent = text;
