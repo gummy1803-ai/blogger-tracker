@@ -991,7 +991,10 @@ function renderLookup() {
         <div style="font-size:14px;font-weight:600;color:var(--text)">建联成功博主分析</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">分析"引导到私域了"的博主特征，AI 给出精准建联方向建议</div>
       </div>
-      <div style="margin-left:auto;background:rgba(67,217,164,.12);border:1px solid rgba(67,217,164,.3);color:var(--green);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">${successRows.length} 位成功博主</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button onclick="rendered.delete('lookup');renderLookup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
+        <div style="background:rgba(67,217,164,.12);border:1px solid rgba(67,217,164,.3);color:var(--green);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">${successRows.length} 位成功博主</div>
+      </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-height:90px;overflow-y:auto">
       ${successRows.slice(0,50).map(r=>`<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 9px;color:var(--muted)">${r.name||r.link.slice(0,20)+'...'}</span>`).join('')}
@@ -1625,6 +1628,7 @@ function switchTab(tab, btn) {
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
+  if (tab === 'lookup') { rendered.delete('lookup'); TABS['lookup'](); rendered.add('lookup'); }
   if (tab === 'guide') { loadAISummary(); loadKbList(); }
 }
 
