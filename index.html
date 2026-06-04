@@ -9,8 +9,8 @@
   const SUPABASE_URL    = "https://wtfmhfpjgoliyzsozfav.supabase.co";
   const SUPABASE_ANON   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0Zm1oZnBqZ29saXl6c296ZmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjE2NjYsImV4cCI6MjA5NTU5NzY2Nn0.FxMCYutcjxm4YdwW3rGj0rALQYEeagS6D0vEINxb8Vc";
   const MAX_FANS        = 5.0;
-  const STATUS_SUCCESS  = "引导到私域了";
-  const STATUS_CONTACT  = ["抖音私信建联","小红书私信建联","微信建联","微信私信建联","引导到私域了"];
+  const STATUS_SUCCESS  = ["引导到私域了","二次回访成功"];
+  const STATUS_CONTACT  = ["抖音私信建联","小红书私信建联","微信建联","微信私信建联","引导到私域了","无需二次回访","需要且未二次回访","二次回访无果","二次回访成功","拒绝"];
 
   // ★ 查重工具后端地址（你的 Vercel 地址）
   const DUP_API = "";
@@ -209,6 +209,7 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('bloggers',this)">博主列表</button>
     <button class="tab"     onclick="switchTab('revisit',this)">⏰ 回访</button>
     <button class="tab"     onclick="switchTab('trend',this)">趋势</button>
+    <button class="tab"     onclick="switchTab('lookup',this)">🎯 建联分析</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
 
   </div>
@@ -217,6 +218,7 @@ a.lnk:hover { opacity:1; }
   <div id="pane-team"     style="display:none"></div>
   <div id="pane-bloggers" style="display:none"></div>
   <div id="pane-revisit"  style="display:none"></div>
+  <div id="pane-lookup"   style="display:none"></div>
   <div id="pane-guide"    style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
 
@@ -262,7 +264,7 @@ const weekStart = (() => {
 // 时间范围筛选
 
 function getPeriodLabel(period) {
-  return {"all":"历史","today":"今日","week":"本周","month":"本月"}[period] || "今日";
+  return {"all":"历史","today":"今日","week":"本周","last_week":"上周","month":"本月","last_month":"上月"}[period] || "今日";
 }
 
 function filterByPeriod(rows, period) {
@@ -274,6 +276,17 @@ function filterByPeriod(rows, period) {
   if (period === "today") return rows.filter(r => r.record_date === todayStr);
   if (period === "week")  return rows.filter(r => r.record_date >= weekStartStr && r.record_date <= todayStr);
   if (period === "month") return rows.filter(r => r.record_date >= monthStartStr && r.record_date <= todayStr);
+  if (period === "last_week") {
+    const lastWeekEnd = new Date(weekStartD); lastWeekEnd.setDate(lastWeekEnd.getDate()-1);
+    const lastWeekStart = new Date(lastWeekEnd); lastWeekStart.setDate(lastWeekStart.getDate()-6);
+    return rows.filter(r => r.record_date >= localDateStr(lastWeekStart) && r.record_date <= localDateStr(lastWeekEnd));
+  }
+  if (period === "last_month") {
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    const lastMonthStart = localDateStr(lastMonthDate);
+    const lastMonthEnd = localDateStr(new Date(now.getFullYear(), now.getMonth(), 0));
+    return rows.filter(r => r.record_date >= lastMonthStart && r.record_date <= lastMonthEnd);
+  }
   return rows; // all
 }
 
@@ -301,7 +314,7 @@ function calcStats(rows) {
     if (!bk[o]) bk[o]={total:0,contacted:0,success:0,fans:[]};
     bk[o].total++;
     if (STATUS_CONTACT.includes(r.status)) bk[o].contacted++;
-    if (r.status === STATUS_SUCCESS) bk[o].success++;
+    if (STATUS_SUCCESS.includes(r.status)) bk[o].success++;
     if (r.followers > 0) bk[o].fans.push(r.followers);
   });
   const res = {};
@@ -375,8 +388,8 @@ function renderOverview() {
   const ts = calcStats(todayRows), ws = calcStats(weekRows);
   const [tt,tc,tsx] = sums(ts), [wt,wc,wsx] = sums(ws);
   const dN = todayRows.filter(r=>r.status==="没回").length;
-  const dC = todayRows.filter(r=>STATUS_CONTACT.includes(r.status)&&r.status!==STATUS_SUCCESS).length;
-  const dS = todayRows.filter(r=>r.status===STATUS_SUCCESS).length;
+  const dC = todayRows.filter(r=>STATUS_CONTACT.includes(r.status)&&!STATUS_SUCCESS.includes(r.status)).length;
+  const dS = todayRows.filter(r=>STATUS_SUCCESS.includes(r.status)).length;
   const qOk = todayRows.filter(r=>r.followers<=MAX_FANS).length;
   const replied = todayRows.filter(r=>r.status&&r.status!=="没回"&&r.status!=="未回"&&r.status!=="").length;
   const repliedTotal = todayRows.length;
@@ -457,7 +470,7 @@ function renderDonut(s,c,n) {
         style="font-family:Syne,sans-serif;font-size:${total>999?10:total>99?13:16}px;font-weight:700;fill:#fff;letter-spacing:-1px">${total}</text>
     </svg>
     <div class="donut-legend">
-      <div class="leg"><div class="leg-dot" style="background:#43d9a4"></div>引导私域<span class="leg-val" style="color:#43d9a4">${s}</span></div>
+      <div class="leg"><div class="leg-dot" style="background:#43d9a4"></div>合作成功<span class="leg-val" style="color:#43d9a4">${s}</span></div>
       <div class="leg"><div class="leg-dot" style="background:#5b7fff"></div>私信建联<span class="leg-val" style="color:#5b7fff">${c}</span></div>
       <div class="leg"><div class="leg-dot" style="background:rgba(255,255,255,.2)"></div>暂未回复<span class="leg-val">${n}</span></div>
     </div>
@@ -467,9 +480,9 @@ function renderDonut(s,c,n) {
 function renderWeekBars() {
   const days = [];
   for (let i=6;i>=0;i--) { const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().split("T")[0]); }
-  const maxV = Math.max(...days.map(d=>ALL_ROWS.filter(r=>r.record_date===d&&r.status===STATUS_SUCCESS).length),1);
+  const maxV = Math.max(...days.map(d=>ALL_ROWS.filter(r=>r.record_date===d&&STATUS_SUCCESS.includes(r.status)).length),1);
   return `<div class="bars">${days.map(d=>{
-    const cnt = ALL_ROWS.filter(r=>r.record_date===d&&r.status===STATUS_SUCCESS).length;
+    const cnt = ALL_ROWS.filter(r=>r.record_date===d&&STATUS_SUCCESS.includes(r.status)).length;
     const lbl = d.slice(5).replace("-","/");
     return `<div class="bar-row">
       <div class="bar-lbl">${lbl}</div>
@@ -485,7 +498,6 @@ function renderWeekBars() {
 let teamPeriod = "all";
 function renderTeam() {
   const periodRows = filterByPeriod(ALL_ROWS, teamPeriod);
-  const todayRows  = ALL_ROWS.filter(r=>r.record_date===today);
   const weekRows2 = filterByPeriod(ALL_ROWS, 'week');
   const ts = calcStats(periodRows), ws = calcStats(weekRows2), k = calcKPI(ts);
   const owners = Object.keys(ts).sort((a,b)=>ts[b].contacted-ts[a].contacted);
@@ -495,8 +507,8 @@ function renderTeam() {
   const el = document.getElementById("pane-team");
   el.innerHTML = `
   <div class="period-btns" style="margin-bottom:14px">
-    ${["all","today","week","month"].map((v,i)=>{
-      const labels=["全部历史","今天","本周","本月"];
+    ${["all","today","week","last_week","month","last_month"].map((v,i)=>{
+      const labels=["全部历史","今天","本周","上周","本月","上个月"];
       return `<button class="pbtn${teamPeriod===v?' active':''}" onclick="teamPeriod='${v}';renderTeam()">${labels[i]}</button>`;
     }).join("")}
   </div>
@@ -513,21 +525,19 @@ function renderTeam() {
   <div class="sec-lbl">个人详情 & 考评</div>
   <div class="person-grid anim">
     ${owners.map(o=>{
-      const d=ts[o], tday=calcStats(todayRows)[o]||{contacted:0,success:0}, w=ws[o]||{contacted:0,success:0}, ki=k[o]||{score:0,grade:"D"};
+      const d=ts[o], ki=k[o]||{score:0,grade:"D"};
       const gc=gradeColor[ki.grade];
+      const periodLabel = getPeriodLabel(teamPeriod);
       return `<div class="pcard">
         <div>
           <div class="pname">${o}</div>
           <div class="qtag ${d.quality_ok?"q-ok":"q-bad"}">${d.quality_ok?"✓ 博主质量达标":"⚠ 均粉超标"} · 均${fmtF(d.avg_fans)}</div>
           <div class="pstats">
-            <div class="ps"><em>建联总数</em><b>${d.contacted}</b></div>
-            <div class="ps"><em>合作成功</em><b style="color:var(--green)">${d.success}</b></div>
+            <div class="ps"><em>${periodLabel}录入</em><b>${d.total}</b></div>
+            <div class="ps"><em>${periodLabel}建联</em><b style="color:var(--blue)">${d.contacted}</b></div>
+            <div class="ps"><em>${periodLabel}合作</em><b style="color:var(--green)">${d.success}</b></div>
             <div class="ps"><em>建联成功率</em><b style="color:var(--blue)">${fmtRate(d.contacted,d.total)}</b></div>
             <div class="ps"><em>合作成功率</em><b style="color:var(--green)">${fmtRate(d.success,d.contacted)}</b></div>
-            <div class="ps"><em>今日建联</em><b>${tday.contacted}</b></div>
-            <div class="ps"><em>今日合作</em><b>${tday.success}</b></div>
-            <div class="ps"><em>本周建联</em><b>${w.contacted}</b></div>
-            <div class="ps"><em>本周合作</em><b>${w.success}</b></div>
           </div>
           <div class="score-row">
             <div class="score-track"><div class="bar-fill" data-w="${ki.score}" style="background:${gc}"></div></div>
@@ -578,7 +588,12 @@ function renderBloggers() {
       <button class="fbtn on" onclick="setF('all',this,'s')">全部状态</button>
       <button class="fbtn" onclick="setF('没回',this,'s')">没回</button>
       <button class="fbtn" onclick="setF('私信建联',this,'s')">私信建联</button>
-      <button class="fbtn" onclick="setF('引导到私域了',this,'s')">已引导私域</button>
+      <button class="fbtn" onclick="setF('引导到私域了',this,'s')">引导成功</button>
+      <button class="fbtn" onclick="setF('无需二次回访',this,'s')">无需回访</button>
+      <button class="fbtn" onclick="setF('需要且未二次回访',this,'s')">待回访</button>
+      <button class="fbtn" onclick="setF('二次回访无果',this,'s')">回访无果</button>
+      <button class="fbtn" onclick="setF('二次回访成功',this,'s')">回访成功</button>
+      <button class="fbtn" onclick="setF('拒绝',this,'s')">已拒绝</button>
     </div>
     <div class="fbar" id="of">
       <button class="fbtn on" onclick="setF('all',this,'o')">所有跟进人</button>
@@ -606,7 +621,7 @@ function refreshTable() {
   let rows = [...filterByPeriod(ALL_ROWS, bloggerPeriod)].sort((a,b)=>b.record_date.localeCompare(a.record_date));
   if (filterStatus!=="all") {
     if (filterStatus==="私信建联") {
-      rows=rows.filter(r=>STATUS_CONTACT.includes(r.status||"没回")&&(r.status||"没回")!==STATUS_SUCCESS);
+      rows=rows.filter(r=>STATUS_CONTACT.includes(r.status||"没回")&&!STATUS_SUCCESS.includes(r.status||"没回"));
     } else {
       rows=rows.filter(r=>(r.status||"没回")===filterStatus);
     }
@@ -614,13 +629,18 @@ function refreshTable() {
   if (filterOwner!=="all")  rows=rows.filter(r=>r.owner===filterOwner);
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9"><div class="empty">暂无数据</div></td></tr>`; return; }
   const si={
-    "没回":         {cls:"p-none",lbl:"没回"},
-    "抖音私信建联": {cls:"p-ing", lbl:"已私信"},
+    "没回":           {cls:"p-none",lbl:"没回"},
+    "抖音私信建联":   {cls:"p-ing", lbl:"已私信"},
     "小红书私信建联": {cls:"p-ing", lbl:"已私信"},
-    "微信建联": {cls:"p-ing", lbl:"已私信"},
-    "微信私信建联": {cls:"p-ing", lbl:"已私信"},
-    "引导到私域了": {cls:"p-ok",  lbl:"✓ 引导成功"},
-    "":             {cls:"p-none",lbl:"未填写"},
+    "微信建联":       {cls:"p-ing", lbl:"已私信"},
+    "微信私信建联":   {cls:"p-ing", lbl:"已私信"},
+    "引导到私域了":   {cls:"p-ok",  lbl:"✓ 引导成功"},
+    "无需二次回访":   {cls:"p-ok",  lbl:"✓ 无需回访"},
+    "需要且未二次回访":{cls:"p-ing", lbl:"待回访"},
+    "二次回访无果":   {cls:"p-none",lbl:"回访无果"},
+    "二次回访成功":   {cls:"p-ok",  lbl:"✓ 回访成功"},
+    "拒绝":           {cls:"p-none",lbl:"已拒绝"},
+    "":               {cls:"p-none",lbl:"未填写"},
   };
   tbody.innerHTML = rows.map(r=>{
     const s=si[r.status||"没回"]||{cls:"p-none",lbl:r.status||"没回"};
@@ -668,7 +688,7 @@ function renderRevisit() {
   sorted.forEach(r=>{
     const key = r.link||r.account||r.name;
     if(!key) return;
-    if(r.status===STATUS_SUCCESS){ seen[key]="done"; return; }
+    if(STATUS_SUCCESS.includes(r.status)){ seen[key]="done"; return; }
     if(NO_REPLY.includes(r.status) && seen[key]!=="done" && !seen[key]){
       seen[key] = {name:r.name,owner:r.owner,date:r.record_date,status:r.status};
     }
@@ -953,6 +973,254 @@ function showDupErr(msg) {
 }
 
 // ══════════════════════════════════════════
+// ── 🎯 建联分析 Tab ──
+let analysisProfiles = [];  // 抓取到的博主画像
+let analysisDone = false;
+
+function renderLookup() {
+  const el = document.getElementById('pane-lookup');
+  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
+  el.innerHTML = `
+<div style="max-width:820px">
+
+  <!-- 顶部说明 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:20px">🎯</span>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">建联成功博主分析</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">分析"引导到私域了"的博主特征，AI 给出精准建联方向建议</div>
+      </div>
+      <div style="margin-left:auto;background:rgba(67,217,164,.12);border:1px solid rgba(67,217,164,.3);color:var(--green);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">${successRows.length} 位成功博主</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-height:90px;overflow-y:auto">
+      ${successRows.slice(0,50).map(r=>`<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 9px;color:var(--muted)">${r.name||r.link.slice(0,20)+'...'}</span>`).join('')}
+      ${successRows.length>50?`<span style="font-size:11px;color:var(--muted);padding:2px 6px">+${successRows.length-50} 位</span>`:''}
+    </div>
+  </div>
+
+  <!-- 进度 -->
+  <div id="an-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
+  <div id="an-prog-wrap" style="height:3px;background:var(--surf2);border-radius:2px;margin:6px 0;display:none">
+    <div id="an-prog-fill" style="height:3px;background:var(--green);border-radius:2px;width:0;transition:width .3s"></div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="dup-btn dup-btn-primary" id="an-fetch-btn" onclick="anFetchAll()" style="background:var(--green);flex:1" ${successRows.length===0?'disabled':''}>
+      🔍 抓取博主主页信息
+    </button>
+    <button class="dup-btn dup-btn-mark" id="an-ai-btn" onclick="anRunAI()" style="display:none;flex:1">
+      ✨ AI 分析建联方向
+    </button>
+  </div>
+
+  <!-- 博主画像列表（逐条展示） -->
+  <div id="an-profiles" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+
+  <!-- AI 报告区域 -->
+  <div id="an-report" style="display:none">
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surf2);display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">✨</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">AI 建联分析报告</span>
+        <button class="dup-btn dup-btn-mark" onclick="anExportReport()" style="margin-left:auto;font-size:12px;padding:4px 12px">⬇ 导出</button>
+      </div>
+      <div id="an-report-body" style="padding:18px 20px;font-size:13px;line-height:1.9;color:var(--text);white-space:pre-wrap"></div>
+    </div>
+  </div>
+
+</div>`;
+
+  // 如果已有结果，直接还原
+  if (analysisDone && analysisProfiles.length) {
+    anRestoreProfiles();
+    document.getElementById('an-ai-btn').style.display = 'flex';
+  }
+}
+
+function anSetStatus(msg, color) {
+  const el = document.getElementById('an-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--muted)'; }
+}
+function anSetProgress(pct) {
+  const w = document.getElementById('an-prog-wrap');
+  if (!w) return;
+  w.style.display = pct > 0 ? 'block' : 'none';
+  document.getElementById('an-prog-fill').style.width = pct + '%';
+}
+
+async function anFetchAll() {
+  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
+  if (!successRows.length) return;
+
+  analysisProfiles = [];
+  analysisDone = false;
+  document.getElementById('an-profiles').innerHTML = '';
+  document.getElementById('an-report').style.display = 'none';
+  document.getElementById('an-ai-btn').style.display = 'none';
+  document.getElementById('an-fetch-btn').disabled = true;
+
+  // 最多取30个，避免太慢
+  const targets = successRows.slice(0, 30);
+
+  for (let i = 0; i < targets.length; i++) {
+    const row = targets[i];
+    anSetStatus(`抓取中 ${i+1} / ${targets.length}：${row.name || row.link.slice(0,30)}`);
+    anSetProgress(Math.round((i / targets.length) * 100));
+    await anFetchOne(row, i);
+  }
+
+  anSetProgress(100);
+  analysisDone = true;
+  anSetStatus(`✅ 抓取完成，共 ${targets.length} 位博主`, 'var(--green)');
+  document.getElementById('an-fetch-btn').disabled = false;
+  document.getElementById('an-ai-btn').style.display = 'flex';
+}
+
+async function anFetchOne(row, idx) {
+  const container = document.getElementById('an-profiles');
+  const card = document.createElement('div');
+  card.id = 'an-card-' + idx;
+  card.style.cssText = 'border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surf)';
+  card.innerHTML = `
+    <div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--surf2)">
+      <div id="an-dot-${idx}" style="width:7px;height:7px;border-radius:50%;background:#f5a623;flex-shrink:0"></div>
+      <span style="font-size:12px;font-weight:600;color:var(--text)">${row.name || '—'}</span>
+      <span style="font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.link}</span>
+      <span style="font-size:11px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:1px 7px;border-radius:4px;white-space:nowrap">已成功</span>
+    </div>
+    <div id="an-body-${idx}" style="padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic">正在分析...</div>`;
+  container.appendChild(card);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 600,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: `请访问以下博主主页，提取关键特征，严格按JSON格式返回，不要任何其他文字：
+{"platform":"平台名","name":"博主名","followers":"粉丝量","content_type":"内容类型（1-3个标签，逗号分隔）","style":"风格特征（简洁）","audience":"受众群体","verified":"是否认证(true/false)","note":"其他关键信息"}
+如无法访问则返回：{"error":"原因"}
+网址：${row.link}` }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    let profile = {};
+    try {
+      const match = raw.match(/\{[\s\S]*\}/);
+      profile = match ? JSON.parse(match[0]) : { error: raw.slice(0,80) };
+    } catch { profile = { error: raw.slice(0,80) }; }
+
+    profile._name = row.name;
+    profile._link = row.link;
+    profile._followers_raw = row.followers;
+    analysisProfiles.push(profile);
+
+    document.getElementById('an-dot-' + idx).style.background = profile.error ? '#ef4444' : '#22c55e';
+    const body = document.getElementById('an-body-' + idx);
+    body.style.fontStyle = 'normal';
+    if (profile.error) {
+      body.style.color = '#fca5a5';
+      body.textContent = '⚠ ' + profile.error;
+    } else {
+      body.style.color = 'var(--text)';
+      body.innerHTML = `<span style="color:var(--muted)">平台：</span>${profile.platform||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">粉丝：</span>${profile.followers||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">内容：</span>${profile.content_type||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">风格：</span>${profile.style||'—'}`;
+    }
+  } catch(e) {
+    analysisProfiles.push({ error: e.message, _name: row.name, _link: row.link });
+    document.getElementById('an-dot-' + idx).style.background = '#ef4444';
+    document.getElementById('an-body-' + idx).textContent = '请求失败：' + e.message;
+  }
+}
+
+function anRestoreProfiles() {
+  const container = document.getElementById('an-profiles');
+  analysisProfiles.forEach((p, idx) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surf)';
+    const ok = !p.error;
+    card.innerHTML = `
+      <div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--surf2)">
+        <div style="width:7px;height:7px;border-radius:50%;background:${ok?'#22c55e':'#ef4444'};flex-shrink:0"></div>
+        <span style="font-size:12px;font-weight:600;color:var(--text)">${p._name||'—'}</span>
+        <span style="font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p._link||''}</span>
+        <span style="font-size:11px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:1px 7px;border-radius:4px;white-space:nowrap">已成功</span>
+      </div>
+      <div style="padding:10px 14px;font-size:12px;color:${ok?'var(--text)':'#fca5a5'}">
+        ${ok ? `<span style="color:var(--muted)">平台：</span>${p.platform||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">粉丝：</span>${p.followers||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">内容：</span>${p.content_type||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">风格：</span>${p.style||'—'}` : '⚠ ' + p.error}
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+async function anRunAI() {
+  const validProfiles = analysisProfiles.filter(p => !p.error);
+  if (!validProfiles.length) { anSetStatus('没有可分析的博主数据', '#fca5a5'); return; }
+
+  document.getElementById('an-ai-btn').disabled = true;
+  anSetStatus('✨ AI 正在深度分析，请稍候（约30秒）...', 'var(--blue)');
+  document.getElementById('an-report').style.display = 'none';
+
+  const profileSummary = validProfiles.map((p,i) =>
+    `博主${i+1}：平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type}，风格=${p.style}，受众=${p.audience}，认证=${p.verified}，备注=${p.note}`
+  ).join('\n');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 2000,
+        messages: [{ role: 'user', content: `以下是我们团队建联成功（引导到私域）的 ${validProfiles.length} 位博主的公开信息：
+
+${profileSummary}
+
+请根据以上数据，输出一份专业的建联分析报告，包含以下两部分：
+
+【一、成功博主画像】
+分析这批建联成功的博主的共同特征，包括：
+- 粉丝量区间分布（哪个量级最多？）
+- 主要内容类型/赛道（哪类内容占主导？）
+- 风格共性（是否有共同的内容风格？）
+- 平台分布
+- 认证情况
+- 其他显著规律
+
+【二、建联方向建议】
+根据成功博主的特征，给出具体可落地的建联优化建议：
+- 优先锁定哪类博主（具体描述）
+- 避免浪费资源在哪类博主上
+- 话术/切入点建议（根据博主特征）
+- 下一步行动计划（3条具体建议）
+
+语言简洁专业，使用数据支撑结论。` }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    document.getElementById('an-report').style.display = 'block';
+    document.getElementById('an-report-body').textContent = text;
+    anSetStatus('✅ 分析完成', 'var(--green)');
+    document.getElementById('an-report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // 存到全局供导出
+    window._anReportText = text;
+  } catch(e) {
+    anSetStatus('❌ AI 分析失败：' + e.message, '#fca5a5');
+  }
+  document.getElementById('an-ai-btn').disabled = false;
+}
+
+function anExportReport() {
+  const text = window._anReportText || '';
+  if (!text) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['# 建联分析报告\n\n' + text], { type: 'text/markdown' }));
+  a.download = '建联分析报告.md'; a.click();
+}
+
 // Tab & 初始化
 // ══════════════════════════════════════════
 function renderGuide() {
@@ -1348,6 +1616,7 @@ const TABS = {
   revisit:  renderRevisit,
   trend:    renderTrend,
   guide:    renderGuide,
+  lookup:   renderLookup,
 };
 let rendered = new Set();
 
