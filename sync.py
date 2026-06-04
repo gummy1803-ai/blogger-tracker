@@ -272,11 +272,12 @@ def upsert_bloggers_by_date(record_date, records):
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type":  "application/json",
         "Prefer":        "resolution=merge-duplicates,return=minimal",
+        "X-Upsert":      "true",
     }
     r = requests.post(
-        f"{SUPABASE_URL}/rest/v1/bloggers",
+        f"{SUPABASE_URL}/rest/v1/bloggers?on_conflict=link,record_date",
         headers=headers, json=payload, timeout=30)
-    if r.status_code not in (200, 201):
+    if r.status_code not in (200, 201, 204):
         print(f"  ⚠️ [{record_date}] Supabase错误: {r.status_code} {r.text[:150]}")
         return 0
     print(f"  ✓ [{record_date}] 写入 {len(payload)} 条")
