@@ -241,6 +241,7 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('trend',this)">趋势</button>
     <button class="tab"     onclick="switchTab('lookup',this)">🎯 建联分析</button>
     <button class="tab"     onclick="switchTab('report',this)">📋 分析报告</button>
+    <button class="tab"     onclick="switchTab('ocr',this)">📸 截图识别</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
 
   </div>
@@ -251,6 +252,7 @@ a.lnk:hover { opacity:1; }
   <div id="pane-revisit"  style="display:none"></div>
   <div id="pane-lookup"   style="display:none"></div>
   <div id="pane-report"   style="display:none"></div>
+  <div id="pane-ocr"     style="display:none"></div>
   <div id="pane-guide"    style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
 
@@ -1357,6 +1359,255 @@ function mdToHtml(md) {
   return html;
 }
 
+
+// ── 📸 截图识别 Tab ──
+let ocrRows = [];  // 已识别的博主数据
+
+function renderOcr() {
+  const el = document.getElementById('pane-ocr');
+  el.innerHTML = `
+<div style="max-width:860px">
+
+  <!-- 上传区域 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px">📸 博主主页截图识别</div>
+
+    <!-- 拖拽上传区 -->
+    <div id="ocr-drop" onclick="document.getElementById('ocr-input').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="ocrHandleDrop(event)">
+      <div style="font-size:28px;margin-bottom:8px">🖼</div>
+      <div style="font-size:13px;color:var(--text);font-weight:500">点击或拖拽上传截图</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">支持 JPG、PNG，可同时上传多张</div>
+    </div>
+    <input type="file" id="ocr-input" accept="image/*" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+
+    <!-- 预览区 -->
+    <div id="ocr-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="dup-btn dup-btn-primary" id="ocr-run-btn" onclick="ocrRun()" style="flex:1" disabled>
+        🔍 开始识别
+      </button>
+      <button class="dup-btn dup-btn-mark" onclick="ocrClear()">🗑 清空</button>
+    </div>
+  </div>
+
+  <div id="ocr-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
+
+  <!-- 结果表格 -->
+  <div id="ocr-table-wrap" style="display:none;background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px">
+    <div style="padding:11px 16px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">识别结果</span>
+      <span id="ocr-count" style="font-size:11px;color:var(--muted);background:var(--surf);padding:2px 8px;border-radius:4px"></span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="dup-btn dup-btn-mark" onclick="ocrExportCSV()" style="font-size:12px">⬇ 导出 CSV</button>
+        <button class="dup-btn dup-btn-mark" onclick="ocrCopyFeishu()" style="font-size:12px">📋 复制到飞书</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="ocr-table" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--surf2)">
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主名</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">平台</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">粉丝量</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主类型</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主链接</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">回复情况</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">跟进人</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">操作</th>
+          </tr>
+        </thead>
+        <tbody id="ocr-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>`;
+
+  // 恢复已有数据
+  if (ocrRows.length) ocrRenderTable();
+}
+
+let ocrPendingFiles = [];  // 待识别的图片文件
+
+function ocrHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('ocr-drop').style.borderColor = 'var(--border)';
+  ocrHandleFiles(e.dataTransfer.files);
+}
+
+function ocrHandleFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    ocrPendingFiles.push(f);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const previews = document.getElementById('ocr-previews');
+      if (!previews) return;
+      const idx = ocrPendingFiles.indexOf(f);
+      const div = document.createElement('div');
+      div.id = 'preview-' + idx;
+      div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+      div.innerHTML = `
+        <img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">
+        <button onclick="ocrRemoveFile(${idx})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:4px;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>`;
+      previews.appendChild(div);
+    };
+    reader.readAsDataURL(f);
+  }
+  const btn = document.getElementById('ocr-run-btn');
+  if (btn) btn.disabled = ocrPendingFiles.length === 0;
+}
+
+function ocrRemoveFile(idx) {
+  ocrPendingFiles.splice(idx, 1);
+  const el = document.getElementById('preview-' + idx);
+  if (el) el.remove();
+  const btn = document.getElementById('ocr-run-btn');
+  if (btn) btn.disabled = ocrPendingFiles.length === 0;
+}
+
+async function ocrRun() {
+  if (!ocrPendingFiles.length) return;
+  const btn = document.getElementById('ocr-run-btn');
+  if (btn) btn.disabled = true;
+  const statusEl = document.getElementById('ocr-status');
+
+  // 每次最多5张一批发送
+  const batchSize = 5;
+  const newRows = [];
+
+  for (let i = 0; i < ocrPendingFiles.length; i += batchSize) {
+    const batch = ocrPendingFiles.slice(i, i + batchSize);
+    if (statusEl) statusEl.textContent = `识别中 ${i+1}–${Math.min(i+batchSize, ocrPendingFiles.length)} / ${ocrPendingFiles.length} 张...`;
+
+    // 转 base64
+    const b64s = await Promise.all(batch.map(f => new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result.split(',')[1]);
+      r.readAsDataURL(f);
+    })));
+
+    try {
+      const resp = await fetch(VERCEL_API + '/api/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: b64s })
+      });
+      const data = await resp.json();
+
+      if (data.result && Array.isArray(data.result)) {
+        data.result.forEach(r => {
+          if (r.error) {
+            newRows.push({ _error: r.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+          } else {
+            newRows.push({ name: r.name||'', platform: r.platform||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status: r.status||'', owner: '' });
+          }
+        });
+      } else if (data.raw) {
+        if (statusEl) statusEl.textContent = '⚠ 识别结果格式异常，请重试';
+        newRows.push({ _error: '格式异常：' + data.raw.slice(0,80), name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+      } else if (data.error) {
+        if (statusEl) statusEl.textContent = '❌ ' + data.error;
+        newRows.push({ _error: data.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+      }
+    } catch(e) {
+      newRows.push({ _error: e.message, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+    }
+  }
+
+  ocrRows = [...ocrRows, ...newRows];
+  ocrPendingFiles = [];
+  const previews = document.getElementById('ocr-previews');
+  if (previews) previews.innerHTML = '';
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = `✅ 识别完成，共 ${ocrRows.filter(r=>!r._error).length} 条有效数据`;
+  ocrRenderTable();
+}
+
+function ocrRenderTable() {
+  const wrap = document.getElementById('ocr-table-wrap');
+  const tbody = document.getElementById('ocr-tbody');
+  const count = document.getElementById('ocr-count');
+  if (!wrap || !tbody) return;
+
+  wrap.style.display = 'block';
+  if (count) count.textContent = `${ocrRows.filter(r=>!r._error).length} 条`;
+
+  tbody.innerHTML = ocrRows.map((row, idx) => {
+    if (row._error) {
+      return `<tr style="background:rgba(239,68,68,.05)">
+        <td colspan="8" style="padding:10px 14px;color:#fca5a5;font-size:12px">⚠ ${row._error}
+          <button onclick="ocrDeleteRow(${idx})" style="margin-left:8px;background:transparent;border:none;color:#fca5a5;cursor:pointer;font-size:11px">删除</button>
+        </td>
+      </tr>`;
+    }
+    const td = (val, field) => `<td style="padding:8px 14px;border-bottom:1px solid var(--border);color:var(--text)">
+      <div contenteditable="true" onblur="ocrEdit(${idx},'${field}',this.textContent)"
+        style="outline:none;min-width:40px;min-height:16px">${val||''}</div>
+    </td>`;
+    return `<tr id="ocr-row-${idx}" style="transition:background .15s" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='transparent'">
+      ${td(row.name,'name')}
+      ${td(row.platform,'platform')}
+      ${td(row.followers,'followers')}
+      ${td(row.blogger_type,'blogger_type')}
+      ${td(row.link,'link')}
+      ${td(row.status,'status')}
+      ${td(row.owner,'owner')}
+      <td style="padding:8px 14px;border-bottom:1px solid var(--border)">
+        <button onclick="ocrDeleteRow(${idx})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function ocrEdit(idx, field, val) {
+  if (ocrRows[idx]) ocrRows[idx][field] = val.trim();
+}
+
+function ocrDeleteRow(idx) {
+  ocrRows.splice(idx, 1);
+  ocrRenderTable();
+}
+
+function ocrClear() {
+  ocrRows = [];
+  ocrPendingFiles = [];
+  rendered.delete('ocr');
+  renderOcr();
+  rendered.add('ocr');
+}
+
+function ocrExportCSV() {
+  const valid = ocrRows.filter(r => !r._error);
+  if (!valid.length) return;
+  const header = '博主名,平台,粉丝量,博主类型,博主链接,回复情况,跟进人';
+  const rows = valid.map(r =>
+    [r.name, r.platform, r.followers, r.blogger_type, r.link, r.status, r.owner]
+      .map(v => `"${(v||'').replace(/"/g,'""')}"`)
+      .join(',')
+  );
+  const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = '博主信息.csv'; a.click();
+}
+
+function ocrCopyFeishu() {
+  const valid = ocrRows.filter(r => !r._error);
+  if (!valid.length) return;
+  const rows = valid.map(r =>
+    [r.name, r.platform, r.followers, r.blogger_type, r.link, r.status, r.owner].join('\t')
+  );
+  navigator.clipboard.writeText(rows.join('\n')).then(() => {
+    const s = document.getElementById('ocr-status');
+    if (s) { s.textContent = '✅ 已复制，直接粘贴到飞书表格即可'; s.style.color = 'var(--green)'; }
+  });
+}
+
 function renderReport() {
   const el = document.getElementById('pane-report');
   const report = window._anReportText;
@@ -1798,6 +2049,7 @@ const TABS = {
   guide:    renderGuide,
   lookup:   renderLookup,
   report:   renderReport,
+  ocr:      renderOcr,
 };
 let rendered = new Set();
 
