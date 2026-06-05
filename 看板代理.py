@@ -9,7 +9,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 ANTHROPIC_BASE = "https://api.anthropic.com"
 FEISHU_BASE    = "https://open.feishu.cn"
-DEEPSEEK_BASE  = "https://api.deepseek.com"
+DEEPSEEK_BASE  = "https://api.deepseek.com/v1"
+TAVILY_BASE    = "https://api.tavily.com"
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -37,6 +38,9 @@ class Handler(BaseHTTPRequestHandler):
                 "Content-Type": "application/json",
                 "Authorization": self.headers.get("Authorization", ""),
             }
+        elif path.startswith("/tavily/"):
+            target = TAVILY_BASE + path[len("/tavily"):]
+            headers = {"Content-Type": "application/json"}
         elif path.startswith("/feishu/"):
             target = FEISHU_BASE + path[len("/feishu"):]
             headers = {

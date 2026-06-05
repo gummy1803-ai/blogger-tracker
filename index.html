@@ -20,6 +20,26 @@
 
   // DeepSeek API 调用（走本地代理）
   const DEEPSEEK_KEY = "sk-bc0712cef1064ba995cc4c170bfd0166";
+  const TAVILY_KEY   = "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";
+
+  // Tavily 搜索
+  async function tavilySearch(query) {
+    const resp = await fetch(PROXY + "/tavily/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: TAVILY_KEY,
+        query,
+        max_results: 3,
+        include_answer: true
+      })
+    });
+    const d = await resp.json();
+    // 拼接搜索结果摘要
+    const answer = d.answer || "";
+    const snippets = (d.results || []).map(r => r.content || "").join(" ");
+    return (answer + " " + snippets).slice(0, 1500);
+  }
   async function callClaude(messages, maxTokens=1000, tools=[]) {
     const resp = await fetch(PROXY + "/deepseek/chat/completions", {
       method:"POST",
@@ -1035,7 +1055,7 @@ function renderLookup() {
   <!-- 操作按钮 -->
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="dup-btn dup-btn-primary" id="an-fetch-btn" onclick="anFetchAll()" style="background:var(--green);flex:1" ${successRows.length===0?'disabled':''}>
-      🔍 抓取博主主页信息
+      🔍 搜索并分析博主信息
     </button>
     <button class="dup-btn dup-btn-mark" id="an-ai-btn" onclick="anRunAI()" style="display:none;flex:1">
       ✨ AI 分析建联方向
@@ -1093,14 +1113,14 @@ async function anFetchAll() {
 
   for (let i = 0; i < targets.length; i++) {
     const row = targets[i];
-    anSetStatus(`抓取中 ${i+1} / ${targets.length}：${row.name || row.link.slice(0,30)}`);
+    anSetStatus(`搜索中 ${i+1} / ${targets.length}：${row.name || '—'}`);
     anSetProgress(Math.round((i / targets.length) * 100));
     await anFetchOne(row, i);
   }
 
   anSetProgress(100);
   analysisDone = true;
-  anSetStatus(`✅ 抓取完成，共 ${targets.length} 位博主`, 'var(--green)');
+  anSetStatus(`✅ 搜索完成，共 ${targets.length} 位博主`, 'var(--green)');
   document.getElementById('an-fetch-btn').disabled = false;
   document.getElementById('an-ai-btn').style.display = 'flex';
 }
@@ -1110,50 +1130,71 @@ async function anFetchOne(row, idx) {
   const card = document.createElement('div');
   card.id = 'an-card-' + idx;
   card.style.cssText = 'border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surf)';
+
+  // 判断平台
+  const link = row.link || '';
+  let platform = '未知';
+  if (link.includes('xhslink') || link.includes('xiaohongshu') || link.includes('xhs')) platform = '小红书';
+  else if (link.includes('douyin') || link.includes('tiktok') || link.includes('v.dou')) platform = '抖音';
+  else if (link.includes('bilibili')) platform = 'B站';
+  else if (link.includes('weibo')) platform = '微博';
+
   card.innerHTML = `
     <div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--surf2)">
       <div id="an-dot-${idx}" style="width:7px;height:7px;border-radius:50%;background:#f5a623;flex-shrink:0"></div>
-      <span style="font-size:12px;font-weight:600;color:var(--text)">${row.name || '—'}</span>
-      <span style="font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.link}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--text)">${row.name||'—'}</span>
+      <span style="font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${platform} · ${link}</span>
       <span style="font-size:11px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:1px 7px;border-radius:4px;white-space:nowrap">已成功</span>
     </div>
-    <div id="an-body-${idx}" style="padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic">正在分析...</div>`;
+    <div id="an-body-${idx}" style="padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic">搜索中...</div>`;
   container.appendChild(card);
 
   try {
-    const data = await callClaude(
-      [{ role: 'user', content: `请访问以下博主主页，提取关键特征，严格按JSON格式返回，不要任何其他文字：
-{"platform":"平台名","name":"博主名","followers":"粉丝量","content_type":"内容类型（1-3个标签，逗号分隔）","style":"风格特征（简洁）","audience":"受众群体","verified":"是否认证(true/false)","note":"其他关键信息"}
-如无法访问则返回：{"error":"原因"}
-网址：${row.link}` }],
-      600, [{ type: 'web_search_20250305', name: 'web_search' }]
-    );
+    // Step 1: Tavily 搜索博主信息
+    const query = `${row.name} ${platform} 博主 内容类型 粉丝`;
+    const searchResult = await tavilySearch(query);
+
+    // Step 2: DeepSeek 根据搜索结果分析
+    const data = await callClaude([{
+      role: 'user',
+      content: `根据以下搜索结果，分析该博主的公开信息，严格按JSON返回，不要其他文字：
+{"platform":"${platform}","name":"${row.name}","followers":"粉丝量（如有）","content_type":"内容类型（1-3个标签，逗号分隔）","style":"内容风格（简洁2-4字）","audience":"目标受众","blogger_type":"博主类型（如：AI科技、生活方式、母婴、美食、知识分享等）"}
+
+搜索结果：
+${searchResult}
+
+博主名：${row.name}，平台：${platform}，表格中记录的粉丝量：${row.followers||'未知'}万`
+    }], 400);
+
     const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
     let profile = {};
     try {
       const match = raw.match(/\{[\s\S]*\}/);
-      profile = match ? JSON.parse(match[0]) : { error: raw.slice(0,80) };
-    } catch { profile = { error: raw.slice(0,80) }; }
+      profile = match ? JSON.parse(match[0]) : {};
+    } catch { profile = {}; }
 
     profile._name = row.name;
-    profile._link = row.link;
+    profile._link = link;
     profile._followers_raw = row.followers;
+    if (!profile.platform) profile.platform = platform;
+    if (!profile.followers) profile.followers = (row.followers||'—') + '万';
     analysisProfiles.push(profile);
 
-    document.getElementById('an-dot-' + idx).style.background = profile.error ? '#ef4444' : '#22c55e';
+    document.getElementById('an-dot-' + idx).style.background = '#22c55e';
     const body = document.getElementById('an-body-' + idx);
     body.style.fontStyle = 'normal';
-    if (profile.error) {
-      body.style.color = '#fca5a5';
-      body.textContent = '⚠ ' + profile.error;
-    } else {
-      body.style.color = 'var(--text)';
-      body.innerHTML = `<span style="color:var(--muted)">平台：</span>${profile.platform||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">粉丝：</span>${profile.followers||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">内容：</span>${profile.content_type||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">风格：</span>${profile.style||'—'}`;
-    }
+    body.style.color = 'var(--text)';
+    body.innerHTML = `
+      <span style="color:var(--muted)">粉丝：</span>${profile.followers||'—'} &nbsp;|&nbsp;
+      <span style="color:var(--muted)">内容：</span>${profile.content_type||'—'} &nbsp;|&nbsp;
+      <span style="color:var(--muted)">风格：</span>${profile.style||'—'} &nbsp;|&nbsp;
+      <span style="color:var(--muted)">类型：</span><b style="color:var(--green)">${profile.blogger_type||'—'}</b>`;
   } catch(e) {
-    analysisProfiles.push({ error: e.message, _name: row.name, _link: row.link });
+    analysisProfiles.push({ error: e.message, _name: row.name, _link: link, platform });
     document.getElementById('an-dot-' + idx).style.background = '#ef4444';
-    document.getElementById('an-body-' + idx).textContent = '请求失败：' + e.message;
+    document.getElementById('an-body-' + idx).style.color = '#fca5a5';
+    document.getElementById('an-body-' + idx).style.fontStyle = 'normal';
+    document.getElementById('an-body-' + idx).textContent = '失败：' + e.message;
   }
 }
 
@@ -1171,14 +1212,14 @@ function anRestoreProfiles() {
         <span style="font-size:11px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:1px 7px;border-radius:4px;white-space:nowrap">已成功</span>
       </div>
       <div style="padding:10px 14px;font-size:12px;color:${ok?'var(--text)':'#fca5a5'}">
-        ${ok ? `<span style="color:var(--muted)">平台：</span>${p.platform||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">粉丝：</span>${p.followers||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">内容：</span>${p.content_type||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">风格：</span>${p.style||'—'}` : '⚠ ' + p.error}
+        <span style="color:var(--muted)">平台：</span>${p.platform||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">粉丝：</span>${p.followers||'—'} &nbsp;|&nbsp; <span style="color:var(--muted)">博主类型：</span>${p.blogger_type||'—'}
       </div>`;
     container.appendChild(card);
   });
 }
 
 async function anRunAI() {
-  const validProfiles = analysisProfiles.filter(p => !p.error);
+  const validProfiles = analysisProfiles.filter(p => p._name || p.name);
   if (!validProfiles.length) { anSetStatus('没有可分析的博主数据', '#fca5a5'); return; }
 
   document.getElementById('an-ai-btn').disabled = true;
@@ -1186,7 +1227,7 @@ async function anRunAI() {
   document.getElementById('an-report').style.display = 'none';
 
   const profileSummary = validProfiles.map((p,i) =>
-    `博主${i+1}：平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type}，风格=${p.style}，受众=${p.audience}，认证=${p.verified}，备注=${p.note}`
+    `博主${i+1}：博主名=${p.name||p._name}，平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type||'—'}，风格=${p.style||'—'}，目标受众=${p.audience||'—'}，博主类型=${p.blogger_type||'—'}`
   ).join('\n');
 
   try {
