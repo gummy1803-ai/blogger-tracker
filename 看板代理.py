@@ -9,6 +9,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 ANTHROPIC_BASE = "https://api.anthropic.com"
 FEISHU_BASE    = "https://open.feishu.cn"
+DEEPSEEK_BASE  = "https://api.deepseek.com"
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -29,6 +30,12 @@ class Handler(BaseHTTPRequestHandler):
                 "Content-Type": "application/json",
                 "x-api-key": self.headers.get("x-api-key", ""),
                 "anthropic-version": self.headers.get("anthropic-version", "2023-06-01"),
+            }
+        elif path.startswith("/deepseek/"):
+            target = DEEPSEEK_BASE + path[len("/deepseek"):]
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": self.headers.get("Authorization", ""),
             }
         elif path.startswith("/feishu/"):
             target = FEISHU_BASE + path[len("/feishu"):]

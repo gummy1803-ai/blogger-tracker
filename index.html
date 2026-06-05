@@ -18,16 +18,25 @@
   // ★ 本地代理地址（运行 proxy.py 后生效，解决 CORS）
   const PROXY = "http://localhost:8765";
 
-  // 统一的 Anthropic API 调用（自动走代理）
+  // DeepSeek API 调用（走本地代理）
+  const DEEPSEEK_KEY = "sk-bc0712cef1064ba995cc4c170bfd0166";
   async function callClaude(messages, maxTokens=1000, tools=[]) {
-    const body = { model:"claude-sonnet-4-20250514", max_tokens:maxTokens, messages };
-    if (tools.length) body.tools = tools;
-    const resp = await fetch(PROXY + "/anthropic/v1/messages", {
+    const resp = await fetch(PROXY + "/deepseek/chat/completions", {
       method:"POST",
-      headers:{ "Content-Type":"application/json", "anthropic-version":"2023-06-01" },
-      body: JSON.stringify(body)
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + DEEPSEEK_KEY
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        max_tokens: maxTokens,
+        messages: messages
+      })
     });
-    return resp.json();
+    const d = await resp.json();
+    // 转换为 Anthropic 格式，兼容现有代码
+    const text = d.choices?.[0]?.message?.content || d.error?.message || JSON.stringify(d);
+    return { content: [{ type: "text", text }] };
   }
 </script>
 
