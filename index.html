@@ -1404,6 +1404,7 @@ function renderOcr() {
       <span style="font-size:13px;font-weight:600;color:var(--text)">识别结果</span>
       <span id="ocr-count" style="font-size:11px;color:var(--muted);background:var(--surf);padding:2px 8px;border-radius:4px"></span>
       <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="dup-btn dup-btn-mark" onclick="ocrCheckDup()" style="font-size:12px">🔍 查重</button>
         <button class="dup-btn dup-btn-mark" onclick="ocrExportCSV()" style="font-size:12px">⬇ 导出 CSV</button>
         <button class="dup-btn dup-btn-mark" onclick="ocrCopyFeishu()" style="font-size:12px">📋 复制到飞书</button>
       </div>
@@ -1555,8 +1556,6 @@ async function ocrRun() {
     ocrRows = [...ocrRows, ...newRows.slice(newRows.length-1)];
     ocrRenderTable();
   }
-
-  ocrRows = [...ocrRows, ...newRows];
   ocrPendingFiles = [];
   const previews = document.getElementById('ocr-previews');
   if (previews) previews.innerHTML = '';
@@ -1582,11 +1581,12 @@ function ocrRenderTable() {
         </td>
       </tr>`;
     }
+    const isDup = !!row._dup;
     const td = (val, field) => `<td style="padding:8px 14px;border-bottom:1px solid var(--border);color:var(--text)">
       <div contenteditable="true" onblur="ocrEdit(${idx},'${field}',this.textContent)"
         style="outline:none;min-width:40px;min-height:16px">${val||''}</div>
     </td>`;
-    return `<tr id="ocr-row-${idx}" style="transition:background .15s" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='transparent'">
+    return `<tr id="ocr-row-${idx}" style="transition:background .15s;background:${isDup?'rgba(239,68,68,.07)':'transparent'}" onmouseover="this.style.background='${isDup?'rgba(239,68,68,.12)':'var(--surf2)'}'" onmouseout="this.style.background='${isDup?'rgba(239,68,68,.07)':'transparent'}'">
       ${td(row.name,'name')}
       ${td(row.account,'account')}
       ${td(row.followers,'followers')}
@@ -1594,7 +1594,8 @@ function ocrRenderTable() {
       ${td(row.link,'link')}
       ${td(row.status,'status')}
       ${td(row.owner,'owner')}
-      <td style="padding:8px 14px;border-bottom:1px solid var(--border)">
+      <td style="padding:8px 14px;border-bottom:1px solid var(--border);white-space:nowrap">
+        ${isDup ? `<span style="font-size:11px;color:#fca5a5;margin-right:6px" title="${row._dup}">⚠ ${row._dup}</span>` : ''}
         <button onclick="ocrDeleteRow(${idx})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px">🗑</button>
       </td>
     </tr>`;
@@ -1631,6 +1632,46 @@ function ocrExportCSV() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = '博主信息.csv'; a.click();
+}
+
+function ocrCheckDup() {
+  const valid = ocrRows.filter(r => !r._error);
+  if (!valid.length) return;
+
+  // 建立 Supabase 已有链接的集合（归一化处理）
+  const normalize = url => (url||'').trim().toLowerCase().replace(/\/+$/, '').replace(/^https?:\/\//, '');
+  const existingLinks = new Set(ALL_ROWS.map(r => normalize(r.link)));
+  const existingNames = new Set(ALL_ROWS.map(r => (r.name||'').trim()));
+  const existingAccounts = new Set(ALL_ROWS.map(r => (r.account||'').trim()).filter(Boolean));
+
+  let dupCount = 0;
+  ocrRows = ocrRows.map(r => {
+    if (r._error) return r;
+    const linkDup  = r.link    && existingLinks.has(normalize(r.link));
+    const nameDup  = r.name    && existingNames.has(r.name.trim());
+    const accDup   = r.account && existingAccounts.has(r.account.trim());
+    if (linkDup || nameDup || accDup) {
+      dupCount++;
+      const reasons = [];
+      if (linkDup) reasons.push('链接重复');
+      if (nameDup) reasons.push('名称重复');
+      if (accDup)  reasons.push('账号重复');
+      return { ...r, _dup: reasons.join('、') };
+    }
+    return { ...r, _dup: '' };
+  });
+
+  ocrRenderTable();
+  const s = document.getElementById('ocr-status');
+  if (s) {
+    if (dupCount > 0) {
+      s.textContent = `⚠ 发现 ${dupCount} 条重复博主（已标红）`;
+      s.style.color = '#fca5a5';
+    } else {
+      s.textContent = '✅ 无重复博主';
+      s.style.color = 'var(--green)';
+    }
+  }
 }
 
 function ocrCopyCol(field) {
