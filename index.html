@@ -1412,13 +1412,13 @@ function renderOcr() {
       <table id="ocr-table" style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
           <tr style="background:var(--surf2)">
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主名</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">平台</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">粉丝量</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主类型</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主链接</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">回复情况</th>
-            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">跟进人</th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主名 <button onclick="ocrCopyCol('name')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主号 <button onclick="ocrCopyCol('account')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">粉丝量 <button onclick="ocrCopyCol('followers')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主类型 <button onclick="ocrCopyCol('blogger_type')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">博主链接 <button onclick="ocrCopyCol('link')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">回复情况 <button onclick="ocrCopyCol('status')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
+            <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">跟进人 <button onclick="ocrCopyCol('owner')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;margin-left:4px" title="复制此列">⎘</button></th>
             <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">操作</th>
           </tr>
         </thead>
@@ -1519,7 +1519,7 @@ async function ocrRun() {
             content: [
               { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
               { type: 'text', text: `请识别图片中的博主主页信息，严格按以下JSON数组格式返回，不要任何其他文字：
-[{"name":"博主名称","link":"主页链接（如有否则空）","platform":"平台（小红书/抖音/B站/微博等）","followers":"粉丝数（如19.4万）","blogger_type":"博主类型（如AI科技/生活方式/知识分享等）","error":""}]
+[{"name":"博主名称","account":"博主账号ID（如抖音号/小红书号/B站UID等，不是昵称）","link":"主页链接（如有否则空）","followers":"粉丝数（如19.4万）","blogger_type":"博主类型（如AI科技/生活方式/知识分享等）","error":""}]
 如无法识别在error字段说明原因，其他字段留空。followers只填粉丝数不填获赞数。` }
             ]
           }]
@@ -1538,7 +1538,7 @@ async function ocrRun() {
               if (r.error) {
                 newRows.push({ _error: r.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
               } else {
-                newRows.push({ name: r.name||'', platform: r.platform||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status:'', owner:'' });
+                newRows.push({ name: r.name||'', account: r.account||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status:'', owner:'' });
               }
             });
           } else {
@@ -1588,7 +1588,7 @@ function ocrRenderTable() {
     </td>`;
     return `<tr id="ocr-row-${idx}" style="transition:background .15s" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='transparent'">
       ${td(row.name,'name')}
-      ${td(row.platform,'platform')}
+      ${td(row.account,'account')}
       ${td(row.followers,'followers')}
       ${td(row.blogger_type,'blogger_type')}
       ${td(row.link,'link')}
@@ -1621,9 +1621,9 @@ function ocrClear() {
 function ocrExportCSV() {
   const valid = ocrRows.filter(r => !r._error);
   if (!valid.length) return;
-  const header = '博主名,平台,粉丝量,博主类型,博主链接,回复情况,跟进人';
+  const header = '博主名,博主号,粉丝量,博主类型,博主链接,回复情况,跟进人';
   const rows = valid.map(r =>
-    [r.name, r.platform, r.followers, r.blogger_type, r.link, r.status, r.owner]
+    [r.name, r.account, r.followers, r.blogger_type, r.link, r.status, r.owner]
       .map(v => `"${(v||'').replace(/"/g,'""')}"`)
       .join(',')
   );
@@ -1633,11 +1633,22 @@ function ocrExportCSV() {
   a.download = '博主信息.csv'; a.click();
 }
 
+function ocrCopyCol(field) {
+  const valid = ocrRows.filter(r => !r._error);
+  if (!valid.length) return;
+  const text = valid.map(r => r[field] || '').join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const s = document.getElementById('ocr-status');
+    const labels = {name:'博主名',account:'博主号',followers:'粉丝量',blogger_type:'博主类型',link:'博主链接',status:'回复情况',owner:'跟进人'};
+    if (s) { s.textContent = `✅ 已复制「${labels[field]||field}」列`; s.style.color = 'var(--green)'; setTimeout(()=>{ if(s) s.textContent=''; }, 2000); }
+  });
+}
+
 function ocrCopyFeishu() {
   const valid = ocrRows.filter(r => !r._error);
   if (!valid.length) return;
   const rows = valid.map(r =>
-    [r.name, r.platform, r.followers, r.blogger_type, r.link, r.status, r.owner].join('\t')
+    [r.name, r.account, r.followers, r.blogger_type, r.link, r.status, r.owner].join('\t')
   );
   navigator.clipboard.writeText(rows.join('\n')).then(() => {
     const s = document.getElementById('ocr-status');
