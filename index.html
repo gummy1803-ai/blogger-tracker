@@ -1034,7 +1034,7 @@ function renderLookup() {
         <div style="font-size:14px;font-weight:600;color:var(--text)">建联成功博主分析</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">通过博主主页搜索判断类型，AI 给出精准建联方向建议</div>
       </div>
-      <button onclick="rendered.delete('lookup');renderLookup()" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
+      <button onclick="anHardRefresh()" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
     </div>
 
     <!-- 时间筛选 -->
@@ -1081,6 +1081,15 @@ function renderLookup() {
 
 // 当前选中的时间段
 let anCurrentPeriod = 'all';
+
+function anHardRefresh() {
+  analysisProfiles = [];
+  analysisDone = false;
+  window._anReportText = null;
+  rendered.delete('lookup');
+  TABS['lookup']();
+  rendered.add('lookup');
+}
 
 function anSelectPeriod(period, btn) {
   anCurrentPeriod = period;
@@ -1230,7 +1239,8 @@ async function anRunAI() {
   const validProfiles = analysisProfiles.filter(p => p._name || p.name);
   if (!validProfiles.length) { anSetStatus('没有可分析的博主数据', '#fca5a5'); return; }
 
-  document.getElementById('an-ai-btn').disabled = true;
+  const aiBtn = document.getElementById('an-ai-btn');
+  if (aiBtn) aiBtn.disabled = true;
   anSetStatus('✨ AI 正在深度分析，请稍候（约30秒）...', 'var(--blue)');
   const profileSummary = validProfiles.map((p,i) =>
     `博主${i+1}：博主名=${p.name||p._name}，平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type||'—'}，风格=${p.style||'—'}，目标受众=${p.audience||'—'}，博主类型=${p.blogger_type||'—'}`
@@ -1759,7 +1769,6 @@ function switchTab(tab, btn) {
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
-  if (tab === 'lookup') { rendered.delete('lookup'); TABS['lookup'](); rendered.add('lookup'); }
   if (tab === 'report') { rendered.delete('report'); TABS['report'](); rendered.add('report'); }
   if (tab === 'guide') { loadAISummary(); loadKbList(); }
 }
