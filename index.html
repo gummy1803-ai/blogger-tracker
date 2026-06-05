@@ -21,6 +21,7 @@
   // DeepSeek API 调用（走本地代理）
   const DEEPSEEK_KEY = "sk-bc0712cef1064ba995cc4c170bfd0166";
   const TAVILY_KEY   = "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";
+  const QWEN_KEY     = "sk-eaf0550046c94b37920b095d75b730f7";
 
   // Tavily 搜索
   async function tavilySearch(query) {
@@ -1476,47 +1477,83 @@ async function ocrRun() {
   if (btn) btn.disabled = true;
   const statusEl = document.getElementById('ocr-status');
 
-  // 每次最多5张一批发送
-  const batchSize = 5;
+  // 逐张识别，避免超时
   const newRows = [];
 
-  for (let i = 0; i < ocrPendingFiles.length; i += batchSize) {
-    const batch = ocrPendingFiles.slice(i, i + batchSize);
-    if (statusEl) statusEl.textContent = `识别中 ${i+1}–${Math.min(i+batchSize, ocrPendingFiles.length)} / ${ocrPendingFiles.length} 张...`;
+  for (let i = 0; i < ocrPendingFiles.length; i++) {
+    const f = ocrPendingFiles[i];
+    if (statusEl) statusEl.textContent = `识别中 ${i+1} / ${ocrPendingFiles.length}：${f.name}`;
 
-    // 转 base64
-    const b64s = await Promise.all(batch.map(f => new Promise(res => {
-      const r = new FileReader();
-      r.onload = e => res(e.target.result.split(',')[1]);
-      r.readAsDataURL(f);
-    })));
+    // 压缩并转 base64（最大 1200px，quality 0.8）
+    const b64 = await new Promise(res => {
+      const img = new Image();
+      const url = URL.createObjectURL(f);
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        res(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+      };
+      img.src = url;
+    });
 
     try {
-      const resp = await fetch(VERCEL_API + '/api/vision', {
+      const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: b64s })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + QWEN_KEY
+        },
+        body: JSON.stringify({
+          model: 'qwen-vl-plus',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
+              { type: 'text', text: `请识别图片中的博主主页信息，严格按以下JSON数组格式返回，不要任何其他文字：
+[{"name":"博主名称","link":"主页链接（如有否则空）","platform":"平台（小红书/抖音/B站/微博等）","followers":"粉丝数（如19.4万）","blogger_type":"博主类型（如AI科技/生活方式/知识分享等）","error":""}]
+如无法识别在error字段说明原因，其他字段留空。followers只填粉丝数不填获赞数。` }
+            ]
+          }]
+        })
       });
       const data = await resp.json();
-
-      if (data.result && Array.isArray(data.result)) {
-        data.result.forEach(r => {
-          if (r.error) {
-            newRows.push({ _error: r.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+      const text = data.choices?.[0]?.message?.content || '';
+      if (!text) {
+        newRows.push({ _error: data.error?.message || '识别失败', name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+      } else {
+        try {
+          const match = text.match(/\[[\s\S]*\]/);
+          const parsed = match ? JSON.parse(match[0]) : null;
+          if (parsed && Array.isArray(parsed)) {
+            parsed.forEach(r => {
+              if (r.error) {
+                newRows.push({ _error: r.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+              } else {
+                newRows.push({ name: r.name||'', platform: r.platform||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status:'', owner:'' });
+              }
+            });
           } else {
-            newRows.push({ name: r.name||'', platform: r.platform||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status: r.status||'', owner: '' });
+            newRows.push({ _error: '格式解析失败：' + text.slice(0,80), name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
           }
-        });
-      } else if (data.raw) {
-        if (statusEl) statusEl.textContent = '⚠ 识别结果格式异常，请重试';
-        newRows.push({ _error: '格式异常：' + data.raw.slice(0,80), name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
-      } else if (data.error) {
-        if (statusEl) statusEl.textContent = '❌ ' + data.error;
-        newRows.push({ _error: data.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+        } catch(pe) {
+          newRows.push({ _error: '解析错误：' + pe.message, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+        }
       }
     } catch(e) {
       newRows.push({ _error: e.message, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
     }
+    // 每识别一张就实时更新表格
+    ocrRows = [...ocrRows, ...newRows.slice(newRows.length-1)];
+    ocrRenderTable();
   }
 
   ocrRows = [...ocrRows, ...newRows];
