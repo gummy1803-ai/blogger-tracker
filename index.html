@@ -16,7 +16,7 @@
   const DUP_API = "";
 
   // ★ 本地代理地址（运行 proxy.py 后生效，解决 CORS）
-  const PROXY = "http://localhost:8765";
+  const VERCEL_API = "https://feishu-dup-checker.vercel.app";
 
   // DeepSeek API 调用（走本地代理）
   const DEEPSEEK_KEY = "sk-bc0712cef1064ba995cc4c170bfd0166";
@@ -24,39 +24,25 @@
 
   // Tavily 搜索
   async function tavilySearch(query) {
-    const resp = await fetch(PROXY + "/tavily/search", {
+    const resp = await fetch(VERCEL_API + "/api/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: TAVILY_KEY,
-        query,
-        max_results: 3,
-        include_answer: true
-      })
+      body: JSON.stringify({ query })
     });
     const d = await resp.json();
-    // 拼接搜索结果摘要
-    const answer = d.answer || "";
-    const snippets = (d.results || []).map(r => r.content || "").join(" ");
-    return (answer + " " + snippets).slice(0, 1500);
+    if (d.error) throw new Error(d.error);
+    return d.text || "";
   }
   async function callClaude(messages, maxTokens=1000, tools=[]) {
-    const resp = await fetch(PROXY + "/deepseek/chat/completions", {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + DEEPSEEK_KEY
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        max_tokens: maxTokens,
-        messages: messages
-      })
+    const prompt = messages.map(m => m.content).join("\n");
+    const resp = await fetch(VERCEL_API + "/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, max_tokens: maxTokens })
     });
     const d = await resp.json();
-    // 转换为 Anthropic 格式，兼容现有代码
-    const text = d.choices?.[0]?.message?.content || d.error?.message || JSON.stringify(d);
-    return { content: [{ type: "text", text }] };
+    if (d.error) throw new Error(d.error);
+    return { content: [{ type: "text", text: d.text }] };
   }
 </script>
 
@@ -1246,8 +1232,6 @@ async function anRunAI() {
 
   document.getElementById('an-ai-btn').disabled = true;
   anSetStatus('✨ AI 正在深度分析，请稍候（约30秒）...', 'var(--blue)');
-  document.getElementById('an-report').style.display = 'none';
-
   const profileSummary = validProfiles.map((p,i) =>
     `博主${i+1}：博主名=${p.name||p._name}，平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type||'—'}，风格=${p.style||'—'}，目标受众=${p.audience||'—'}，博主类型=${p.blogger_type||'—'}`
   ).join('\n');
