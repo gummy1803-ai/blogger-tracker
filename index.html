@@ -254,6 +254,7 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('revisit',this)">⏰ 回访</button>
     <button class="tab"     onclick="switchTab('trend',this)">趋势</button>
     <button class="tab"     onclick="switchTab('lookup',this)">🎯 建联分析</button>
+    <button class="tab"     onclick="switchTab('report',this)">📋 分析报告</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
 
   </div>
@@ -263,6 +264,7 @@ a.lnk:hover { opacity:1; }
   <div id="pane-bloggers" style="display:none"></div>
   <div id="pane-revisit"  style="display:none"></div>
   <div id="pane-lookup"   style="display:none"></div>
+  <div id="pane-report"   style="display:none"></div>
   <div id="pane-guide"    style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
 
@@ -318,6 +320,11 @@ function filterByPeriod(rows, period) {
   const weekStartStr = localDateStr(weekStartD);
   const monthStartStr = todayStr.slice(0,7) + "-01";
   if (period === "today") return rows.filter(r => r.record_date === todayStr);
+  if (period === "yesterday") {
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const yStr = localDateStr(y);
+    return rows.filter(r => r.record_date === yStr);
+  }
   if (period === "week")  return rows.filter(r => r.record_date >= weekStartStr && r.record_date <= todayStr);
   if (period === "month") return rows.filter(r => r.record_date >= monthStartStr && r.record_date <= todayStr);
   if (period === "last_week") {
@@ -1021,62 +1028,62 @@ function showDupErr(msg) {
 let analysisProfiles = [];  // 抓取到的博主画像
 let analysisDone = false;
 
+// 时间筛选函数（复用现有的 filterByPeriod）
+function anFilterRows(period) {
+  const base = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
+  if (period === 'all') return base;
+  return filterByPeriod(base, period);
+}
+
 function renderLookup() {
   const el = document.getElementById('pane-lookup');
-  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
+  const allSuccess = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
   el.innerHTML = `
-<div style="max-width:820px">
+<div style="max-width:860px">
 
-  <!-- 顶部说明 -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <span style="font-size:20px">🎯</span>
       <div>
         <div style="font-size:14px;font-weight:600;color:var(--text)">建联成功博主分析</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">分析"引导到私域了"的博主特征，AI 给出精准建联方向建议</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">通过博主主页搜索判断类型，AI 给出精准建联方向建议</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-        <button onclick="rendered.delete('lookup');renderLookup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
-        <div style="background:rgba(67,217,164,.12);border:1px solid rgba(67,217,164,.3);color:var(--green);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">${successRows.length} 位成功博主</div>
-      </div>
+      <button onclick="rendered.delete('lookup');renderLookup()" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-height:90px;overflow-y:auto">
-      ${successRows.slice(0,50).map(r=>`<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 9px;color:var(--muted)">${r.name||r.link.slice(0,20)+'...'}</span>`).join('')}
-      ${successRows.length>50?`<span style="font-size:11px;color:var(--muted);padding:2px 6px">+${successRows.length-50} 位</span>`:''}
+
+    <!-- 时间筛选 -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      ${[['all','全部'],['today','今天'],['yesterday','昨天'],['week','本周'],['last_week','上周'],['month','本月'],['last_month','上月']].map(([v,l])=>
+        `<button onclick="anSelectPeriod('${v}',this)" class="an-period-btn" data-period="${v}"
+          style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:${v==='all'?'var(--blue)':'transparent'};color:${v==='all'?'#fff':'var(--muted)'};cursor:pointer">${l}</button>`
+      ).join('')}
+    </div>
+
+    <!-- 统计 -->
+    <div id="an-count-bar" style="font-size:12px;color:var(--muted);margin-bottom:12px">共 <b style="color:var(--text)">${allSuccess.length}</b> 位成功博主</div>
+
+    <!-- 博主标签预览 -->
+    <div id="an-tags" style="display:flex;flex-wrap:wrap;gap:5px;max-height:80px;overflow-y:auto">
+      ${allSuccess.slice(0,60).map(r=>`<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 8px;color:var(--muted)">${r.name||'—'}</span>`).join('')}
+      ${allSuccess.length>60?`<span style="font-size:11px;color:var(--muted);padding:2px 6px">+${allSuccess.length-60}</span>`:''}
     </div>
   </div>
 
-  <!-- 进度 -->
   <div id="an-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
   <div id="an-prog-wrap" style="height:3px;background:var(--surf2);border-radius:2px;margin:6px 0;display:none">
     <div id="an-prog-fill" style="height:3px;background:var(--green);border-radius:2px;width:0;transition:width .3s"></div>
   </div>
 
-  <!-- 操作按钮 -->
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="dup-btn dup-btn-primary" id="an-fetch-btn" onclick="anFetchAll()" style="background:var(--green);flex:1" ${successRows.length===0?'disabled':''}>
+    <button class="dup-btn dup-btn-primary" id="an-fetch-btn" onclick="anFetchAll()" style="background:var(--green);flex:1" ${allSuccess.length===0?'disabled':''}>
       🔍 搜索并分析博主信息
     </button>
     <button class="dup-btn dup-btn-mark" id="an-ai-btn" onclick="anRunAI()" style="display:none;flex:1">
-      ✨ AI 分析建联方向
+      ✨ 生成分析报告
     </button>
   </div>
 
-  <!-- 博主画像列表（逐条展示） -->
-  <div id="an-profiles" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
-
-  <!-- AI 报告区域 -->
-  <div id="an-report" style="display:none">
-    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surf2);display:flex;align-items:center;gap:8px">
-        <span style="font-size:15px">✨</span>
-        <span style="font-size:13px;font-weight:600;color:var(--text)">AI 建联分析报告</span>
-        <button class="dup-btn dup-btn-mark" onclick="anExportReport()" style="margin-left:auto;font-size:12px;padding:4px 12px">⬇ 导出</button>
-      </div>
-      <div id="an-report-body" style="padding:18px 20px;font-size:13px;line-height:1.9;color:var(--text);white-space:pre-wrap"></div>
-    </div>
-  </div>
-
+  <div id="an-profiles" style="display:flex;flex-direction:column;gap:8px"></div>
 </div>`;
 
   // 如果已有结果，直接还原
@@ -1084,6 +1091,25 @@ function renderLookup() {
     anRestoreProfiles();
     document.getElementById('an-ai-btn').style.display = 'flex';
   }
+}
+
+// 当前选中的时间段
+let anCurrentPeriod = 'all';
+
+function anSelectPeriod(period, btn) {
+  anCurrentPeriod = period;
+  document.querySelectorAll('.an-period-btn').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.background = 'var(--blue)';
+  btn.style.color = '#fff';
+
+  const rows = anFilterRows(period);
+  const tags = document.getElementById('an-tags');
+  const countBar = document.getElementById('an-count-bar');
+  if (countBar) countBar.innerHTML = `共 <b style="color:var(--text)">${rows.length}</b> 位成功博主（${['all','全部',['today','今天'],['yesterday','昨天'],['week','本周'],['last_week','上周'],['month','本月'],['last_month','上月']].find(x=>Array.isArray(x)&&x[0]===period)?.[1]||'全部'}）`;
+  if (tags) tags.innerHTML = rows.slice(0,60).map(r=>`<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 8px;color:var(--muted)">${r.name||'—'}</span>`).join('') + (rows.length>60?`<span style="font-size:11px;color:var(--muted);padding:2px 6px">+${rows.length-60}</span>`:'');
 }
 
 function anSetStatus(msg, color) {
@@ -1098,18 +1124,14 @@ function anSetProgress(pct) {
 }
 
 async function anFetchAll() {
-  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了' && r.link);
-  if (!successRows.length) return;
+  const targets = anFilterRows(anCurrentPeriod);
+  if (!targets.length) { anSetStatus('该时间段内没有建联成功的博主', '#fca5a5'); return; }
 
   analysisProfiles = [];
   analysisDone = false;
   document.getElementById('an-profiles').innerHTML = '';
-  document.getElementById('an-report').style.display = 'none';
   document.getElementById('an-ai-btn').style.display = 'none';
   document.getElementById('an-fetch-btn').disabled = true;
-
-  // 最多取30个，避免太慢
-  const targets = successRows.slice(0, 30);
 
   for (let i = 0; i < targets.length; i++) {
     const row = targets[i];
@@ -1262,12 +1284,82 @@ ${profileSummary}
     document.getElementById('an-report-body').textContent = text;
     anSetStatus('✅ 分析完成', 'var(--green)');
     document.getElementById('an-report').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // 存到全局供导出
+    // 存到全局供导出和报告Tab展示
     window._anReportText = text;
+    const periodLabels = {all:'全部历史',today:'今天',yesterday:'昨天',week:'本周',last_week:'上周',month:'本月',last_month:'上月'};
+    window._anReportMeta = {
+      period: periodLabels[anCurrentPeriod] || anCurrentPeriod,
+      count: validProfiles.length,
+      time: new Date().toLocaleString('zh-CN',{hour12:false})
+    };
+    // 自动跳到报告Tab
+    const reportTab = document.querySelector('[onclick*="report"]');
+    if (reportTab) switchTab('report', reportTab);
   } catch(e) {
     anSetStatus('❌ AI 分析失败：' + e.message, '#fca5a5');
   }
   document.getElementById('an-ai-btn').disabled = false;
+}
+
+function renderReport() {
+  const el = document.getElementById('pane-report');
+  const report = window._anReportText;
+  const meta = window._anReportMeta || {};
+
+  if (!report) {
+    el.innerHTML = `
+<div style="max-width:820px">
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:40px 20px;text-align:center">
+    <div style="font-size:32px;margin-bottom:12px">📋</div>
+    <div style="font-size:14px;color:var(--text);font-weight:600;margin-bottom:8px">暂无分析报告</div>
+    <div style="font-size:12px;color:var(--muted)">请先前往「🎯 建联分析」Tab，选择时间范围并生成报告</div>
+  </div>
+</div>`;
+    return;
+  }
+
+  // 把纯文本报告解析成结构化展示
+  const sections = report.split(/【(.*?)】/).filter(Boolean);
+  let cards = '';
+  for (let i = 0; i < sections.length; i += 2) {
+    const title = sections[i];
+    const body = sections[i+1] || '';
+    // 把 - 开头的行变成列表项
+    const lines = body.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const items = lines.map(l => {
+      if (l.startsWith('-') || l.startsWith('•')) {
+        return `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--green);flex-shrink:0">▸</span><span style="color:var(--text);line-height:1.6">${l.replace(/^[-•]\s*/,'')}</span></div>`;
+      }
+      // 检测 key: value 格式
+      const kv = l.match(/^(.{2,12})[：:]\s*(.+)$/);
+      if (kv) {
+        return `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);flex-shrink:0;min-width:80px">${kv[1]}</span><span style="color:var(--text);line-height:1.6">${kv[2]}</span></div>`;
+      }
+      return `<div style="color:var(--text);padding:4px 0;line-height:1.7">${l}</div>`;
+    }).join('');
+
+    const icons = {'一、成功博主画像':'👤','二、建联方向建议':'🎯'};
+    cards += `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
+      <div style="padding:12px 18px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">${icons[title]||'📌'}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${title}</span>
+      </div>
+      <div style="padding:14px 18px;font-size:13px">${items}</div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+<div style="max-width:820px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)">📋 建联分析报告</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">${meta.period||''}·分析 ${meta.count||0} 位建联成功博主·生成于 ${meta.time||''}</div>
+    </div>
+    <button class="dup-btn dup-btn-mark" onclick="anExportReport()" style="margin-left:auto">⬇ 导出 Markdown</button>
+  </div>
+  ${cards}
+</div>`;
 }
 
 function anExportReport() {
@@ -1674,6 +1766,7 @@ const TABS = {
   trend:    renderTrend,
   guide:    renderGuide,
   lookup:   renderLookup,
+  report:   renderReport,
 };
 let rendered = new Set();
 
@@ -1683,6 +1776,7 @@ function switchTab(tab, btn) {
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
   if (tab === 'lookup') { rendered.delete('lookup'); TABS['lookup'](); rendered.add('lookup'); }
+  if (tab === 'report') { rendered.delete('report'); TABS['report'](); rendered.add('report'); }
   if (tab === 'guide') { loadAISummary(); loadKbList(); }
 }
 
