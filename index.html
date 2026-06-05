@@ -1274,11 +1274,8 @@ ${profileSummary}
       2000
     );
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-    document.getElementById('an-report').style.display = 'block';
-    document.getElementById('an-report-body').textContent = text;
-    anSetStatus('✅ 分析完成', 'var(--green)');
-    document.getElementById('an-report').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // 存到全局供导出和报告Tab展示
+    anSetStatus('✅ 分析完成，正在跳转报告...', 'var(--green)');
+    // 存到全局供报告Tab展示和导出
     window._anReportText = text;
     const periodLabels = {all:'全部历史',today:'今天',yesterday:'昨天',week:'本周',last_week:'上周',month:'本月',last_month:'上月'};
     window._anReportMeta = {
@@ -1287,12 +1284,13 @@ ${profileSummary}
       time: new Date().toLocaleString('zh-CN',{hour12:false})
     };
     // 自动跳到报告Tab
-    const reportTab = document.querySelector('[onclick*="report"]');
+    const reportTab = document.querySelector('[onclick*=\"report\"]');
     if (reportTab) switchTab('report', reportTab);
   } catch(e) {
     anSetStatus('❌ AI 分析失败：' + e.message, '#fca5a5');
   }
-  document.getElementById('an-ai-btn').disabled = false;
+  const aiBtnFinal = document.getElementById('an-ai-btn');
+  if (aiBtnFinal) aiBtnFinal.disabled = false;
 }
 
 function renderReport() {
