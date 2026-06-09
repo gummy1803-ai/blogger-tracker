@@ -16,7 +16,7 @@
   const DUP_API = "";
 
   // ★ 本地代理地址（运行 proxy.py 后生效，解决 CORS）
-  const VERCEL_API = "https://feishu-dup-checker.vercel.app";
+  const VERCEL_API = window.location.origin;
 
   // DeepSeek API 调用（走本地代理）
   const DEEPSEEK_KEY = "sk-bc0712cef1064ba995cc4c170bfd0166";
@@ -219,6 +219,7 @@ a.lnk:hover { opacity:1; }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -231,6 +232,7 @@ a.lnk:hover { opacity:1; }
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div class="badge" id="syncTime">加载中…</div>
       <div class="badge" id="dateBadge"></div>
+      <button id="admin-btn" onclick="toggleAdmin()" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s">🔒 管理员登录</button>
     </div>
   </div>
 
@@ -240,9 +242,11 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('bloggers',this)">博主列表</button>
     <button class="tab"     onclick="switchTab('revisit',this)">⏰ 回访</button>
     <button class="tab"     onclick="switchTab('trend',this)">趋势</button>
-    <button class="tab"     onclick="switchTab('lookup',this)">🎯 建联分析</button>
-    <button class="tab"     onclick="switchTab('report',this)">📋 分析报告</button>
+    <button class="tab"     onclick="switchTab('periodic',this)">📅 数据分析</button>
+    <button class="tab"     onclick="switchTab('rank',this)">🎯 建联排序</button>
     <button class="tab"     onclick="switchTab('ocr',this)">📸 截图识别</button>
+    <button class="tab"     onclick="switchTab('checkin',this)">✅ 签到</button>
+    <button class="tab"     onclick="switchTab('attendance',this)">📅 打卡总览</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
 
   </div>
@@ -251,11 +255,13 @@ a.lnk:hover { opacity:1; }
   <div id="pane-team"     style="display:none"></div>
   <div id="pane-bloggers" style="display:none"></div>
   <div id="pane-revisit"  style="display:none"></div>
-  <div id="pane-lookup"   style="display:none"></div>
-  <div id="pane-report"   style="display:none"></div>
+  <div id="pane-rank"    style="display:none"></div>
   <div id="pane-ocr"     style="display:none"></div>
+  <div id="pane-periodic" style="display:none"></div>
   <div id="pane-guide"    style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
+  <div id="pane-checkin"  style="display:none"></div>
+  <div id="pane-attendance" style="display:none"></div>
 
 
 </div>
@@ -272,11 +278,19 @@ const SB = {
     if (params.limit)    qs.set("limit",   params.limit);
     if (params.gte_date) qs.set("record_date", `gte.${params.gte_date}`);
     if (params.eq_date)  qs.set("record_date", `eq.${params.eq_date}`);
-    const url = `${SUPABASE_URL}/rest/v1/${table}?${qs}`;
-    const res = await fetch(url, {
-      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` }
-    });
-    if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+    // 优先走 Vercel 中转（解决国内访问 Supabase 问题）
+    const vercelUrl = `${VERCEL_API}/api/data?table=${table}&${qs}`;
+    const directUrl = `${SUPABASE_URL}/rest/v1/${table}?${qs}`;
+    let res;
+    try {
+      res = await fetch(vercelUrl, { signal: AbortSignal.timeout(8000) });
+    } catch(e) {
+      // Vercel 失败则直连 Supabase
+      res = await fetch(directUrl, {
+        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` }
+      });
+    }
+    if (!res.ok) throw new Error(`数据请求失败 ${res.status}: ${await res.text()}`);
     return res.json();
   }
 };
@@ -1170,20 +1184,23 @@ async function anFetchOne(row, idx) {
   container.appendChild(card);
 
   try {
-    // Step 1: Tavily 搜索博主信息
-    const query = `${row.name} ${platform} 博主 内容类型 粉丝`;
-    const searchResult = await tavilySearch(query);
+    // Step 1: 搜索博主信息
+    const searchResp = await fetch(window.location.origin + '/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: `${row.name} ${platform} 博主 内容 粉丝` })
+    });
+    const searchData = await searchResp.json();
+    const searchResult = searchData.text || '';
 
-    // Step 2: DeepSeek 根据搜索结果分析
+    // Step 2: DeepSeek 分析
     const data = await callClaude([{
       role: 'user',
-      content: `根据以下搜索结果，分析该博主的公开信息，严格按JSON返回，不要其他文字：
-{"platform":"${platform}","name":"${row.name}","followers":"粉丝量（如有）","content_type":"内容类型（1-3个标签，逗号分隔）","style":"内容风格（简洁2-4字）","audience":"目标受众","blogger_type":"博主类型（如：AI科技、生活方式、母婴、美食、知识分享等）"}
+      content: `根据以下信息，分析该博主的公开信息，严格按JSON返回，不要其他文字：
+{"platform":"${platform}","name":"${row.name}","followers":"${row.followers||'未知'}万","content_type":"内容类型（1-3个标签，逗号分隔）","style":"内容风格（简洁2-4字）","audience":"目标受众","blogger_type":"博主类型（如：AI科技、生活方式、母婴、美食、知识分享等）"}
 
-搜索结果：
-${searchResult}
-
-博主名：${row.name}，平台：${platform}，表格中记录的粉丝量：${row.followers||'未知'}万`
+搜索结果：${searchResult}
+博主名：${row.name}，平台：${platform}，粉丝量：${row.followers||'未知'}万`
     }], 400);
 
     const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
@@ -1286,9 +1303,7 @@ ${profileSummary}
       count: validProfiles.length,
       time: new Date().toLocaleString('zh-CN',{hour12:false})
     };
-    // 自动跳到报告Tab
-    const reportTab = document.querySelector('[onclick*=\"report\"]');
-    if (reportTab) switchTab('report', reportTab);
+
   } catch(e) {
     anSetStatus('❌ AI 分析失败：' + e.message, '#fca5a5');
   }
@@ -1361,10 +1376,1269 @@ function mdToHtml(md) {
 }
 
 
+
+// ── 📅 数据分析 Tab ──
+
+// 生成时间段选项
+function getPeriodicOptions() {
+  const now = new Date();
+  const options = [];
+
+  // 过去6个月
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2,'0')}`;
+    const monthLabel = `${year}年${month}月`;
+
+    // 整月
+    options.push({ key: monthKey, label: monthLabel, type: 'month', year, month });
+
+    // 月内4个阶段
+    const phases = [
+      { key: `${monthKey}-p1`, label: `${monthLabel} 第1阶段（1-7日）`,  start: 1,  end: 7  },
+      { key: `${monthKey}-p2`, label: `${monthLabel} 第2阶段（8-14日）`, start: 8,  end: 14 },
+      { key: `${monthKey}-p3`, label: `${monthLabel} 第3阶段（15-21日）`,start: 15, end: 21 },
+      { key: `${monthKey}-p4`, label: `${monthLabel} 第4阶段（22日-月底）`,start: 22, end: 31 },
+    ];
+    phases.forEach(p => options.push({ ...p, type: 'phase', year, month }));
+  }
+  return options;
+}
+
+// 根据时间段 key 筛选博主
+function filterByPeriodKey(key) {
+  const parts = key.split('-');
+  const year  = parseInt(parts[0]);
+  const month = parseInt(parts[1]);
+  const phase = parts[2]; // p1/p2/p3/p4 或 undefined
+
+  return ALL_ROWS.filter(r => {
+    if (!r.record_date || r.status !== '引导到私域了') return false;
+    const d = new Date(r.record_date);
+    if (d.getFullYear() !== year || d.getMonth()+1 !== month) return false;
+    if (!phase) return true; // 整月
+    const day = d.getDate();
+    if (phase === 'p1') return day >= 1  && day <= 7;
+    if (phase === 'p2') return day >= 8  && day <= 14;
+    if (phase === 'p3') return day >= 15 && day <= 21;
+    if (phase === 'p4') return day >= 22;
+    return false;
+  });
+}
+
+let periodicReports = {}; // 缓存已加载的报告
+let periodicRunning = false;
+
+async function renderPeriodic() {
+  const el = document.getElementById('pane-periodic');
+  const options = getPeriodicOptions();
+
+  el.innerHTML = `
+<div style="max-width:860px">
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">📅 阶段数据分析</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">选择时间段，AI 分析该阶段建联成功博主特征，结果自动保存，同一时间段不重复分析</div>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="period-select" style="flex:1;padding:9px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);outline:none">
+        <option value="">-- 选择时间段 --</option>
+        ${options.map(o => `<option value="${o.key}">${o.label}</option>`).join('')}
+      </select>
+      <button class="dup-btn dup-btn-primary" id="period-run-btn" onclick="periodicRun()" style="background:var(--green);white-space:nowrap">
+        ✨ 开始分析
+      </button>
+    </div>
+
+    <div id="period-count" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <div id="period-status" style="font-size:13px;color:var(--muted);margin-top:6px;min-height:18px"></div>
+    <div id="period-prog-wrap" style="height:3px;background:var(--surf2);border-radius:2px;margin-top:6px;display:none">
+      <div id="period-prog" style="height:3px;background:var(--green);border-radius:2px;width:0;transition:width .3s"></div>
+    </div>
+  </div>
+
+  <!-- 已有报告列表 -->
+  <div id="period-list" style="margin-bottom:14px"></div>
+
+  <!-- 当前报告展示 -->
+  <div id="period-report-wrap" style="display:none"></div>
+</div>`;
+
+  // 监听选择变化
+  document.getElementById('period-select').addEventListener('change', periodicOnSelect);
+
+  // 加载已有报告列表
+  periodicLoadList();
+}
+
+async function periodicOnSelect() {
+  const key = document.getElementById('period-select').value;
+  if (!key) {
+    document.getElementById('period-count').textContent = '';
+    document.getElementById('period-report-wrap').style.display = 'none';
+    return;
+  }
+  const rows = filterByPeriodKey(key);
+  document.getElementById('period-count').textContent =
+    `该时间段内有 ${rows.length} 位建联成功博主`;
+
+  // 检查是否已有报告
+  if (periodicReports[key]) {
+    periodicShowReport(periodicReports[key]);
+    document.getElementById('period-run-btn').textContent = '✨ 重新分析';
+    return;
+  }
+
+  // 从数据库加载
+  try {
+    const resp = await fetch(`${window.location.origin}/api/reports/get?period_key=${encodeURIComponent(key)}`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.report_text) {
+        periodicReports[key] = data;
+        periodicShowReport(data);
+        document.getElementById('period-run-btn').textContent = '✨ 重新分析';
+        return;
+      }
+    }
+  } catch(e) {}
+
+  document.getElementById('period-report-wrap').style.display = 'none';
+  document.getElementById('period-run-btn').textContent = '✨ 开始分析';
+}
+
+async function periodicLoadList() {
+  const listEl = document.getElementById('period-list');
+  if (!listEl) return;
+  try {
+    const resp = await fetch(`${window.location.origin}/api/reports/list`);
+    const data = await resp.json();
+
+    // 更新下拉选项，给已分析的加 ✅ 标记
+    if (data && data.length) {
+      const doneKeys = new Set(data.map(r => r.period_key));
+      const select = document.getElementById('period-select');
+      if (select) {
+        Array.from(select.options).forEach(opt => {
+          if (!opt.value) return;
+          if (doneKeys.has(opt.value)) {
+            if (!opt.text.startsWith('✅')) opt.text = '✅ ' + opt.text;
+          } else {
+            opt.text = opt.text.replace(/^✅ /, '');
+          }
+        });
+      }
+    }
+
+    if (!data || !data.length) {
+      listEl.innerHTML = '';
+      return;
+    }
+    listEl.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">已有 ${data.length} 份分析报告：</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${data.map(r => `
+          <button onclick="periodicLoadReport('${r.period_key}')"
+            style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--green);background:rgba(67,217,164,.1);color:var(--green);cursor:pointer">
+            ✅ ${r.period_label} <span style="opacity:.7">(${r.blogger_count}人)</span>
+          </button>`).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+async function periodicLoadReport(key) {
+  document.getElementById('period-select').value = key;
+  await periodicOnSelect();
+}
+
+async function periodicRun() {
+  const key = document.getElementById('period-select').value;
+  if (!key) { alert('请先选择时间段'); return; }
+  if (periodicRunning) return;
+
+  const rows = filterByPeriodKey(key);
+  if (!rows.length) {
+    document.getElementById('period-status').textContent = '⚠ 该时间段没有建联成功的博主';
+    return;
+  }
+
+  periodicRunning = true;
+  const btn = document.getElementById('period-run-btn');
+  btn.disabled = true;
+  const statusEl = document.getElementById('period-status');
+  const progWrap = document.getElementById('period-prog-wrap');
+  const prog = document.getElementById('period-prog');
+  progWrap.style.display = 'block';
+
+  // Step 1: 逐个搜索博主信息
+  const profiles = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    statusEl.textContent = `搜索中 ${i+1}/${rows.length}：${row.name||'—'}`;
+    prog.style.width = Math.round((i/rows.length)*60) + '%';
+
+    try {
+      const link = row.link || '';
+      let platform = '未知';
+      if (link.includes('xhslink')||link.includes('xiaohongshu')) platform = '小红书';
+      else if (link.includes('douyin')||link.includes('v.dou')) platform = '抖音';
+      else if (link.includes('bilibili')) platform = 'B站';
+
+      const searchResp = await fetch(window.location.origin + '/api/search', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({query: `${row.name} ${platform} 博主 内容 粉丝`})
+      });
+      const sd = await searchResp.json();
+      profiles.push({name: row.name, platform, followers: row.followers, searchText: sd.text||''});
+    } catch(e) {
+      profiles.push({name: row.name, platform: '未知', followers: row.followers, searchText: ''});
+    }
+  }
+
+  // Step 2: AI 生成报告
+  statusEl.textContent = '✨ AI 正在生成分析报告...';
+  prog.style.width = '80%';
+
+  const optionEl = document.querySelector(`#period-select option[value="${key}"]`);
+  const label = optionEl ? optionEl.textContent : key;
+
+  const summary = profiles.map((p,i) => ['博主'+(i+1), p.name, p.platform, (p.followers||'未知')+'万', p.searchText.slice(0,200)].join(',')).join('\n');
+
+  try {
+    const resp = await fetch(window.location.origin + '/api/analyze', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        prompt: `以下是「${label}」期间建联成功（引导到私域）的 ${profiles.length} 位博主信息：
+
+${summary}
+
+请输出一份阶段分析报告，包含：
+
+【一、本阶段成功博主画像】
+- 粉丝量区间分布
+- 主要内容类型/赛道
+- 风格共性
+- 平台分布
+- 其他显著规律
+
+【二、本阶段建联方向建议】
+- 优先锁定哪类博主
+- 避免浪费资源在哪类博主
+- 话术/切入点建议
+- 下阶段行动计划（3条具体建议）
+
+语言简洁专业，数据支撑结论。`,
+        max_tokens: 2000
+      })
+    });
+    const data = await resp.json();
+    const text = data.text || '';
+
+    // 保存到数据库
+    await fetch(window.location.origin + '/api/reports/save', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({period_key: key, period_label: label, report_text: text, blogger_count: profiles.length})
+    });
+
+    periodicReports[key] = {period_key: key, period_label: label, report_text: text, blogger_count: profiles.length};
+    prog.style.width = '100%';
+    statusEl.textContent = `✅ 分析完成，已保存`;
+    periodicShowReport(periodicReports[key]);
+    periodicLoadList(); // 刷新列表
+    btn.textContent = '✨ 重新分析';
+  } catch(e) {
+    statusEl.textContent = '❌ 分析失败：' + e.message;
+  }
+
+  periodicRunning = false;
+  btn.disabled = false;
+  setTimeout(() => { progWrap.style.display = 'none'; prog.style.width = '0'; }, 2000);
+}
+
+function periodicShowReport(data) {
+  const wrap = document.getElementById('period-report-wrap');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  const html = mdToHtml(data.report_text || '');
+  const time = data.created_at ? new Date(data.created_at).toLocaleString('zh-CN',{hour12:false}) : '';
+  // 存 key 和 label 到 wrap 上，供导入函数用
+  wrap.dataset.periodKey = data.period_key;
+  wrap.dataset.periodLabel = data.period_label || '';
+  wrap.innerHTML = `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:11px 18px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">📋 ${data.period_label||''}</span>
+        <span style="font-size:11px;color:var(--muted)">${data.blogger_count||0} 位博主 · ${time}</span>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="dup-btn dup-btn-mark" onclick="periodicExport('${data.period_key}')" style="font-size:12px">⬇ 导出</button>
+          <label class="dup-btn dup-btn-mark" style="font-size:12px;cursor:pointer">
+            📥 导入 <input type="file" accept=".md,.txt" style="display:none" onchange="periodicImport(event,this)">
+          </label>
+        </div>
+      </div>
+      <div style="padding:16px 18px;font-size:13px">${html}</div>
+    </div>`;
+}
+
+function periodicExport(key) {
+  const data = periodicReports[key];
+  if (!data) return;
+  const md = `# ${data.period_label} 建联分析报告
+
+分析博主：${data.blogger_count} 位
+
+---
+
+${data.report_text}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'}));
+  a.download = `${data.period_label}分析报告.md`;
+  a.click();
+}
+
+async function periodicImport(event, input) {
+  const wrap = document.getElementById('period-report-wrap');
+  const key   = wrap ? wrap.dataset.periodKey   : '';
+  const label = wrap ? wrap.dataset.periodLabel : '';
+  const file = event.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  // 去掉文件头部的标题行
+  const lines = text.split('\n');
+  const bodyLines = lines.filter((l,i) => !(i < 4 && (l.startsWith('#') || l.startsWith('分析博主') || l === '---')));
+  const reportText = bodyLines.join('\n').trim();
+
+  const statusEl = document.getElementById('period-status');
+  try {
+    await fetch(window.location.origin + '/api/reports/save', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({period_key: key, period_label: label, report_text: reportText, blogger_count: 0})
+    });
+    periodicReports[key] = {period_key: key, period_label: label, report_text: reportText, blogger_count: 0};
+    periodicShowReport(periodicReports[key]);
+    periodicLoadList();
+    if (statusEl) { statusEl.textContent = '✅ 导入成功'; statusEl.style.color = 'var(--green)'; }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '❌ 导入失败：' + e.message; statusEl.style.color = '#fca5a5'; }
+  }
+}
+
+
+// ── 🎯 建联排序 Tab ──
+let rankProfiles = [];  // 识别出的博主
+let rankResult = null;  // 排序结果
+
+async function renderRank() {
+  const el = document.getElementById('pane-rank');
+  el.innerHTML = `
+<div style="max-width:1000px">
+
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">🎯 建联优先级排序</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传博主主页截图，AI 结合历史建联数据，输出高/中/低优先级排序建议，自动保存到数据库</div>
+
+    <div id="rank-drop" onclick="document.getElementById('rank-input').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="rankHandleDrop(event)">
+      <div style="font-size:26px;margin-bottom:6px">🖼</div>
+      <div style="font-size:13px;color:var(--text);font-weight:500">点击或拖拽上传博主主页截图</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">支持多张，每张对应一位博主</div>
+    </div>
+    <input type="file" id="rank-input" accept="image/*" multiple style="display:none" onchange="rankHandleFiles(this.files)">
+    <div id="rank-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="dup-btn dup-btn-primary" id="rank-run-btn" onclick="rankRun()" style="flex:1" disabled>🎯 开始分析排序</button>
+      <button class="dup-btn dup-btn-mark" onclick="rankClear()">🗑 清空</button>
+    </div>
+  </div>
+
+  <div id="rank-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
+  <div id="rank-prog-wrap" style="height:3px;background:var(--surf2);border-radius:2px;margin:6px 0;display:none">
+    <div id="rank-prog" style="height:3px;background:var(--green);border-radius:2px;width:0;transition:width .3s"></div>
+  </div>
+
+  <!-- 历史记录列表 -->
+  <div id="rank-history" style="margin-bottom:14px"></div>
+
+  <!-- 排序结果看板 -->
+  <div id="rank-result" style="display:none"></div>
+</div>`;
+
+  if (rankProfiles.length && rankResult) rankShowResult();
+  rankLoadHistory();
+}
+
+async function rankLoadHistory() {
+  const el = document.getElementById('rank-history');
+  if (!el) return;
+  try {
+    const resp = await fetch(window.location.origin + '/api/rank/list');
+    const data = await resp.json();
+    if (!data || !data.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">历史排序记录（${data.length}次）：</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${data.map(r => {
+          const t = new Date(r.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+          return `<button onclick="rankLoadRecord('${r.report_key}')"
+            style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer">
+            📋 ${t}（${r.blogger_count}位）</button>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+async function rankLoadRecord(key) {
+  try {
+    const resp = await fetch(window.location.origin + '/api/rank/get?report_key=' + encodeURIComponent(key));
+    const data = await resp.json();
+    if (data && data.report_data) {
+      rankResult = data.report_data;
+      rankShowResult();
+    }
+  } catch(e) {}
+}
+
+let rankPendingFiles = [];
+
+function rankHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('rank-drop').style.borderColor = 'var(--border)';
+  rankHandleFiles(e.dataTransfer.files);
+}
+
+function rankHandleFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    rankPendingFiles.push(f);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const previews = document.getElementById('rank-previews');
+      if (!previews) return;
+      const idx = rankPendingFiles.length - 1;
+      const div = document.createElement('div');
+      div.id = 'rank-preview-' + idx;
+      div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+      div.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">
+        <button onclick="rankRemoveFile(${idx})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:4px;width:18px;height:18px;font-size:11px;cursor:pointer">×</button>`;
+      previews.appendChild(div);
+    };
+    reader.readAsDataURL(f);
+  }
+  const btn = document.getElementById('rank-run-btn');
+  if (btn) btn.disabled = rankPendingFiles.length === 0;
+}
+
+function rankRemoveFile(idx) {
+  rankPendingFiles.splice(idx, 1);
+  const el = document.getElementById('rank-preview-' + idx);
+  if (el) el.remove();
+  const btn = document.getElementById('rank-run-btn');
+  if (btn) btn.disabled = rankPendingFiles.length === 0;
+}
+
+async function rankRun() {
+  if (!rankPendingFiles.length) return;
+  const btn = document.getElementById('rank-run-btn');
+  btn.disabled = true;
+  const statusEl = document.getElementById('rank-status');
+  const progWrap = document.getElementById('rank-prog-wrap');
+  const prog = document.getElementById('rank-prog');
+  progWrap.style.display = 'block';
+
+  rankProfiles = [];
+
+  // Step 1: 把所有截图转成 base64
+  if (statusEl) statusEl.textContent = '处理截图中...';
+  const allB64s = [];
+  for (let i = 0; i < rankPendingFiles.length; i++) {
+    const f = rankPendingFiles[i];
+    const b64 = await new Promise(res => {
+      const img = new Image();
+      const url = URL.createObjectURL(f);
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        res(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+      };
+      img.src = url;
+    });
+    allB64s.push(b64);
+  }
+  prog.style.width = '30%';
+
+  // Step 2: 一次性发送所有截图，让AI识别并自动合并同一博主
+  if (statusEl) statusEl.textContent = `AI 识别 ${allB64s.length} 张截图，自动合并同一博主...`;
+  try {
+    const imgParts = allB64s.map(b64 => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } }));
+    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
+      body: JSON.stringify({
+        model: 'qwen-vl-plus', max_tokens: 2000,
+        messages: [{ role: 'user', content: [
+          ...imgParts,
+          { type: 'text', text: `以上是${allB64s.length}张截图，可能是博主主页截图或建联成功的聊天记录截图，可能有多张属于同一博主（头像相同即为同一人）。
+
+识别规则：
+- 如果是主页截图：读取页面上显示的博主昵称、粉丝数、简介等
+- 如果是聊天记录截图：只看屏幕左侧的消息（对方/博主发的），读取左侧气泡旁边的头像和昵称；忽略右侧消息（那是我自己发的）
+- 头像相同的多张截图属于同一博主，合并为一条
+
+严格按JSON数组返回，不要其他文字：
+[{"name":"博主昵称","account":"账号ID（如有）","followers":"粉丝数（如有，否则空）","content_type":"内容类型（如有，否则空）","platform":"平台（小红书/抖音/B站等）","bio":"简介或备注（如有）","merged_count":合并了几张截图}]` }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    const profiles = match ? JSON.parse(match[0]) : [];
+
+    for (const profile of profiles) {
+      const name = profile.name || '';
+      const existing = ALL_ROWS.filter(r =>
+        r.name && name && (r.name.includes(name) || name.includes(r.name))
+      );
+      profile._existing = existing;
+      profile._status = existing.length ? existing[existing.length-1].status : '未找到记录';
+      profile._followers_db = existing.length ? existing[existing.length-1].followers : null;
+      rankProfiles.push(profile);
+    }
+  } catch(e) {
+    rankProfiles.push({ name: '识别失败', error: e.message, _existing: [], _status: '未找到记录' });
+  }
+  prog.style.width = '50%';
+
+  // Step 2.5: 显示识别结果，让用户确认/删除
+  if (statusEl) statusEl.textContent = `✅ 识别完成，共 ${rankProfiles.length} 位博主，确认后点排序`;
+  prog.style.width = '55%';
+  rankShowPreview();
+  btn.disabled = false;
+  return; // 先停在这里，等用户确认
+}
+
+function rankShowPreview() {
+  const wrap = document.getElementById('rank-result');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+
+  const cards = rankProfiles.map((p, idx) => `
+    <div id="rank-card-${idx}" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${p.name||'未识别'} ${p.merged_count>1?'<span style="font-size:11px;color:var(--green);background:rgba(67,217,164,.1);padding:1px 6px;border-radius:4px">合并'+p.merged_count+'张</span>':''}</div>
+        <div style="font-size:12px;color:var(--muted)">${p.platform||''} · 粉丝：${p.followers||'未知'} · ${p.content_type||''}</div>
+        ${p.bio?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+p.bio+'</div>':''}
+        ${p.error?'<div style="font-size:11px;color:#fca5a5">⚠ '+p.error+'</div>':''}
+      </div>
+      <button onclick="rankDeleteProfile(${idx})" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;white-space:nowrap">🗑 删除</button>
+    </div>`).join('');
+
+  wrap.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">识别结果（共 ${rankProfiles.length} 位博主）— 确认无误后点排序</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${cards}</div>
+    <button class="dup-btn dup-btn-primary" onclick="rankDoSort()" style="width:100%;background:var(--green)">✨ 确认并生成优先级排序</button>`;
+}
+
+function rankDeleteProfile(idx) {
+  rankProfiles.splice(idx, 1);
+  rankShowPreview();
+}
+
+async function rankDoSort() {
+  const btn = document.getElementById('rank-run-btn');
+  if (btn) btn.disabled = true;
+  const statusEl = document.getElementById('rank-status');
+  const progWrap = document.getElementById('rank-prog-wrap');
+  const prog = document.getElementById('rank-prog');
+  if (progWrap) progWrap.style.display = 'block';
+
+  // Step 3: AI 综合排序
+  if (statusEl) statusEl.textContent = '✨ AI 综合分析，生成优先级排序...';
+  prog.style.width = '70%';
+
+  // 统计历史成功规律
+  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了');
+  const successFollowers = successRows.map(r => parseFloat(r.followers)||0).filter(v=>v>0);
+  const avgSuccess = successFollowers.length ? (successFollowers.reduce((a,b)=>a+b,0)/successFollowers.length).toFixed(1) : '未知';
+
+  const profileSummary = rankProfiles.map((p, i) =>
+    '博主'+(i+1)+'：'+p.name+'，粉丝：'+(p.followers||'未知')+'，内容类型：'+(p.content_type||'未知')+'，简介：'+(p.bio||'无')+'，历史状态：'+p._status
+  ).join('\n');
+
+  try {
+    const resp = await fetch(window.location.origin + '/api/analyze', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: `你是一位新媒体建联专家。以下是待建联博主的信息：
+
+${profileSummary}
+
+历史建联成功博主平均粉丝量：${avgSuccess}万，共${successRows.length}位成功案例。
+
+请根据博主特征和历史成功规律，将这些博主分为三个优先级，严格按以下JSON格式返回，不要其他文字：
+{
+  "high": [{"name":"博主名","reason":"建议理由（1-2句）"}],
+  "medium": [{"name":"博主名","reason":"建议理由（1-2句）"}],
+  "low": [{"name":"博主名","reason":"建议理由（1-2句）"}],
+  "strategy": "整体建联策略建议（2-3句）"
+}
+
+判断依据：粉丝量是否匹配、内容类型是否契合、是否有历史互动记录、建联成功率预估。`,
+        max_tokens: 1000
+      })
+    });
+    const data = await resp.json();
+    const text = data.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    rankResult = match ? JSON.parse(match[0]) : null;
+
+    prog.style.width = '100%';
+    if (statusEl) { statusEl.textContent = '✅ 排序完成，正在保存...'; statusEl.style.color = 'var(--green)'; }
+    rankShowResult();
+
+    // 保存到数据库
+    const reportKey = 'rank-' + Date.now();
+    try {
+      await fetch(window.location.origin + '/api/rank/save', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ report_key: reportKey, report_data: rankResult, blogger_count: rankProfiles.length })
+      });
+      if (statusEl) statusEl.textContent = '✅ 排序完成，已保存';
+      rankLoadHistory();
+    } catch(e) {
+      if (statusEl) statusEl.textContent = '✅ 排序完成（保存失败：' + e.message + '）';
+    }
+
+    rankPendingFiles = [];
+    const previews = document.getElementById('rank-previews');
+    if (previews) previews.innerHTML = '';
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '❌ 排序失败：' + e.message; statusEl.style.color = '#fca5a5'; }
+  }
+
+  btn.disabled = false;
+  setTimeout(() => { progWrap.style.display = 'none'; prog.style.width = '0'; }, 2000);
+}
+
+function rankShowResult() {
+  const wrap = document.getElementById('rank-result');
+  if (!wrap || !rankResult) return;
+  wrap.style.display = 'block';
+
+  const levels = [
+    { key: 'high',   label: '🔴 高优先级', color: '#ef4444', bg: 'rgba(239,68,68,.08)',   border: 'rgba(239,68,68,.3)',   hdr: 'rgba(239,68,68,.15)' },
+    { key: 'medium', label: '🟡 中优先级', color: '#f59e0b', bg: 'rgba(245,158,11,.08)',  border: 'rgba(245,158,11,.3)',  hdr: 'rgba(245,158,11,.15)' },
+    { key: 'low',    label: '🟢 低优先级', color: '#22c55e', bg: 'rgba(34,197,94,.08)',   border: 'rgba(34,197,94,.3)',   hdr: 'rgba(34,197,94,.15)' },
+  ];
+
+  // 三列看板
+  const cols = levels.map(lv => {
+    const items = (rankResult[lv.key] || []);
+    const cards = items.map(it => `
+      <div style="background:var(--surf);border:1px solid ${lv.border};border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${it.name}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">${it.reason}</div>
+      </div>`).join('');
+    return `
+      <div style="flex:1;min-width:200px">
+        <div style="background:${lv.hdr};border:1px solid ${lv.border};border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700;color:${lv.color}">${lv.label}</span>
+          <span style="font-size:11px;color:${lv.color};background:${lv.bg};padding:2px 8px;border-radius:4px">${items.length}位</span>
+        </div>
+        ${cards || '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">暂无</div>'}
+      </div>`;
+  }).join('');
+
+  const strategy = rankResult.strategy ? `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">📋 整体建联策略</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7">${rankResult.strategy}</div>
+    </div>` : '';
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">🎯 建联优先级排序结果</div>
+      <button class="dup-btn dup-btn-mark" onclick="rankExport()" style="font-size:12px">⬇ 导出</button>
+    </div>
+    ${strategy}
+    <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">${cols}</div>`;
+}
+
+function rankExport() {
+  if (!rankResult) return;
+  let md = '# 建联优先级排序报告\n\n';
+  if (rankResult.strategy) md += `## 整体策略
+${rankResult.strategy}
+
+`;
+  ['high','medium','low'].forEach(k => {
+    const label = k==='high'?'高优先级':k==='medium'?'中优先级':'低优先级';
+    const items = rankResult[k] || [];
+    if (items.length) {
+      md += `## ${label}
+`;
+      items.forEach(it => { md += '- **' + it.name + '**：' + it.reason + '\n'; });
+      md += '\n';
+    }
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'}));
+  a.download = '建联优先级排序.md'; a.click();
+}
+
+function rankClear() {
+  rankProfiles = []; rankResult = null;
+  rankPendingFiles = [];
+  rendered.delete('rank');
+  renderRank();
+  rendered.add('rank');
+}
+
 // ── 📸 截图识别 Tab ──
 let ocrRows = [];  // 已识别的博主数据
 
+
+// ── 💬 聊天截图话术提取 ──
+let chatScriptRows = []; // 存储提取的话术
+let chatScriptFiles = [];
+
+function renderChatScript() {
+  const el = document.getElementById('pane-ocr');
+  // We'll add a sub-tab inside OCR pane
+  renderOcrWithTabs('chat');
+}
+
+let ocrCurrentSubTab = 'blogger'; // 'blogger' or 'chat'
+
+function renderOcrWithTabs(subTab) {
+  if (subTab) ocrCurrentSubTab = subTab;
+  const el = document.getElementById('pane-ocr');
+  el.innerHTML = `
+<div style="max-width:860px">
+  <!-- Sub tabs -->
+  <div style="display:flex;gap:3px;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:3px;width:fit-content;margin-bottom:18px">
+    <button onclick="ocrSwitchSubTab('blogger',this)"
+      style="padding:6px 16px;border-radius:7px;border:none;cursor:pointer;font-size:13px;
+      background:${ocrCurrentSubTab==='blogger'?'var(--orange)':'transparent'};
+      color:${ocrCurrentSubTab==='blogger'?'#fff':'var(--muted)'}">
+      📸 博主主页识别
+    </button>
+    <button onclick="ocrSwitchSubTab('chat',this)"
+      style="padding:6px 16px;border-radius:7px;border:none;cursor:pointer;font-size:13px;
+      background:${ocrCurrentSubTab==='chat'?'var(--blue)':'transparent'};
+      color:${ocrCurrentSubTab==='chat'?'#fff':'var(--muted)'}">
+      💬 聊天话术提取
+    </button>
+  </div>
+  <div id="ocr-sub-blogger" style="display:${ocrCurrentSubTab==='blogger'?'block':'none'}"></div>
+  <div id="ocr-sub-chat" style="display:${ocrCurrentSubTab==='chat'?'block':'none'}"></div>
+</div>`;
+
+  renderOcrBloggerContent();
+  renderOcrChatContent();
+}
+
+function ocrSwitchSubTab(tab, btn) {
+  ocrCurrentSubTab = tab;
+  document.getElementById('ocr-sub-blogger').style.display = tab==='blogger'?'block':'none';
+  document.getElementById('ocr-sub-chat').style.display = tab==='chat'?'block':'none';
+  document.querySelectorAll('[onclick^="ocrSwitchSubTab"]').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.background = tab==='blogger'?'var(--orange)':'var(--blue)';
+  btn.style.color = '#fff';
+}
+
+function renderOcrBloggerContent() {
+  const el = document.getElementById('ocr-sub-blogger');
+  if (!el) return;
+  el.innerHTML = `
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px">📸 博主主页截图识别</div>
+    <div id="ocr-drop" onclick="document.getElementById('ocr-input').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="ocrHandleDrop(event)">
+      <div style="font-size:28px;margin-bottom:8px">🖼</div>
+      <div style="font-size:13px;color:var(--text);font-weight:500">点击或拖拽上传截图</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">支持 JPG、PNG，可同时上传多张</div>
+    </div>
+    <input type="file" id="ocr-input" accept="image/*" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+    <div id="ocr-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="dup-btn dup-btn-primary" id="ocr-run-btn" onclick="ocrRun()" style="flex:1" disabled>
+        🔍 开始识别
+      </button>
+      <button class="dup-btn dup-btn-mark" onclick="ocrClear()">🗑 清空</button>
+    </div>
+  </div>
+  <div id="ocr-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
+  <div id="ocr-table-wrap" style="display:none;background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">识别结果</span>
+      <span id="ocr-count" style="font-size:11px;color:var(--muted);background:var(--surf);padding:2px 8px;border-radius:4px"></span>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="dup-btn dup-btn-mark" onclick="ocrCheckDup()" style="font-size:12px">🔍 查重</button>
+        <button class="dup-btn dup-btn-mark" onclick="ocrExportCSV()" style="font-size:12px">⬇ 导出 CSV</button>
+        <button class="dup-btn dup-btn-mark" onclick="ocrCopyFeishu()" style="font-size:12px">📋 复制到飞书</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="ocr-table" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:var(--surf2)">
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">博主名</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">博主号</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">粉丝量</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">博主类型</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">博主链接</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">回复情况</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">跟进人</th>
+          <th style="padding:9px 14px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">操作</th>
+        </tr></thead>
+        <tbody id="ocr-tbody"></tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // restore existing ocrRows if any
+  if (ocrRows.length) ocrRenderTable();
+}
+
+function renderOcrChatContent() {
+  const el = document.getElementById('ocr-sub-chat');
+  if (!el) return;
+  el.innerHTML = `
+  <!-- 聊天话术提取 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">💬 聊天截图话术提取</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传与博主的聊天截图，AI 自动识别并提取有效话术，保存到话术库</div>
+    <div id="chat-drop" onclick="document.getElementById('chat-input').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="chatHandleDrop(event)">
+      <div style="font-size:28px;margin-bottom:8px">💬</div>
+      <div style="font-size:13px;color:var(--text);font-weight:500">点击或拖拽上传聊天截图</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">支持 JPG、PNG，可同时上传多张</div>
+    </div>
+    <input type="file" id="chat-input" accept="image/*" multiple style="display:none" onchange="chatHandleFiles(this.files)">
+    <div id="chat-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="dup-btn dup-btn-primary" id="chat-run-btn" onclick="chatRun()" style="flex:1;background:var(--blue)" disabled>
+        ✨ 提取话术
+      </button>
+      <button class="dup-btn dup-btn-mark" onclick="chatClear()">🗑 清空</button>
+    </div>
+  </div>
+  <div id="chat-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px"></div>
+
+  <!-- 话术结果 -->
+  <div id="chat-results-wrap" style="display:${chatScriptRows.length?'block':'none'}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">话术库 (${chatScriptRows.length}条)</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="chatExport()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer">⬇ 导出</button>
+        <button onclick="chatClearResults()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer">清空话术库</button>
+      </div>
+    </div>
+    <div id="chat-results-list" style="display:flex;flex-direction:column;gap:8px">
+      ${chatScriptRows.map((r,i) => renderChatScriptCard(r,i)).join('')}
+    </div>
+  </div>
+
+  <!-- 博主适配分析 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-top:14px">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">🎯 一键分析博主是否适配</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传博主主页截图，AI 结合历史成功案例判断是否适合建联</div>
+    <div id="compat-drop" onclick="document.getElementById('compat-input').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--green)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="compatHandleDrop(event)">
+      <div style="font-size:22px;margin-bottom:6px">🖼</div>
+      <div style="font-size:13px;color:var(--text)">点击或拖拽上传博主主页截图</div>
+    </div>
+    <input type="file" id="compat-input" accept="image/*" multiple style="display:none" onchange="compatHandleFiles(this.files)">
+    <div id="compat-previews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    <button class="dup-btn dup-btn-primary" id="compat-run-btn" onclick="compatRun()" style="margin-top:10px;width:100%;background:var(--green)" disabled>
+      🔍 分析适配度
+    </button>
+    <div id="compat-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px;margin-top:6px"></div>
+    <div id="compat-result" style="margin-top:10px"></div>
+  </div>
+
+  <!-- 推荐建联博主 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-top:14px">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">💡 根据画像推荐建联博主</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">基于历史成功建联数据，AI 推荐20个最适合建联的博主方向</div>
+    <button class="dup-btn dup-btn-primary" id="recommend-run-btn" onclick="recommendBloggers()" style="width:100%;background:var(--gold);color:#000">
+      ✨ 生成推荐建联博主
+    </button>
+    <div id="recommend-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px;margin-top:6px"></div>
+    <div id="recommend-result" style="margin-top:10px"></div>
+  </div>`;
+}
+
+function renderChatScriptCard(r, i) {
+  const tagColors = { '开场白':'var(--blue)', '拒绝处理':'var(--red)', '价值塑造':'var(--green)', '跟进':'var(--gold)', '成交':'var(--orange)', '其他':'var(--muted)' };
+  const color = tagColors[r.type] || 'var(--muted)';
+  return `
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${color}22;color:${color};border:1px solid ${color}44">${r.type||'其他'}</span>
+      <span style="font-size:11px;color:var(--muted)">${r.platform||''}</span>
+      <span style="font-size:11px;color:var(--muted)">${r.date||''}</span>
+      <button onclick="chatDeleteRow(${i})" style="margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px">🗑</button>
+    </div>
+    <div style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${r.script||''}</div>
+    ${r.note ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">💡 ${r.note}</div>` : ''}
+  </div>`;
+}
+
+let chatPendingFiles = [];
+
+function chatHandleDrop(event) {
+  event.preventDefault();
+  chatHandleFiles(event.dataTransfer.files);
+}
+
+function chatHandleFiles(files) {
+  Array.from(files).forEach((f, idx) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      chatPendingFiles.push({ file: f, b64: e.target.result.split(',')[1], name: f.name });
+      const previews = document.getElementById('chat-previews');
+      if (previews) {
+        const div = document.createElement('div');
+        div.style.cssText = 'position:relative;display:inline-block';
+        div.innerHTML = `<img src="${e.target.result}" style="width:70px;height:70px;object-fit:cover;border-radius:6px">
+          <button onclick="chatRemoveFile(${chatPendingFiles.length-1})" style="position:absolute;top:-4px;right:-4px;background:#ef4444;border:none;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px">×</button>`;
+        previews.appendChild(div);
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  const btn = document.getElementById('chat-run-btn');
+  if (btn) btn.disabled = chatPendingFiles.length === 0;
+}
+
+function chatRemoveFile(idx) {
+  chatPendingFiles.splice(idx, 1);
+  renderOcrChatContent();
+}
+
+async function chatRun() {
+  if (!chatPendingFiles.length) return;
+  const btn = document.getElementById('chat-run-btn');
+  if (btn) btn.disabled = true;
+  const statusEl = document.getElementById('chat-status');
+  if (statusEl) statusEl.textContent = '识别中，请稍候...';
+
+  const allB64s = chatPendingFiles.map(f => f.b64);
+
+  try {
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          ...allB64s.map(b64 => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } })),
+          { type: 'text', text: `以上是${allB64s.length}张与博主的聊天截图。请分析截图中我方（右侧气泡）的消息，提取有效的建联话术。
+按以下JSON数组格式返回，不要其他文字：
+[{"type":"话术类型(开场白/拒绝处理/价值塑造/跟进/成交/其他)","script":"具体话术内容，保持原文","platform":"平台(小红书/抖音/微信等)","note":"话术亮点或使用建议"}]
+每条话术单独一个对象。如果有多条有效话术，全部提取。` }
+        ]
+      }
+    ];
+
+    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
+      body: JSON.stringify({ model: 'qwen-vl-plus', max_tokens: 3000, messages })
+    });
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      const now = new Date().toLocaleDateString('zh-CN');
+      parsed.forEach(r => { r.date = now; chatScriptRows.push(r); });
+      await saveChatScripts();
+      // 保存话术到数据库
+      try {
+        await fetch(window.location.origin + '/api/tactics', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ tactics: parsed.map(t => ({
+            category: t.type || t.category || '其他',
+            content: t.script || t.content || '',
+            note: t.note || '',
+            source: t.platform || ''
+          }))})
+        });
+      } catch(e) { console.warn('话术保存失败:', e); }
+      if (statusEl) statusEl.textContent = `✅ 提取完成，新增 ${parsed.length} 条话术，已保存到话术库`;
+    } else {
+      if (statusEl) statusEl.textContent = '⚠️ 未能识别有效话术，请检查截图';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = '❌ 识别失败：' + e.message;
+  }
+
+  chatPendingFiles = [];
+  if (btn) btn.disabled = true;
+  renderOcrChatContent();
+}
+
+async function saveChatScripts() {
+  try {
+    localStorage.setItem('chat_scripts', JSON.stringify(chatScriptRows));
+  } catch(e) {}
+  // Also save to supabase if table exists
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/chat_scripts`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(chatScriptRows.map(r => ({ type: r.type, script: r.script, platform: r.platform, note: r.note, date: r.date })))
+    });
+  } catch(e) {}
+}
+
+async function loadChatScripts() {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/chat_scripts?order=id.desc&limit=200`, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    if (resp.ok) {
+      const rows = await resp.json();
+      if (rows && rows.length) { chatScriptRows = rows; return; }
+    }
+  } catch(e) {}
+  try {
+    const stored = localStorage.getItem('chat_scripts');
+    if (stored) chatScriptRows = JSON.parse(stored);
+  } catch(e) {}
+}
+
+function chatDeleteRow(idx) {
+  chatScriptRows.splice(idx, 1);
+  saveChatScripts();
+  renderOcrChatContent();
+}
+
+function chatClearResults() {
+  if (!confirm('确定清空所有话术？')) return;
+  chatScriptRows = [];
+  saveChatScripts();
+  renderOcrChatContent();
+}
+
+function chatExport() {
+  if (!chatScriptRows.length) return;
+  const header = '类型,话术内容,平台,建议,日期';
+  const rows = chatScriptRows.map(r =>
+    [r.type, r.script, r.platform, r.note, r.date].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')
+  );
+  const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = '话术库.csv'; a.click();
+}
+
+function chatClear() {
+  chatPendingFiles = [];
+  renderOcrChatContent();
+}
+
+// ── 博主适配分析 ──
+let compatPendingFiles = [];
+
+function compatHandleDrop(e) {
+  e.preventDefault();
+  compatHandleFiles(e.dataTransfer.files);
+}
+
+function compatHandleFiles(files) {
+  Array.from(files).forEach(f => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      compatPendingFiles.push({ b64: e.target.result.split(',')[1] });
+      const previews = document.getElementById('compat-previews');
+      if (previews) {
+        const div = document.createElement('div');
+        div.style.cssText = 'position:relative;display:inline-block';
+        div.innerHTML = `<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:6px">`;
+        previews.appendChild(div);
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  const btn = document.getElementById('compat-run-btn');
+  if (btn) btn.disabled = compatPendingFiles.length === 0;
+}
+
+async function compatRun() {
+  if (!compatPendingFiles.length) return;
+  const btn = document.getElementById('compat-run-btn');
+  const statusEl = document.getElementById('compat-status');
+  const resultEl = document.getElementById('compat-result');
+  btn.disabled = true;
+  if (statusEl) statusEl.textContent = 'AI 分析中，请稍候...';
+  if (resultEl) resultEl.innerHTML = '';
+
+  // 统计历史成功博主特征
+  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了');
+  const avgFollowers = successRows.length
+    ? (successRows.map(r => parseFloat(r.followers)||0).filter(v=>v>0).reduce((a,b)=>a+b,0) / successRows.length).toFixed(1)
+    : '未知';
+  const platforms = {};
+  successRows.forEach(r => { if(r.platform) platforms[r.platform] = (platforms[r.platform]||0)+1; });
+  const topPlatform = Object.entries(platforms).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`${p}(${c}位)`).join('、');
+
+  try {
+    const imgParts = compatPendingFiles.map(f => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + f.b64 } }));
+    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
+      body: JSON.stringify({
+        model: 'qwen-vl-plus', max_tokens: 1500,
+        messages: [{ role: 'user', content: [
+          ...imgParts,
+          { type: 'text', text: `以上是博主主页截图。请分析该博主是否适合宣传以下产品，结合历史建联成功数据给出判断。
+
+【产品信息：飞羽出书 FeatherPub AI】
+- 核心定位：AI一站式出书平台，依托国际人工智能科学院出版社资源
+- 拳头产品：16666元包含版号的实体书籍出版发行一站式解决方案
+- 目标用户：有人生故事、个人回忆录、知识积累想出版的人
+- 核心卖点：AI辅助写作，一天写完一本书，human in the loop全程参与
+- 适合宣传的博主类型：AI科技、知识分享、个人成长、中老年人群、有故事有经历的博主
+
+历史建联成功数据：
+- 总成功案例：${successRows.length}位
+- 平均粉丝量：${avgFollowers}万
+- 主要平台：${topPlatform || '暂无数据'}
+
+请严格按JSON格式返回，不要其他文字：
+{"name":"博主名","platform":"平台","followers":"粉丝数","content_type":"内容类型","compatibility_score":85,"compatibility_level":"高/中/低","reasons":["适配原因1","适配原因2"],"risks":["风险点1"],"suggestion":"建联建议（1-2句）","opening":"推荐开场白话术（结合飞羽出书产品特点）"}` }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    const result = match ? JSON.parse(match[0]) : null;
+
+    if (result) {
+      const levelColor = result.compatibility_level === '高' ? 'var(--green)' : result.compatibility_level === '中' ? 'var(--gold)' : 'var(--red)';
+      const score = result.compatibility_score || 0;
+      resultEl.innerHTML = `
+        <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="text-align:center;background:${levelColor}22;border:2px solid ${levelColor};border-radius:10px;padding:10px 16px">
+              <div style="font-size:24px;font-weight:800;color:${levelColor}">${score}</div>
+              <div style="font-size:11px;color:${levelColor}">适配度</div>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--text)">${result.name||'—'}</div>
+              <div style="font-size:12px;color:var(--muted)">${result.platform||''} · ${result.followers||'—'} · ${result.content_type||'—'}</div>
+              <div style="font-size:13px;font-weight:600;color:${levelColor};margin-top:4px">${result.compatibility_level||'—'}适配度</div>
+            </div>
+          </div>
+          ${result.reasons?.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:5px">✅ 适配原因</div>${result.reasons.map(r=>`<div style="font-size:12px;color:var(--text);padding:4px 0">▸ ${r}</div>`).join('')}</div>` : ''}
+          ${result.risks?.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:5px">⚠️ 风险点</div>${result.risks.map(r=>`<div style="font-size:12px;color:var(--gold);padding:4px 0">▸ ${r}</div>`).join('')}</div>` : ''}
+          ${result.suggestion ? `<div style="margin-bottom:10px;font-size:13px;color:var(--text);background:var(--surf);border-radius:8px;padding:10px">💡 ${result.suggestion}</div>` : ''}
+          ${result.opening ? `<div style="font-size:12px;color:var(--muted);margin-bottom:5px">推荐开场白：</div><div style="font-size:13px;color:var(--blue);background:rgba(91,127,255,.1);border-radius:8px;padding:10px;white-space:pre-wrap">${result.opening}</div>` : ''}
+        </div>`;
+      if (statusEl) statusEl.textContent = '✅ 分析完成';
+    } else {
+      if (statusEl) statusEl.textContent = '⚠️ 分析失败，请重试';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = '❌ 错误：' + e.message;
+  }
+
+  compatPendingFiles = [];
+  btn.disabled = false;
+}
+
+// ── 推荐建联博主 ──
+async function recommendBloggers() {
+  const btn = document.getElementById('recommend-run-btn');
+  const statusEl = document.getElementById('recommend-status');
+  const resultEl = document.getElementById('recommend-result');
+  btn.disabled = true;
+  if (statusEl) { statusEl.textContent = 'AI 分析历史数据，生成推荐...'; statusEl.style.color = 'var(--muted)'; }
+  if (resultEl) resultEl.innerHTML = '';
+
+  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了');
+  if (!successRows.length) {
+    if (statusEl) statusEl.textContent = '⚠️ 暂无建联成功数据，无法生成推荐';
+    btn.disabled = false;
+    return;
+  }
+
+  const summary = successRows.slice(0, 50).map(r =>
+    `博主名:${r.name},平台:${r.platform||'未知'},粉丝:${r.followers||'未知'}万,类型:${r.blogger_type||'未知'}`
+  ).join('\n');
+
+  try {
+    const resp = await fetch(window.location.origin + '/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: `以下是我们团队建联成功的博主数据（共${successRows.length}位）：\n\n${summary}\n\n基于以上成功案例的规律，请推荐20个最适合建联的博主方向/类型。\n\n严格按JSON数组返回，不要其他文字：\n[{"rank":1,"type":"博主类型/方向","platform":"平台","followers_range":"粉丝量区间","reason":"推荐原因（1句话）","approach":"建联切入点（1句话）"}]`,
+        max_tokens: 2000
+      })
+    });
+    const data = await resp.json();
+    const text = data.text || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    const list = match ? JSON.parse(match[0]) : null;
+
+    if (list && list.length) {
+      resultEl.innerHTML = `
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">基于 ${successRows.length} 位历史成功案例，推荐以下建联方向：</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">
+          ${list.map(item => `
+            <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="font-size:11px;font-weight:700;color:var(--muted);background:var(--surf);padding:2px 7px;border-radius:4px">#${item.rank}</span>
+                <span style="font-size:13px;font-weight:600;color:var(--text)">${item.type}</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${item.platform||''} · ${item.followers_range||''}</div>
+              <div style="font-size:12px;color:var(--green);margin-bottom:4px">▸ ${item.reason||''}</div>
+              <div style="font-size:11px;color:var(--blue)">💬 ${item.approach||''}</div>
+            </div>`).join('')}
+        </div>`;
+      if (statusEl) { statusEl.textContent = `✅ 已生成 ${list.length} 条推荐`; statusEl.style.color = 'var(--green)'; }
+    } else {
+      if (statusEl) { statusEl.textContent = '⚠️ 生成失败，请重试'; statusEl.style.color = '#fca5a5'; }
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '❌ 错误：' + e.message; statusEl.style.color = '#fca5a5'; }
+  }
+  btn.disabled = false;
+}
+
 function renderOcr() {
+  renderOcrWithTabs();
+}
+
+function renderOcr_original() {
   const el = document.getElementById('pane-ocr');
   el.innerHTML = `
 <div style="max-width:860px">
@@ -1747,6 +3021,152 @@ function renderGuide() {
   const el = document.getElementById("pane-guide");
   el.innerHTML = `
   <div class="card anim" style="margin-bottom:14px">
+    <div class="card-title"><div class="dot" style="background:var(--blue)"></div>📖 完整使用说明</div>
+    <div style="color:var(--muted2);font-size:14px;line-height:2">
+
+      <div style="background:var(--surf2);border-radius:10px;padding:14px 18px;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🌐 看板地址</div>
+        <div style="font-family:monospace;color:var(--blue);font-size:14px">https://gummy-tracker.top</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">无需安装任何软件，直接用手机或电脑浏览器打开即可，国内可正常访问</div>
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:16px 0 8px">一、系统概览</div>
+      <div>本看板是飞羽出书团队专用的博主建联管理系统，解决数据分散、进度不透明、考评缺乏依据三大问题。数据流向为：<b style="color:var(--text)">飞书电子表格 → 每日自动同步 → Supabase数据库 → 本看板实时展示</b>。右上角显示最后同步时间，每天09:00自动同步一次。</div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">二、各功能模块详解</div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📊 总览</div>
+        <div>展示团队整体建联数据，包括今日录入博主数、引导成功数、已联系数、有效回复率。支持按<b style="color:var(--text)">全部历史 / 今天 / 本周 / 本月</b>四个维度切换查看。下方有今日状态分布饼图和平台分布图，以及本周汇总数据。</div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--orange);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">👥 跟进人</div>
+        <div>按跟进人统计各自的建联数据，包括录入总量、已联系数、建联成功数、转化率和本周工作量。数据实时更新，管理员可以直观看到每位成员的工作进度。</div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📋 博主列表</div>
+        <div>展示所有博主的完整数据，每条记录包含博主名、平台、粉丝量、回复状态、跟进人、录入日期等信息。点击"主页↗"可直接跳转到博主主页。支持按跟进人和状态筛选，方便查找特定博主。</div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🔔 回访</div>
+        <div>自动筛选需要跟进的博主：<b style="color:var(--text)">2天无回复</b>的博主列入"待二次回访"，<b style="color:var(--text)">4天无回复</b>的博主列入"建议放弃"。回访成功后直接在飞书表格修改状态为"引导到私域了"，下次同步后自动更新。</div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📈 趋势</div>
+        <div>可视化展示近期每日建联成功数和建联系数的折线图，帮助管理层了解团队整体趋势，发现异常波动。</div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid var(--purple, #a855f7);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📅 数据分析</div>
+        <div>
+          按阶段分析建联成功博主的特征，为下一阶段建联方向提供依据。<br><br>
+          <b style="color:var(--text)">使用步骤：</b><br>
+          1. 在下拉菜单选择时间段（支持整月或月内4个阶段：1-7日、8-14日、15-21日、22日-月底）<br>
+          2. 点击"开始分析"，系统自动搜索该时间段内成功博主信息<br>
+          3. AI生成包含"成功博主画像"和"建联方向建议"的完整报告<br>
+          4. 报告自动保存到数据库，下拉菜单中已分析过的时间段会显示✅标记<br>
+          5. 点击下方绿色快捷按钮可直接查看历史报告，支持导出Markdown<br><br>
+          <span style="color:var(--danger)">⚠️ 同一时间段已有报告时按钮变为"重新分析"，不会重复消耗额度</span>
+        </div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎯 建联排序</div>
+        <div>
+          上传建联成功的截图（主页截图或聊天记录截图均可），AI自动识别博主信息并给出优先级排序。<br><br>
+          <b style="color:var(--text)">使用步骤：</b><br>
+          1. 点击上传区域或拖拽图片，支持同时上传多张截图<br>
+          2. 同一博主的多张截图（头像相同）会自动合并为一条<br>
+          3. AI识别完毕后先展示结果，可以点击"🗑 删除"去掉识别错误的条目<br>
+          4. 确认无误后点击"确认并生成优先级排序"<br>
+          5. 结果以三列看板展示：🔴高优先级 / 🟡中优先级 / 🟢低优先级，每位博主附上具体建议理由<br>
+          6. 结果自动保存，历史记录可随时查看，支持导出Markdown<br><br>
+          <b style="color:var(--text)">注意事项：</b><br>
+          · 上传聊天记录截图时，AI只看左边（博主发的消息），不会把你自己识别进去<br>
+          · 建议上传博主的主页截图，识别准确率更高<br>
+          · 如果截图太长分成了多部分，全部一起上传，AI会自动合并
+        </div>
+      </div>
+
+      <div style="background:var(--surf2);border-left:3px solid #ec4899;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📸 截图识别</div>
+        <div>
+          上传博主主页截图，AI自动识别并整理成表格，省去手动录入的时间。<br><br>
+          <b style="color:var(--text)">可识别字段：</b>博主名、博主号、粉丝量、博主类型、主页链接<br><br>
+          <b style="color:var(--text)">使用步骤：</b><br>
+          1. 上传截图（支持多张同时上传）<br>
+          2. 点击"开始识别"，逐张识别<br>
+          3. 识别完成后在表格中填写"跟进人"和"回复情况"<br>
+          4. 点击列标题旁的⎘按钮可单独复制该列数据<br>
+          5. 点击"🔍 查重"检查是否与已有博主重复（重复的标红显示）<br>
+          6. 点击"⬇ 导出CSV"或"📋 复制到飞书"导出数据<br><br>
+          <span style="color:var(--danger)">⚠️ 识别结果需人工核对，可直接在表格中点击单元格修改</span>
+        </div>
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">三、飞书表格录入规范</div>
+
+      <div style="margin-bottom:12px"><b style="color:var(--text)">表格列说明：</b></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
+        ${[["A列","数量（自动编号）"],["B列","博主链接（必填）"],["C列","回复情况（必填，见下方状态说明）"],["D列","博主名（必填）"],["E列","粉丝量（万为单位，如19.4）"],["F列","博主号（抖音号/小红书号等）"],["G列","跟进人（自动填充）"],["H列","查重结果（系统自动写入）"],["I列","质量评分（管理员填写，满分100）"],["J列","备注"],["K列","博主类型"]].map(([col,desc])=>`
+        <div style="background:var(--surf2);border-radius:6px;padding:8px 12px;display:flex;gap:8px">
+          <span style="color:var(--blue);font-weight:700;white-space:nowrap">${col}</span>
+          <span style="color:var(--muted2);font-size:13px">${desc}</span>
+        </div>`).join("")}
+      </div>
+
+      <div style="margin-bottom:8px"><b style="color:var(--text)">回复情况状态说明：</b></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px">
+        ${[["抖音私信建联","已发送抖音私信"],["小红书私信建联","已发送小红书私信"],["微信建联","已加微信"],["引导到私域了","建联成功✅"],["拒绝","博主明确拒绝"],["需要且未二次回访","需跟进未跟进"],["无需二次回访","无需再联系"],["二次回访成功","二次建联成功✅"],["二次回访无果","二次建联失败"]].map(([s,d])=>`
+        <div style="background:var(--surf2);border-radius:6px;padding:7px 12px">
+          <span style="color:var(--text);font-size:13px;font-weight:500">${s}</span>
+          <span style="color:var(--muted);font-size:12px;margin-left:6px">${d}</span>
+        </div>`).join("")}
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">四、新同学操作指南</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        ${[
+          ["第一步","打开飞书表格，找到今天日期的工作表（格式：月.日，如 6.7）"],
+          ["第二步","在自己负责的区块录入博主信息，B列填链接、C列选回复情况、D列填博主名、E列填粉丝数"],
+          ["第三步","录入前先检查D列有没有变红，变红说明和其他工作表重复了，需要删除"],
+          ["第四步","每天21:00系统自动查重，H列会写入【已重复】，请在0:00前完成修正"],
+          ["第五步","0:00后表格锁定，次日09:00日报推送后解锁，请提前完成录入"]
+        ].map(([step,desc])=>`
+        <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surf2);border-radius:8px;padding:10px 14px">
+          <span style="background:var(--blue);color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap">${step}</span>
+          <span style="color:var(--muted2);font-size:13px;line-height:1.6">${desc}</span>
+        </div>`).join("")}
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">五、常见问题</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        ${[
+          ["看板数据和飞书表格不一致？","右上角查看最后同步时间，每天09:00自动同步。如需立即更新，联系管理员手动触发。"],
+          ["截图识别结果不准确？","可直接点击表格单元格修改。建议使用博主主页截图，效果最好。"],
+          ["建联排序识别到我自己？","说明截图里有你自己的聊天内容，识别完用🗑删除按钮删掉即可。"],
+          ["数据分析很慢？","每位博主需单独搜索，30位约需3-5分钟，请耐心等待不要关闭页面。"],
+          ["报告怎么查看历史记录？","数据分析Tab底部有绿色按钮，点击可切换查看任意历史报告。建联排序Tab也有历史记录列表。"],
+          ["日报没收到？","请确认当天飞书表格有录入数据。如没有数据，系统会跳过推送。"],
+          ["手机能用吗？","可以，直接用手机浏览器打开 gummy-tracker.top 即可，功能完整。"]
+        ].map(([q,a])=>`
+        <div style="background:var(--surf2);border-radius:8px;padding:12px 16px">
+          <div style="color:var(--text);font-weight:600;font-size:13px;margin-bottom:4px">Q：${q}</div>
+          <div style="color:var(--muted2);font-size:13px;line-height:1.6">A：${a}</div>
+        </div>`).join("")}
+      </div>
+
+      <div style="text-align:center;padding:16px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);margin-top:8px">
+        如需功能调整或遇到问题，请联系系统负责人 · 看板地址：gummy-tracker.top
+      </div>
+    </div>
+  </div>
+
+  <div class="card anim" style="margin-bottom:14px">
     <div class="card-title"><div class="dot" style="background:var(--blue)"></div>系统简介</div>
     <div style="color:var(--muted2);font-size:14px;line-height:2">
       本系统为飞羽出书团队定制，解决博主建联工作中数据分散、进度不透明、考评缺乏依据三大问题。<br>
@@ -2051,20 +3471,16 @@ async function genFileSummary() {
   btn.textContent = "生成中...";
   statusEl.textContent = "";
   try {
-    const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    const resp = await fetch(window.location.origin + "/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer sk-78a6a00bf38c48dab8b94303f2bae165" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "deepseek-chat",
-        max_tokens: 1500,
-        messages: [{
-          role: "user",
-          content: "请将以下内容总结为约" + wordLen + "字的摘要，保留核心要点，语言简洁清晰：\n\n" + content.slice(0, 8000)
-        }]
+        prompt: "请将以下内容总结为约" + wordLen + "字的摘要，保留核心要点，语言简洁清晰：\n\n" + content.slice(0, 8000),
+        max_tokens: 1500
       })
     });
     const data = await resp.json();
-    const summary = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    const summary = data.text;
     if (summary) {
       document.getElementById("kb-content").value = summary;
       statusEl.textContent = "✓ 摘要生成完成（" + summary.length + "字）";
@@ -2107,20 +3523,16 @@ async function askAI() {
 
     const systemPrompt = "你是博主建联管理系统的智能助手，只根据以下提供的材料回答问题。如果问题超出材料范围，回复\"这个问题超出我的知识范围，请询问管理员\"。回答简洁明了，100字以内。\n\n【知识库材料】\n" + kbContext;
 
-    const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    const resp = await fetch(window.location.origin + "/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer sk-78a6a00bf38c48dab8b94303f2bae165" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "deepseek-chat",
-        max_tokens: 300,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: q }
-        ]
+        prompt: systemPrompt + "\n\n用户问题：" + q,
+        max_tokens: 300
       })
     });
     const data = await resp.json();
-    const answer = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "抱歉，暂时无法回答，请询问管理员";
+    const answer = data.text || "抱歉，暂时无法回答，请询问管理员";
     loadDiv.textContent = answer;
     loadDiv.style.color = "var(--text)";
   } catch(e) {
@@ -2129,16 +3541,582 @@ async function askAI() {
   history.scrollTop = history.scrollHeight;
 }
 
+
+// ── 管理员模式 ──
+const ADMIN_PASSWORD = "AIzn886633";
+let isAdmin = false;
+
+function checkAdmin() {
+  const stored = sessionStorage.getItem('admin_auth');
+  if (stored === ADMIN_PASSWORD) { isAdmin = true; return true; }
+  return false;
+}
+
+function promptAdmin() {
+  const pw = prompt("请输入管理员密码：");
+  if (pw === ADMIN_PASSWORD) {
+    sessionStorage.setItem('admin_auth', ADMIN_PASSWORD);
+    isAdmin = true;
+    return true;
+  }
+  alert("密码错误");
+  return false;
+}
+
+function toggleAdmin() {
+  if (isAdmin) {
+    isAdmin = false;
+    sessionStorage.removeItem('admin_auth');
+    document.getElementById('admin-btn').textContent = '🔒 管理员登录';
+    document.getElementById('admin-btn').style.color = 'var(--muted)';
+    rendered.delete('checkin');
+    if (document.getElementById('pane-checkin').style.display !== 'none') { renderCheckin(); rendered.add('checkin'); }
+  } else {
+    if (promptAdmin()) {
+      document.getElementById('admin-btn').textContent = '🔓 管理员模式';
+      document.getElementById('admin-btn').style.color = 'var(--green)';
+      rendered.delete('checkin');
+      if (document.getElementById('pane-checkin').style.display !== 'none') { renderCheckin(); rendered.add('checkin'); }
+    }
+  }
+}
+
+// ── 签到数据存储 (Supabase) ──
+const CHECKIN_TABLE = 'checkins';
+
+// 签到人员配置
+const CHECKIN_MEMBERS = [
+  { name: '杜承睿', requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '崔靖',   requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '卢泳琦', requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '李可',   requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '许家铭', requireChat: false, requireBlogger: false, requireReview: true },
+  { name: '汉强生', requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '刘焱',   requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '寇诺琪', requireChat: true, requireBlogger: true, requireReview: true },
+  { name: '谢家顺', requireChat: true, requireBlogger: true, requireReview: true },
+];
+
+let checkinData = {}; // { 'YYYY-MM-DD': { '杜承睿': { chat:[], blogger:[], review:[], submitted: bool } } }
+let checkinCurrentDate = new Date().toISOString().slice(0,10);
+let checkinUploading = null; // { member, type }
+
+async function loadCheckinData() {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+    const url = `${window.location.origin}/api/checkins`;
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    checkinData = {};
+    rows.forEach(r => {
+      if (!checkinData[r.checkin_date]) checkinData[r.checkin_date] = {};
+      checkinData[r.checkin_date][r.member_name] = {
+        id: r.id,
+        chat: r.chat_images || [],
+        blogger: r.blogger_images || [],
+        review: r.review_images || [],
+        submitted: r.submitted || false
+      };
+    });
+  } catch(e) { console.error('loadCheckinData error', e); }
+}
+
+async function saveCheckinRecord(memberName, date) {
+  const rec = (checkinData[date] || {})[memberName];
+  if (!rec) return;
+  const payload = {
+    member_name: memberName,
+    checkin_date: date,
+    chat_images: rec.chat,
+    blogger_images: rec.blogger,
+    review_images: rec.review,
+    submitted: rec.submitted || false
+  };
+  try {
+    if (rec.id) {
+      await fetch(`${window.location.origin}/api/checkins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      const r = await fetch(`${window.location.origin}/api/checkins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      if (data && data[0] && data[0].id) {
+        if (!checkinData[date]) checkinData[date] = {};
+        if (!checkinData[date][memberName]) checkinData[date][memberName] = { chat:[], blogger:[], review:[], submitted: false };
+        checkinData[date][memberName].id = data[0].id;
+      }
+    }
+  } catch(e) { console.error('saveCheckinRecord error', e); }
+}
+
+// 图片上传到 Supabase Storage (base64 存储，强压缩)
+async function uploadCheckinImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 400; // 最大400px
+      let w = img.width, h = img.height;
+      if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+      else { w = Math.round(w * MAX / h); h = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.5)); // quality 0.5
+    };
+    img.src = url;
+  });
+}
+
+// 导出当天所有截图为 zip
+async function checkinExportZip(date) {
+  const dayData = checkinData[date] || {};
+  const typeLabels = { chat: '聊天截图', blogger: '建联记录', review: '复盘截图' };
+
+  // 检查有没有截图
+  let totalImgs = 0;
+  CHECKIN_MEMBERS.forEach(m => {
+    const rec = dayData[m.name] || {};
+    ['chat','blogger','review'].forEach(t => { totalImgs += (rec[t]||[]).length; });
+  });
+
+  if (!totalImgs) {
+    alert(`${date} 暂无截图可导出`);
+    return;
+  }
+
+  const zip = new JSZip();
+  const folder = zip.folder(date);
+
+  CHECKIN_MEMBERS.forEach(m => {
+    const rec = dayData[m.name] || {};
+    ['chat','blogger','review'].forEach(type => {
+      const imgs = rec[type] || [];
+      imgs.forEach((dataUrl, i) => {
+        // dataUrl: data:image/jpeg;base64,xxx
+        const base64 = dataUrl.split(',')[1];
+        const filename = `${m.name}_${typeLabels[type]}_${i+1}.jpg`;
+        folder.file(filename, base64, { base64: true });
+      });
+    });
+  });
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `打卡截图_${date}.zip`;
+  a.click();
+}
+
+// 清理30天前的截图（保留记录状态，只清空图片）
+async function cleanupOldCheckinImages() {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffStr = cutoff.toISOString().slice(0,10);
+    const url = `${SUPABASE_URL}/rest/v1/${CHECKIN_TABLE}?checkin_date=lt.${cutoffStr}`;
+    const resp = await fetch(url, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    const toClean = rows.filter(r =>
+      (r.chat_images && r.chat_images.length) ||
+      (r.blogger_images && r.blogger_images.length) ||
+      (r.review_images && r.review_images.length)
+    );
+    for (const row of toClean) {
+      await fetch(`${SUPABASE_URL}/rest/v1/${CHECKIN_TABLE}?id=eq.${row.id}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_images: [], blogger_images: [], review_images: [] })
+      });
+    }
+    if (toClean.length) console.log(`清理了 ${toClean.length} 条旧截图`);
+  } catch(e) { console.error('cleanupOldCheckinImages error', e); }
+}
+
+function getCheckinRec(member, date) {
+  if (!checkinData[date]) checkinData[date] = {};
+  if (!checkinData[date][member]) checkinData[date][member] = { chat:[], blogger:[], review:[], submitted: false };
+  return checkinData[date][member];
+}
+
+function checkinStatusIcon(member, date) {
+  const cfg = CHECKIN_MEMBERS.find(m => m.name === member);
+  const rec = (checkinData[date] || {})[member] || {};
+  const today = new Date().toISOString().slice(0,10);
+
+  // 许家铭全算
+  if (member === '许家铭') return '✅';
+
+  // 今天之前：只要飞书表格里当天有该成员的数据就算打卡成功
+  if (date < today) {
+    const normalize = s => (s||'').trim().replace(/\s+/g,'');
+    const hasFeishuData = ALL_ROWS.some(r =>
+      r.record_date === date && normalize(r.owner) === normalize(member)
+    );
+    if (hasFeishuData) return '✅';
+    return '❌';
+  }
+
+  // 今天及以后：需要截图
+  const chatOk = !cfg.requireChat || (rec.chat && rec.chat.length > 0);
+  const bloggerOk = !cfg.requireBlogger || (rec.blogger && rec.blogger.length > 0);
+  const reviewOk = !cfg.requireReview || (rec.review && rec.review.length > 0);
+  if (chatOk && bloggerOk && reviewOk) return '✅';
+  if ((rec.chat && rec.chat.length) || (rec.blogger && rec.blogger.length) || (rec.review && rec.review.length)) return '⚠️';
+  return '❌';
+}
+
+let checkinCurrentMember = null; // 当前登录的成员
+
+function renderCheckin() {
+  const el = document.getElementById('pane-checkin');
+  const dates = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+
+  // 未选择身份时，先显示选择界面
+  if (!isAdmin && !checkinCurrentMember) {
+    el.innerHTML = `
+<div style="max-width:500px;margin:0 auto;padding-top:40px">
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center">
+    <div style="font-size:28px;margin-bottom:12px">👋</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">请选择你是谁</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px">选择后只能查看和上传自己的打卡截图</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${CHECKIN_MEMBERS.map(m => `
+        <button onclick="checkinSelectMember('${m.name}')"
+          style="padding:12px 8px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s"
+          onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+          ${m.name}
+        </button>`).join('')}
+    </div>
+  </div>
+</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+<div style="max-width:1000px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text)">✅ 每日签到</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">上传打卡截图记录每日工作情况</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      ${isAdmin ? '<span style="font-size:12px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:4px 10px;border-radius:6px">🔓 管理员模式</span>' : `<span style="font-size:12px;color:var(--blue);background:rgba(91,127,255,.1);border:1px solid rgba(91,127,255,.25);padding:4px 10px;border-radius:6px">👤 ${checkinCurrentMember}</span>`}
+      ${!isAdmin ? `<button onclick="checkinCurrentMember=null;rendered.delete('checkin');renderCheckin();rendered.add('checkin')" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">切换</button>` : ''}
+      ${isAdmin ? `<button onclick="checkinExportZip('${checkinCurrentDate}')" style="background:var(--blue);border:none;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">⬇ 导出截图</button>` : ''}
+      <button onclick="checkinRefresh()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
+    </div>
+  </div>
+
+  <!-- 日期选择 -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+    ${dates.map(d => {
+      const label = d === dates[0] ? '今天' : d === dates[1] ? '昨天' : d.slice(5).replace('-','/');
+      return `<button onclick="checkinSelectDate('${d}',this)"
+        style="font-size:12px;padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+        background:${d===checkinCurrentDate?'var(--blue)':'transparent'};
+        color:${d===checkinCurrentDate?'#fff':'var(--muted)'};cursor:pointer">${label}</button>`;
+    }).join('')}
+  </div>
+
+  <div id="checkin-date-label" style="font-size:13px;color:var(--muted);margin-bottom:14px">
+    📅 ${checkinCurrentDate}
+  </div>
+
+  <!-- 成员签到卡片 -->
+  <div id="checkin-members-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+    ${CHECKIN_MEMBERS.map(m => renderCheckinMemberCard(m, checkinCurrentDate)).join('')}
+  </div>
+</div>`;
+}
+
+function checkinSelectMember(name) {
+  checkinCurrentMember = name;
+  rendered.delete('checkin');
+  renderCheckin();
+  rendered.add('checkin');
+}
+
+function renderCheckinMemberCard(memberCfg, date) {
+  const m = memberCfg.name;
+  const rec = getCheckinRec(m, date);
+  const icon = checkinStatusIcon(m, date);
+  const isXjm = m === '许家铭';
+
+  const canUploadThis = isAdmin || checkinCurrentMember === m;
+  const canViewImages = isAdmin;
+
+  const uploadBtn = (type, label, images) => {
+    const imgCount = images.length;
+    return `
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${label} (${imgCount}张${imgCount>0?canViewImages?' · 点击查看':'':' · 待上传'})</div>
+      ${canViewImages ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
+        ${images.map((img, i) => `
+          <div style="position:relative">
+            <img src="${img}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="checkinViewImg('${img}')">
+            <button onclick="checkinDeleteImg('${m}','${type}',${i},'${date}')" style="position:absolute;top:-4px;right:-4px;background:#ef4444;border:none;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:16px">×</button>
+          </div>`).join('')}
+      </div>` : imgCount > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
+        ${images.map(() => `<div style="width:48px;height:48px;background:var(--surf2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px">🖼</div>`).join('')}
+      </div>` : ''}
+      ${canUploadThis ? `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);cursor:pointer;border:1px dashed var(--blue);border-radius:6px;padding:4px 10px">
+        <input type="file" accept="image/*" multiple style="display:none" onchange="checkinHandleUpload(event,'${m}','${type}','${date}')">
+        + 上传截图
+      </label>` : ''}
+    </div>`;
+  };
+
+  return `
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">${m}</div>
+      <span style="font-size:18px">${icon}</span>
+    </div>
+    ${isXjm ? `
+      ${uploadBtn('review', '📋 复盘截图', rec.review)}
+    ` : `
+      ${memberCfg.requireChat ? uploadBtn('chat', '💬 聊天截图', rec.chat) : ''}
+      ${memberCfg.requireBlogger ? uploadBtn('blogger', '🔗 建联记录', rec.blogger) : ''}
+      ${memberCfg.requireReview ? uploadBtn('review', '📋 复盘截图', rec.review) : ''}
+    `}
+    <div id="ci-save-status-${m}" style="font-size:11px;color:var(--green);min-height:14px"></div>
+  </div>`;
+}
+
+async function checkinHandleUpload(event, member, type, date) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  const statusEl = document.getElementById(`ci-save-status-${member}`);
+  if (statusEl) statusEl.textContent = '上传中...';
+  const rec = getCheckinRec(member, date);
+  for (const file of files) {
+    const dataUrl = await uploadCheckinImage(file);
+    rec[type].push(dataUrl);
+  }
+  await saveCheckinRecord(member, date);
+  if (statusEl) { statusEl.textContent = '✅ 已保存'; setTimeout(() => { if(statusEl) statusEl.textContent=''; }, 2000); }
+  // re-render just this member's card
+  rendered.delete('checkin');
+  renderCheckin();
+  rendered.add('checkin');
+}
+
+async function checkinDeleteImg(member, type, idx, date) {
+  if (!isAdmin) return;
+  const rec = getCheckinRec(member, date);
+  rec[type].splice(idx, 1);
+  await saveCheckinRecord(member, date);
+  rendered.delete('checkin');
+  renderCheckin();
+  rendered.add('checkin');
+}
+
+function checkinViewImg(src) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.onclick = () => overlay.remove();
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px';
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
+}
+
+function checkinSelectDate(date, btn) {
+  checkinCurrentDate = date;
+  document.querySelectorAll('[onclick^="checkinSelectDate"]').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.background = 'var(--blue)';
+  btn.style.color = '#fff';
+  rendered.delete('checkin');
+  renderCheckin();
+  rendered.add('checkin');
+}
+
+async function checkinRefresh() {
+  await loadCheckinData();
+  // 加载话术库
+  try {
+    const tr = await fetch(window.location.origin + '/api/tactics');
+    const tdata = await tr.json();
+    if (Array.isArray(tdata) && tdata.length) {
+      chatScriptRows = tdata.map(t => ({
+        type: t.category, script: t.content, note: t.note,
+        platform: t.source, id: t.id
+      }));
+    }
+  } catch(e) {}
+  rendered.delete('checkin');
+  renderCheckin();
+  rendered.add('checkin');
+}
+
+// ── 📅 打卡总览 ──
+let attendanceMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+function renderAttendance() {
+  const el = document.getElementById('pane-attendance');
+  const [year, month] = attendanceMonth.split('-').map(Number);
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 生成该月日期，当月到今天，历史月份到月底
+  // 起始日期：如果是5月（第一个月），从第一条数据日期开始；否则从1号开始
+  const firstDataDate = ALL_ROWS.length
+    ? [...ALL_ROWS].sort((a,b) => a.record_date.localeCompare(b.record_date))[0].record_date
+    : `${year}-${String(month).padStart(2,'0')}-01`;
+  const monthStr = `${year}-${String(month).padStart(2,'0')}`;
+  const startDay = firstDataDate.startsWith(monthStr)
+    ? parseInt(firstDataDate.slice(8))
+    : 1;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const allDates = [];
+  for (let d = startDay; d <= daysInMonth; d++) {
+    allDates.push(`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  }
+  const isCurrentMonth = attendanceMonth === new Date().toISOString().slice(0, 7);
+  const dates = isCurrentMonth ? allDates.filter(d => d <= today) : allDates;
+
+  // 月份切换
+  const prevMonth = (() => {
+    const d = new Date(year, month - 2, 1); // month-2 because month is 1-indexed
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  })();
+  const nextMonth = (() => {
+    const d = new Date(year, month, 1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  })();
+
+  // 调试：显示ALL_ROWS里实际的owner名字
+  const actualOwners = [...new Set(ALL_ROWS.map(r => r.owner).filter(Boolean))].sort();
+  const memberNames = CHECKIN_MEMBERS.map(m => m.name);
+  const mismatched = actualOwners.filter(o => !memberNames.includes(o.trim()) && o.trim() !== '未分配');
+
+  el.innerHTML = `
+<div style="max-width:1100px">
+  ${mismatched.length ? `<div style="background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#fca5a5">
+    ⚠️ 以下 owner 名字在飞书数据里存在，但未匹配到签到成员：<b>${mismatched.join('、')}</b>
+  </div>` : ''}
+  <!-- 标题 + 月份切换 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text)">📅 打卡总览</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">每位成员每日打卡情况一览</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="attendanceChangeMonth('${prevMonth}')" style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px;cursor:pointer">‹ 上月</button>
+      <span style="font-size:14px;font-weight:600;color:var(--text);min-width:80px;text-align:center">${year}年${month}月</span>
+      <button onclick="attendanceChangeMonth('${nextMonth}')" ${isCurrentMonth?'disabled style="opacity:.3;cursor:not-allowed"':'style="cursor:pointer"'} style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px">› 下月</button>
+    </div>
+  </div>
+
+  <!-- 出勤统计 -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+    ${CHECKIN_MEMBERS.map(m => {
+      const checkedDays = dates.filter(d => checkinStatusIcon(m.name, d) === '✅').length;
+      const pct = dates.length ? Math.round(checkedDays / dates.length * 100) : 0;
+      const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+      return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:100px;text-align:center">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${m.name}</div>
+        <div style="font-size:20px;font-weight:800;color:${color}">${pct}%</div>
+        <div style="font-size:11px;color:var(--muted)">${checkedDays}/${dates.length}天</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- 日历表格 -->
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:700px">
+      <thead>
+        <tr>
+          <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;left:0;background:var(--bg);z-index:1">成员</th>
+          ${dates.map(d => {
+            const day = parseInt(d.slice(8));
+            const isToday = d === today;
+            const weekDay = ['日','一','二','三','四','五','六'][new Date(d).getDay()];
+            const isWeekend = new Date(d).getDay() === 0 || new Date(d).getDay() === 6;
+            return `<th style="padding:4px 2px;text-align:center;color:${isToday?'var(--blue)':isWeekend?'var(--muted)':'var(--muted)'};font-size:11px;font-weight:${isToday?'700':'400'};border-bottom:1px solid var(--border);min-width:36px">
+              <div style="color:${isToday?'var(--blue)':'var(--muted)'}">周${weekDay}</div>
+              <div style="font-size:13px;font-weight:600;color:${isToday?'var(--blue)':'var(--text)'}">${day}</div>
+            </th>`;
+          }).join('')}
+          <th style="padding:8px 6px;text-align:center;color:var(--muted);font-size:12px;font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">出勤率</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${CHECKIN_MEMBERS.map((m, mi) => {
+          const checkedDays = dates.filter(d => checkinStatusIcon(m.name, d) === '✅').length;
+          const pct = dates.length ? Math.round(checkedDays / dates.length * 100) : 0;
+          const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+          return `<tr style="background:${mi%2===0?'transparent':'rgba(255,255,255,.01)'}">
+            <td style="padding:8px 12px;font-size:13px;font-weight:500;color:var(--text);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap;position:sticky;left:0;background:${mi%2===0?'var(--bg)':'#0e1016'};z-index:1">${m.name}</td>
+            ${dates.map(d => {
+              const icon = checkinStatusIcon(m.name, d);
+              const isToday = d === today;
+              const bg = icon === '✅' ? 'rgba(67,217,164,.15)' : icon === '⚠️' ? 'rgba(245,166,35,.15)' : 'rgba(255,107,107,.08)';
+              const border = isToday ? '1px solid var(--blue)' : '1px solid transparent';
+              return `<td style="padding:4px 2px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03)">
+                <div style="width:28px;height:28px;border-radius:6px;background:${bg};border:${border};display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:14px">${icon}</div>
+              </td>`;
+            }).join('')}
+            <td style="padding:8px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03)">
+              <span style="font-size:12px;font-weight:700;color:${color}">${pct}%</span>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 图例 -->
+  <div style="display:flex;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)">
+    <span>✅ 已打卡</span>
+    <span>⚠️ 部分打卡</span>
+    <span>❌ 未打卡</span>
+  </div>
+</div>`;
+}
+
+function attendanceChangeMonth(ym) {
+  attendanceMonth = ym;
+  rendered.delete('attendance');
+  renderAttendance();
+  rendered.add('attendance');
+}
+
 const TABS = {
-  overview: renderOverview,
-  team:     renderTeam,
-  bloggers: renderBloggers,
-  revisit:  renderRevisit,
-  trend:    renderTrend,
-  guide:    renderGuide,
-  lookup:   renderLookup,
-  report:   renderReport,
-  ocr:      renderOcr,
+  overview:   renderOverview,
+  team:       renderTeam,
+  bloggers:   renderBloggers,
+  revisit:    renderRevisit,
+  trend:      renderTrend,
+  guide:      renderGuide,
+  periodic:   renderPeriodic,
+  rank:       renderRank,
+  ocr:        renderOcr,
+  checkin:    renderCheckin,
+  attendance: renderAttendance,
 };
 let rendered = new Set();
 
@@ -2147,15 +4125,22 @@ function switchTab(tab, btn) {
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
-  if (tab === 'report') { rendered.delete('report'); TABS['report'](); rendered.add('report'); }
   if (tab === 'guide') { loadAISummary(); loadKbList(); }
 }
 
 async function init() {
+  checkAdmin();
+  if (isAdmin) {
+    const btn = document.getElementById('admin-btn');
+    if (btn) { btn.textContent = '🔓 管理员模式'; btn.style.color = 'var(--green)'; }
+  }
   const now = new Date();
   document.getElementById("dateBadge").textContent =
     `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
   await loadData();
+  await loadCheckinData();
+  await loadChatScripts();
+  cleanupOldCheckinImages(); // 后台清理，不阻塞加载
   renderOverview();
   rendered.add("overview");
 }

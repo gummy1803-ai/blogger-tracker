@@ -6,7 +6,7 @@ from flask_cors import CORS
 import requests
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 
 # ============================================================
 # 配置区 —— 建议在 Railway / Vercel 环境变量里设置
@@ -531,28 +531,49 @@ def mark():
 
 
 DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY", "sk-bc0712cef1064ba995cc4c170bfd0166")
+QWEN_KEY     = os.environ.get("QWEN_KEY",     "sk-eaf0550046c94b37920b095d75b730f7")
 TAVILY_KEY   = os.environ.get("TAVILY_KEY",   "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")
 
 
 @app.route("/api/search", methods=["POST"])
 def api_search():
-    """Tavily 搜索博主信息（服务端转发，无 CORS 问题）"""
+    """DuckDuckGo 搜索博主信息（免费无需 Key）"""
     body  = request.json or {}
     query = (body.get("query") or "").strip()
     if not query:
         return jsonify({"error": "query 不能为空"}), 400
     try:
-        resp = requests.post(
-            "https://api.tavily.com/search",
-            json={"api_key": TAVILY_KEY, "query": query, "max_results": 3, "include_answer": True},
-            timeout=15,
+        # DuckDuckGo Instant Answer API
+        resp = requests.get(
+            "https://api.duckduckgo.com/",
+            params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10,
         )
         data = resp.json()
-        answer   = data.get("answer", "")
-        snippets = " ".join(r.get("content", "") for r in data.get("results", []))
-        return jsonify({"text": (answer + " " + snippets).strip()[:2000]})
+        parts = []
+        if data.get("AbstractText"):
+            parts.append(data["AbstractText"])
+        if data.get("Answer"):
+            parts.append(data["Answer"])
+        for r in data.get("RelatedTopics", [])[:5]:
+            if isinstance(r, dict) and r.get("Text"):
+                parts.append(r["Text"])
+        text = " ".join(parts).strip()
+
+        # 如果 DDG 返回内容太少，补充用 Google 搜索摘要
+        if len(text) < 100:
+            g_resp = requests.get(
+                "https://www.googleapis.com/customsearch/v1",
+                params={"q": query, "num": 3, "key": "AIzaSyC-placeholder"},
+                timeout=8
+            )
+            # 如果 Google 也不行，直接返回博主名作为基础信息
+            text = text or f"搜索关键词：{query}"
+
+        return jsonify({"text": text[:2000]})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"text": f"搜索关键词：{query}，搜索服务暂时不可用"})
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -565,17 +586,401 @@ def api_analyze():
         return jsonify({"error": "prompt 不能为空"}), 400
     try:
         resp = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}", "Content-Type": "application/json"},
-            json={"model": "deepseek-chat", "max_tokens": max_tok,
+            "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            headers={"Authorization": f"Bearer {QWEN_KEY}", "Content-Type": "application/json"},
+            json={"model": "qwen-turbo", "max_tokens": max_tok,
                   "messages": [{"role": "user", "content": prompt}]},
-            timeout=60,
+            timeout=55,
         )
         data = resp.json()
         text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         if not text:
-            return jsonify({"error": data.get("error", {}).get("message", "DeepSeek 返回为空")}), 500
+            err_msg = str(data.get("error", {}) or data)
+            return jsonify({"error": "分析失败：" + err_msg}), 500
         return jsonify({"text": text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route("/api/vision", methods=["POST"])
+def api_vision():
+    """通义千问 VL 识别博主截图"""
+    body   = request.json or {}
+    images = body.get("images", [])   # base64 列表
+    if not images:
+        return jsonify({"error": "images 不能为空"}), 400
+
+    # 构造多张图片的消息
+    content_parts = []
+    for img_b64 in images:
+        content_parts.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}
+        })
+    content_parts.append({
+        "type": "text",
+        "text": """请识别图片中的博主主页信息，每张图片对应一个博主。
+严格按以下 JSON 数组格式返回，不要任何其他文字：
+[
+  {
+    "name": "博主名称",
+    "link": "主页链接（如有，否则空字符串）",
+    "platform": "平台（小红书/抖音/B站/微博等）",
+    "followers": "粉丝数（纯数字+单位，如 19.4万）",
+    "blogger_type": "博主类型（如 AI科技/生活方式/知识分享/手工DIY等）",
+    "status": "",
+    "error": ""
+  }
+]
+如果某张图片无法识别或信息不足，在对应条目的 error 字段说明原因，其他字段留空。
+注意：followers 只填粉丝数，不要填获赞数或关注数。"""
+    })
+
+    try:
+        resp = requests.post(
+            "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {QWEN_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "qwen-vl-plus",
+                "messages": [{"role": "user", "content": content_parts}],
+                "max_tokens": 2000
+            },
+            timeout=55
+        )
+        data = resp.json()
+        text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not text:
+            err_msg = str(data.get("error", {}))
+            return jsonify({"error": "识别失败：" + err_msg}), 500
+        # 尝试解析 JSON
+        import re
+        match = re.search(r'\[[\s\S]*\]', text)
+        if match:
+            try:
+                result = json.loads(match.group(0))
+                return jsonify({"result": result})
+            except Exception:
+                pass
+        return jsonify({"raw": text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+SUPABASE_URL  = "https://wtfmhfpjgoliyzsozfav.supabase.co"
+SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0Zm1oZnBqZ29saXl6c296ZmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjE2NjYsImV4cCI6MjA5NTU5NzY2Nn0.FxMCYutcjxm4YdwW3rGj0rALQYEeagS6D0vEINxb8Vc"
+
+
+@app.route("/api/data", methods=["GET"])
+def api_data():
+    """中转 Supabase 数据请求"""
+    table  = request.args.get("table", "bloggers")
+    select = request.args.get("select", "*")
+    limit  = request.args.get("limit", "1000")
+    offset = request.args.get("offset", "0")
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}?select={select}&limit={limit}&offset={offset}&order=id.asc"
+        resp = requests.get(url, headers={
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}"
+        }, timeout=15)
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500, {"Content-Type": "application/json"}
+
+
+@app.route("/api/reports", methods=["GET"])
+def api_reports():
+    """中转 Supabase reports 表"""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/reports?select=*&order=id.desc"
+        resp = requests.get(url, headers={
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}"
+        }, timeout=15)
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500, {"Content-Type": "application/json"}
+
+
+@app.route("/api/reports/save", methods=["POST"])
+def api_reports_save():
+    """保存分析报告到 Supabase"""
+    body = request.json or {}
+    period_key   = (body.get("period_key") or "").strip()
+    period_label = (body.get("period_label") or "").strip()
+    report_text  = (body.get("report_text") or "").strip()
+    blogger_count = int(body.get("blogger_count", 0))
+    if not period_key or not report_text:
+        return jsonify({"error": "period_key 和 report_text 不能为空"}), 400
+    try:
+        # 先尝试更新，如果不存在则插入
+        headers = {
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}",
+            "Content-Type": "application/json",
+        }
+        payload = {"period_key": period_key, "period_label": period_label,
+                   "report_text": report_text, "blogger_count": blogger_count}
+
+        # 检查是否已存在
+        check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/analysis_reports?period_key=eq.{period_key}&select=id",
+            headers=headers, timeout=10
+        )
+        existing = check.json()
+
+        if existing:
+            # 更新
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/analysis_reports?period_key=eq.{period_key}",
+                headers={**headers, "Prefer": "return=minimal"},
+                json=payload, timeout=10
+            )
+        else:
+            # 插入
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/analysis_reports",
+                headers={**headers, "Prefer": "return=minimal"},
+                json=payload, timeout=10
+            )
+
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True})
+        return jsonify({"error": resp.text}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/list", methods=["GET"])
+def api_reports_list():
+    """获取所有分析报告列表"""
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/analysis_reports?select=id,period_key,period_label,blogger_count,created_at&order=created_at.desc",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/get", methods=["GET"])
+def api_reports_get():
+    """获取指定 period_key 的报告"""
+    period_key = request.args.get("period_key", "")
+    if not period_key:
+        return jsonify({"error": "period_key 不能为空"}), 400
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/analysis_reports?period_key=eq.{period_key}&select=*",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        data = resp.json()
+        if data:
+            return jsonify(data[0])
+        return jsonify({"error": "not_found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rank/save", methods=["POST"])
+def api_rank_save():
+    body = request.json or {}
+    report_key   = (body.get("report_key") or "").strip()
+    report_data  = body.get("report_data", {})
+    blogger_count = int(body.get("blogger_count", 0))
+    if not report_key:
+        return jsonify({"error": "report_key 不能为空"}), 400
+    try:
+        headers = {
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}",
+            "Content-Type": "application/json",
+        }
+        check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/rank_reports?report_key=eq.{report_key}&select=id",
+            headers=headers, timeout=10
+        )
+        payload = {"report_key": report_key, "report_data": report_data if isinstance(report_data, dict) else json.loads(report_data), "blogger_count": blogger_count}
+        if check.json():
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/rank_reports?report_key=eq.{report_key}",
+                headers={**headers, "Prefer": "return=minimal"},
+                json=payload, timeout=10
+            )
+        else:
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/rank_reports",
+                headers={**headers, "Prefer": "return=minimal"},
+                json=payload, timeout=10
+            )
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True})
+        return jsonify({"error": resp.text}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rank/list", methods=["GET"])
+def api_rank_list():
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/rank_reports?select=id,report_key,blogger_count,created_at&order=created_at.desc",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rank/get", methods=["GET"])
+def api_rank_get():
+    report_key = request.args.get("report_key", "")
+    if not report_key:
+        return jsonify({"error": "report_key 不能为空"}), 400
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/rank_reports?report_key=eq.{report_key}&select=*",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        data = resp.json()
+        if data:
+            row = data[0]
+            if isinstance(row.get("report_data"), str):
+                row["report_data"] = json.loads(row["report_data"])
+            return jsonify(row)
+        return jsonify({"error": "not_found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/checkins", methods=["GET"])
+def api_checkins_get():
+    """获取签到记录"""
+    date = request.args.get("date", "")
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/checkins?order=checkin_date.desc"
+        if date:
+            url += f"&checkin_date=eq.{date}"
+        else:
+            # 默认取最近7天
+            from datetime import datetime, timedelta
+            cutoff = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+            url += f"&checkin_date=gte.{cutoff}"
+        resp = requests.get(url, headers={
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}"
+        }, timeout=10)
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500, {"Content-Type": "application/json"}
+
+
+@app.route("/api/checkins", methods=["POST"])
+def api_checkins_save():
+    """保存签到记录"""
+    body = request.json or {}
+    member_name  = body.get("member_name", "")
+    checkin_date = body.get("checkin_date", "")
+    if not member_name or not checkin_date:
+        return jsonify({"error": "member_name 和 checkin_date 不能为空"}), 400
+    try:
+        headers = {
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}",
+            "Content-Type": "application/json",
+        }
+        check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/checkins?member_name=eq.{member_name}&checkin_date=eq.{checkin_date}&select=id",
+            headers=headers, timeout=10
+        )
+        existing = check.json()
+        payload = {
+            "member_name": member_name,
+            "checkin_date": checkin_date,
+            "chat_images": body.get("chat_images", []),
+            "blogger_images": body.get("blogger_images", []),
+            "review_images": body.get("review_images", []),
+            "submitted": body.get("submitted", False),
+        }
+        if existing:
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/checkins?member_name=eq.{member_name}&checkin_date=eq.{checkin_date}",
+                headers={**headers, "Prefer": "return=representation"},
+                json=payload, timeout=10
+            )
+        else:
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/checkins",
+                headers={**headers, "Prefer": "return=representation"},
+                json=payload, timeout=10
+            )
+        if resp.status_code in (200, 201):
+            return jsonify(resp.json()[0] if isinstance(resp.json(), list) else resp.json())
+        return jsonify({"error": resp.text}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/tactics", methods=["GET"])
+def api_tactics_get():
+    """获取话术库"""
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/tactics?select=*&order=created_at.desc&limit=200",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        return resp.text, resp.status_code, {"Content-Type": "application/json"}
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500, {"Content-Type": "application/json"}
+
+
+@app.route("/api/tactics", methods=["POST"])
+def api_tactics_save():
+    """保存话术到数据库"""
+    body = request.json or {}
+    tactics_list = body.get("tactics", [])
+    if not tactics_list:
+        return jsonify({"error": "tactics 不能为空"}), 400
+    try:
+        headers = {
+            "apikey": SUPABASE_ANON,
+            "Authorization": f"Bearer {SUPABASE_ANON}",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+        }
+        resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/tactics",
+            headers=headers,
+            json=tactics_list,
+            timeout=10
+        )
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True, "count": len(tactics_list)})
+        return jsonify({"error": resp.text}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/tactics/<int:tactic_id>", methods=["DELETE"])
+def api_tactics_delete(tactic_id):
+    """删除话术"""
+    try:
+        resp = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/tactics?id=eq.{tactic_id}",
+            headers={"apikey": SUPABASE_ANON, "Authorization": f"Bearer {SUPABASE_ANON}"},
+            timeout=10
+        )
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
