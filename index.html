@@ -216,6 +216,110 @@ a.lnk:hover { opacity:1; }
 .pbtn { padding:6px 16px; border-radius:7px; border:none; background:transparent; color:var(--muted2); font-size:13px; font-family:inherit; cursor:pointer; transition:all .2s; white-space:nowrap; }
 .pbtn:hover:not(.active) { color:var(--text); background:var(--surf2); }
 .pbtn.active { background:var(--blue); color:#fff; box-shadow:0 2px 12px rgba(91,127,255,.4); }
+
+/* ══════════════════════════════════════════
+   🎓 新人培训
+   ══════════════════════════════════════════ */
+.tr-app{ max-width:640px; margin:0 auto; background:var(--surf); border:1px solid var(--border); border-radius:16px; overflow:hidden; position:relative; }
+.tr-progress-track{ height:4px; width:100%; background:var(--surf2); }
+.tr-progress-fill{ height:100%; background:linear-gradient(90deg,var(--blue),var(--green)); transition:width .5s cubic-bezier(.4,0,.2,1); }
+.tr-step-label{ display:flex; justify-content:space-between; align-items:center; padding:14px 28px 0; font-size:12px; color:var(--muted); letter-spacing:.05em; }
+.tr-step-label .tr-badge{ font-family:'Syne',sans-serif; font-weight:800; color:var(--blue); letter-spacing:.08em; }
+.tr-content{ padding:28px 28px 24px; min-height:380px; display:flex; flex-direction:column; }
+.tr-eyebrow{ font-size:12px; font-weight:700; color:var(--green); letter-spacing:.18em; text-transform:uppercase; margin-bottom:10px; }
+.tr-content h1{ font-family:'Syne',sans-serif; font-weight:800; font-size:24px; letter-spacing:-.01em; margin-bottom:14px; color:var(--text); background:none; -webkit-text-fill-color:var(--text); }
+.tr-content h2{ font-family:'Syne',sans-serif; font-weight:700; font-size:16px; margin:18px 0 8px; color:var(--text); }
+.tr-content p{ font-size:14px; color:var(--muted); margin-bottom:8px; line-height:1.65; }
+.tr-content p.tr-lead{ font-size:15px; color:var(--text); margin-bottom:14px; }
+.tr-content strong{ color:var(--text); font-weight:700; }
+.tr-content b{ color:var(--text); }
+.tr-accent-blue{ color:var(--blue); }
+.tr-accent-green{ color:var(--green); }
+.tr-accent-gold{ color:var(--gold); }
+.tr-accent-red{ color:var(--red); }
+.tr-rules{ list-style:none; margin:6px 0 4px; }
+.tr-rules li{ font-size:13.5px; color:var(--muted); padding:8px 0 8px 22px; position:relative; border-bottom:1px solid var(--border); }
+.tr-rules li:last-child{ border-bottom:none; }
+.tr-rules li::before{ content:'›'; position:absolute; left:0; top:8px; color:var(--blue); font-weight:800; font-size:15px; }
+.tr-grid-table{ display:grid; grid-template-columns:64px 1fr; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:10px 0 4px; font-size:13px; }
+.tr-grid-table > div{ padding:9px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; }
+.tr-grid-table > div:nth-last-child(-n+2){ border-bottom:none; }
+.tr-grid-table .tr-col-key{ background:var(--surf2); font-weight:700; color:var(--blue); justify-content:center; font-family:'Syne',sans-serif; }
+.tr-grid-table .tr-col-val{ color:var(--muted); }
+.tr-status-row{ display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.tr-status-row:last-child{ border-bottom:none; }
+.tr-status-tag{ flex:0 0 auto; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; white-space:nowrap; font-family:'Syne',sans-serif; }
+.tr-tag-progress{ background:rgba(91,127,255,.14); color:var(--blue); }
+.tr-tag-success{ background:rgba(67,217,164,.14); color:var(--green); }
+.tr-tag-followup{ background:rgba(245,166,35,.14); color:var(--gold); }
+.tr-tag-closed{ background:rgba(255,255,255,.06); color:var(--muted); }
+.tr-status-row .tr-status-desc{ font-size:13px; color:var(--muted); }
+.tr-score-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:12px 0 4px; }
+.tr-score-card{ background:var(--surf2); border:1px solid var(--border); border-radius:10px; padding:12px; }
+.tr-score-card .tr-num{ font-family:'Syne',sans-serif; font-weight:800; font-size:22px; color:var(--blue); line-height:1; }
+.tr-score-card .tr-num .tr-of{ font-size:13px; color:var(--muted); font-weight:600; }
+.tr-score-card .tr-lbl{ font-size:12px; color:var(--muted); margin-top:4px; }
+.tr-score-card.tr-gold .tr-num{ color:var(--gold); }
+.tr-score-card.tr-green .tr-num{ color:var(--green); }
+.tr-tool-row{ display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); }
+.tr-tool-row:last-child{ border-bottom:none; }
+.tr-tool-icon{ flex:0 0 32px; height:32px; border-radius:8px; background:var(--surf2); display:flex; align-items:center; justify-content:center; font-size:15px; }
+.tr-tool-row .tr-tool-body b{ display:block; font-size:14px; color:var(--text); margin-bottom:2px; }
+.tr-tool-row .tr-tool-body span{ font-size:12.5px; color:var(--muted); }
+.tr-quiz-box{ margin-top:6px; padding:16px; border-radius:12px; background:var(--surf2); border:1px solid var(--border); }
+.tr-quiz-q{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.tr-quiz-q .tr-qmark{ flex:0 0 22px; height:22px; border-radius:50%; background:var(--blue); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.tr-quiz-opt{ display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; background:var(--surf); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13.5px; cursor:pointer; transition:all .15s ease; font-family:'Noto Sans SC',sans-serif; }
+.tr-quiz-opt:hover:not(:disabled){ border-color:var(--blue); }
+.tr-quiz-opt:disabled{ cursor:default; }
+.tr-quiz-opt.tr-correct{ border-color:var(--green); background:rgba(67,217,164,.10); color:var(--green); }
+.tr-quiz-opt.tr-wrong{ border-color:var(--red); background:rgba(255,107,107,.10); color:var(--red); }
+.tr-quiz-opt.tr-selected{ border-color:var(--blue); background:rgba(91,127,255,.08); }
+.tr-quiz-opt.tr-missed{ border-color:var(--gold); background:rgba(245,166,35,.08); color:var(--gold); }
+.tr-quiz-fb{ font-size:12.5px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); color:var(--muted); }
+.tr-quiz-fb b{ color:var(--text); }
+.tr-name-gate{ flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.tr-chip-icon{ margin-bottom:18px; }
+.tr-name-input{ width:100%; max-width:280px; margin-top:18px; background:var(--surf2); border:1px solid var(--border); border-radius:10px; padding:13px 16px; font-size:15px; color:var(--text); font-family:'Noto Sans SC',sans-serif; text-align:center; outline:none; transition:border-color .15s; }
+.tr-name-input:focus{ border-color:var(--blue); }
+.tr-name-input::placeholder{ color:var(--muted); }
+.tr-nav{ display:flex; justify-content:space-between; gap:10px; padding:18px 28px 26px; border-top:1px solid var(--border); }
+.tr-btn{ font-family:'Syne',sans-serif; font-weight:700; font-size:14px; padding:11px 22px; border-radius:10px; border:1px solid var(--border); background:var(--surf2); color:var(--text); cursor:pointer; transition:all .15s ease; }
+.tr-btn:hover:not(:disabled){ border-color:var(--blue); }
+.tr-btn.tr-primary{ background:linear-gradient(135deg,var(--blue),#4A6BFF); border-color:transparent; color:#fff; margin-left:auto; box-shadow:0 8px 20px -8px rgba(91,127,255,.6); }
+.tr-btn.tr-primary:hover:not(:disabled){ filter:brightness(1.08); }
+.tr-btn:disabled{ opacity:.35; cursor:not-allowed; }
+.tr-btn.tr-ghost{ background:transparent; }
+.tr-cert-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.tr-cert{ width:100%; border:1px solid var(--border); border-radius:16px; padding:32px 24px; position:relative; overflow:hidden; background:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,166,35,.12) 0%, transparent 60%), var(--surf2); }
+.tr-cert::before, .tr-cert::after{ content:''; position:absolute; width:120px; height:120px; border-radius:50%; opacity:.10; }
+.tr-cert::before{ background:var(--blue); top:-50px; left:-50px; }
+.tr-cert::after{ background:var(--green); bottom:-50px; right:-50px; }
+.tr-cert .tr-org{ font-size:11px; letter-spacing:.2em; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+.tr-cert .tr-org b{ color:var(--gold); }
+.tr-cert .tr-title{ font-family:'Syne',sans-serif; font-weight:800; font-size:20px; margin:6px 0 18px; color:var(--text); }
+.tr-cert .tr-recipient-label{ font-size:12px; color:var(--muted); margin-bottom:4px; }
+.tr-cert .tr-recipient{ font-family:'Syne',sans-serif; font-weight:800; font-size:32px; color:var(--gold); margin-bottom:18px; word-break:break-all; }
+.tr-cert .tr-meta-row{ display:flex; justify-content:space-around; align-items:flex-start; gap:14px; margin-top:18px; padding:18px 6px 4px; border-top:1px dashed var(--border); }
+.tr-cert .tr-meta-item{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.tr-cert .tr-meta-item .tr-meta-num{ font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--green); line-height:1.3; word-break:break-word; }
+.tr-cert .tr-meta-item .tr-meta-lbl{ font-size:11px; color:var(--muted); letter-spacing:.05em; }
+.tr-cert-actions{ display:flex; gap:10px; margin-top:20px; width:100%; }
+.tr-cert-actions .tr-btn{ flex:1; }
+@media print{
+  body *{ visibility:hidden; }
+  .tr-cert, .tr-cert *{ visibility:visible; }
+  .tr-cert{ position:fixed; top:40px; left:50%; transform:translateX(-50%); width:480px; background:#fff !important; color:#000; border:2px solid #333; }
+  .tr-cert .tr-org, .tr-cert .tr-title, .tr-cert .tr-recipient-label, .tr-cert .tr-meta-lbl, .tr-cert p{ color:#444 !important; }
+  .tr-cert .tr-recipient{ color:#B8860B !important; }
+  .tr-cert .tr-meta-num{ color:#1a7a4f !important; }
+}
+@media (max-width:480px){
+  .tr-content{ padding:22px 18px; }
+  .tr-nav{ padding:14px 18px 20px; }
+  .tr-content h1{ font-size:20px; }
+  .tr-cert .tr-recipient{ font-size:24px; }
+}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -247,7 +351,9 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('ocr',this)">📸 截图识别</button>
     <button class="tab"     onclick="switchTab('checkin',this)">✅ 签到</button>
     <button class="tab"     onclick="switchTab('attendance',this)">📅 打卡总览</button>
+    <button class="tab"     onclick="switchTab('perf',this)">📊 绩效评分</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
+    <button class="tab"     onclick="switchTab('training',this)">🎓 新人培训</button>
 
   </div>
 
@@ -262,6 +368,8 @@ a.lnk:hover { opacity:1; }
   <div id="pane-trend"    style="display:none"></div>
   <div id="pane-checkin"  style="display:none"></div>
   <div id="pane-attendance" style="display:none"></div>
+  <div id="pane-perf"       style="display:none"></div>
+  <div id="pane-training"   style="display:none"></div>
 
 
 </div>
@@ -413,14 +521,14 @@ async function loadData() {
   try {
     [ALL_ROWS, REPORTS] = await Promise.all([
       SB.query("bloggers", {
-        select: "link,name,status,followers,owner,record_date,platform,blogger_type,account,note",
+        select: "link,name,status,followers,owner,record_date,platform,blogger_type,account,note,is_dup",
         order:  "record_date.desc",
         limit:  "10000"
       }),
       SB.query("daily_reports", {
         select: "report_date,total,contacted,success,rate,w_total,w_contacted,w_success,w_rate",
         order:  "report_date.desc",
-        limit:  "14"
+        limit:  "60"
       })
     ]);
     document.getElementById("syncTime").textContent = `最后同步 ${new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}`;
@@ -780,7 +888,7 @@ function renderTrend() {
     el.innerHTML=`<div class="card"><div class="empty">暂无历史日报数据<br><small style="color:var(--muted)">每天运行同步脚本后会自动生成</small></div></div>`;
     return;
   }
-  const reports = [...REPORTS].reverse();
+  const reports = [...REPORTS].sort((a,b)=>(b.report_date||"").localeCompare(a.report_date||""));
   const maxS = Math.max(...reports.map(r=>r.success||0),1);
   const maxC = Math.max(...reports.map(r=>r.contacted||0),1);
 
@@ -811,7 +919,7 @@ function renderTrend() {
     <div class="card-title"><div class="dot" style="background:var(--gold)"></div>历史日报记录</div>
     <div class="tw"><table>
       <thead><tr><th>日期</th><th>录入</th><th>联系</th><th>成功</th><th>转化率</th></tr></thead>
-      <tbody>${[...reports].reverse().map(r=>`<tr>
+      <tbody>${reports.map(r=>`<tr>
         <td style="color:var(--muted)">${r.report_date}</td>
         <td>${r.total||0}</td>
         <td>${r.contacted||0}</td>
@@ -1099,6 +1207,43 @@ function renderLookup() {
 // 当前选中的时间段
 let anCurrentPeriod = 'all';
 
+// ── 数据分析报告：统一的严格写作规则 ──
+const STRICT_ANALYSIS_RULES = `你是一名严谨的数据分析师，撰写本报告时必须严格遵守以下规则：
+
+【硬性约束】
+1. 全文禁止出现以下及类似表述："总体良好"、"稳步提升"、"有待加强"、"持续优化"、"前景可观"、"建议关注"、"存在不足"等任何无实质信息的空话、客套话、口号式语句。
+2. 所有观点、结论、判断、预测、原因分析，必须绑定具体数据、数值、比例、差值；没有数据支撑的内容不写。
+3. 语言务实精炼，统一使用分点格式，逻辑分层清晰。
+4. 完成后自我复核：删除模糊描述、冗余文字、通用模板话术。如发现某条结论缺乏数据支撑，直接删除该条而不是用空话填充。
+5. 如果样本量很小（如少于5位博主），必须在相应结论处注明样本量，并说明该结论的可信度受限，不得用小样本得出绝对化结论。
+6. 数据本身没有体现某种规律时，如实写"现有数据未显示明显规律"，不强行主观推演。
+
+【报告结构，按顺序输出，缺少对应数据的模块可省略但需说明原因】
+一、数据概况与现状复盘
+- 列出全部核心指标的数值：样本量、各分类的数量及占比、最大值/最小值/平均值
+- 标注异常数据点、明显偏离整体的项（具体到博主名或数值）
+
+二、现存问题与根因拆解
+- 结合数据定位具体问题，逐条说明该问题对应的数据表现（如"X类博主占比仅Y%，但Z类占比达W%"）
+- 区分表层现象（数据本身）与深层诱因（为什么会这样，结合建联渠道/话术/选号标准等可能原因）
+
+三、趋势预测（如数据量不足以支撑预测，本节写明"当前样本量N，不足以做出有统计意义的预测"并跳过）
+- 短期/中期两个周期，给出具体预估数值或区间，并写明推导依据
+- 常规/乐观/风险三种情景，分别给出对应数据结果
+
+四、风险识别
+- 结合数据规律指出可能的风险点，标注触发条件
+- 仅在有数据依据时列出，不凑数
+
+五、可执行建议
+- 每条建议必须包含：执行动作（做什么）、适配对象（针对哪类博主/哪个环节）、预期效果（对应哪个指标会改善）
+- 建议数量与数据支撑强度匹配，不为凑数量写空泛建议
+
+【前提假设与局限性说明】（报告末尾单独列出）
+- 本次分析基于的样本量、统计范围
+- 哪些外部变量可能改变结论（如博主公开数据更新滞后、人工标注误差等）`;
+
+
 function anHardRefresh() {
   analysisProfiles = [];
   analysisDone = false;
@@ -1266,32 +1411,41 @@ async function anRunAI() {
     `博主${i+1}：博主名=${p.name||p._name}，平台=${p.platform}，粉丝=${p.followers}，内容类型=${p.content_type||'—'}，风格=${p.style||'—'}，目标受众=${p.audience||'—'}，博主类型=${p.blogger_type||'—'}`
   ).join('\n');
 
+  // 预计算统计数据，强制AI基于这些数字写报告，而不是自己编
+  const statsLines = [];
+  statsLines.push(`样本量：${validProfiles.length} 位`);
+  const platformCount = {};
+  validProfiles.forEach(p => { const k = p.platform || '未知'; platformCount[k] = (platformCount[k]||0) + 1; });
+  statsLines.push('平台分布：' + Object.entries(platformCount).map(([k,v]) => `${k} ${v}位(${(v/validProfiles.length*100).toFixed(1)}%)`).join('、'));
+  const typeCount = {};
+  validProfiles.forEach(p => { const k = p.blogger_type || '未标注'; typeCount[k] = (typeCount[k]||0) + 1; });
+  statsLines.push('博主类型分布：' + Object.entries(typeCount).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `${k} ${v}位(${(v/validProfiles.length*100).toFixed(1)}%)`).join('、'));
+  const fansNums = validProfiles.map(p => {
+    const raw = (p.followers || p._followers_raw || '').toString();
+    const m = raw.match(/[\d.]+/);
+    return m ? parseFloat(m[0]) : null;
+  }).filter(n => n !== null);
+  if (fansNums.length) {
+    const max = Math.max(...fansNums), min = Math.min(...fansNums);
+    const avg = fansNums.reduce((a,b)=>a+b,0) / fansNums.length;
+    statsLines.push(`粉丝量（万）：最大值 ${max}，最小值 ${min}，平均值 ${avg.toFixed(1)}，有效样本 ${fansNums.length}/${validProfiles.length}`);
+  }
+  const statsBlock = statsLines.join('\n');
+
   try {
     const data = await callClaude(
-      [{ role: 'user', content: `以下是我们团队建联成功（引导到私域）的 ${validProfiles.length} 位博主的公开信息：
+      [{ role: 'user', content: `${STRICT_ANALYSIS_RULES}
 
+【本次分析对象】我们团队建联成功（引导到私域）的博主，全部历史数据。
+
+【预计算统计数据，报告中的数值描述必须与下方一致，不要重新估算】
+${statsBlock}
+
+【博主明细】
 ${profileSummary}
 
-请根据以上数据，输出一份专业的建联分析报告，包含以下两部分：
-
-【一、成功博主画像】
-分析这批建联成功的博主的共同特征，包括：
-- 粉丝量区间分布（哪个量级最多？）
-- 主要内容类型/赛道（哪类内容占主导？）
-- 风格共性（是否有共同的内容风格？）
-- 平台分布
-- 认证情况
-- 其他显著规律
-
-【二、建联方向建议】
-根据成功博主的特征，给出具体可落地的建联优化建议：
-- 优先锁定哪类博主（具体描述）
-- 避免浪费资源在哪类博主上
-- 话术/切入点建议（根据博主特征）
-- 下一步行动计划（3条具体建议）
-
-语言简洁专业，使用数据支撑结论。` }],
-      2000
+请按上述报告结构输出本次分析报告。报告主题是"成功博主画像与建联方向建议"，第一节"数据概况"基于上方预计算统计数据展开，不要重复计算或编造新数字；第五节"可执行建议"聚焦：优先锁定哪类博主、避免浪费资源在哪类博主、话术切入点建议、下一步行动计划。` }],
+      2200
     );
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
     anSetStatus('✅ 分析完成，正在跳转报告...', 'var(--green)');
@@ -1426,6 +1580,25 @@ function filterByPeriodKey(key) {
     if (phase === 'p4') return day >= 22;
     return false;
   });
+}
+
+// 计算上一个相邻周期的key（用于环比），月份没有阶段细分时按月环比
+function getPreviousPeriodKey(key) {
+  const parts = key.split('-');
+  const year  = parseInt(parts[0]);
+  const month = parseInt(parts[1]);
+  const phase = parts[2];
+  if (phase) {
+    const phaseOrder = ['p1','p2','p3','p4'];
+    const idx = phaseOrder.indexOf(phase);
+    if (idx > 0) return `${year}-${String(month).padStart(2,'0')}-${phaseOrder[idx-1]}`;
+    // p1 的上一阶段是上个月的 p4
+    const prevDate = new Date(year, month - 2, 1); // month是1-based, 这里取上个月
+    return `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}-p4`;
+  }
+  // 整月：上一个月
+  const prevDate = new Date(year, month - 2, 1);
+  return `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
 }
 
 let periodicReports = {}; // 缓存已加载的报告
@@ -1605,31 +1778,54 @@ async function periodicRun() {
 
   const summary = profiles.map((p,i) => ['博主'+(i+1), p.name, p.platform, (p.followers||'未知')+'万', p.searchText.slice(0,200)].join(',')).join('\n');
 
+  // 预计算本阶段统计数据
+  const platformCount = {};
+  profiles.forEach(p => { const k = p.platform || '未知'; platformCount[k] = (platformCount[k]||0) + 1; });
+  const platformLine = '平台分布：' + Object.entries(platformCount).map(([k,v]) => `${k} ${v}位(${(v/profiles.length*100).toFixed(1)}%)`).join('、');
+
+  const fansNums = profiles.map(p => {
+    const raw = (p.followers || '').toString();
+    const m = raw.match(/[\d.]+/);
+    return m ? parseFloat(m[0]) : null;
+  }).filter(n => n !== null);
+  let fansLine = '粉丝量数据：本阶段无有效粉丝量记录';
+  if (fansNums.length) {
+    const max = Math.max(...fansNums), min = Math.min(...fansNums);
+    const avg = fansNums.reduce((a,b)=>a+b,0) / fansNums.length;
+    fansLine = `粉丝量（万）：最大值 ${max}，最小值 ${min}，平均值 ${avg.toFixed(1)}，有效样本 ${fansNums.length}/${profiles.length}`;
+  }
+
+  // 上一阶段环比数据（如果已分析过）
+  let prevCompareLine = '上一阶段对比：无上一阶段已分析数据，本次不做环比';
+  try {
+    const prevKey = getPreviousPeriodKey(key);
+    const prevRows = filterByPeriodKey(prevKey);
+    if (prevRows.length || periodicReports[prevKey]) {
+      const prevCount = periodicReports[prevKey]?.blogger_count ?? prevRows.length;
+      const diff = profiles.length - prevCount;
+      const pct = prevCount > 0 ? (diff / prevCount * 100).toFixed(1) : 'N/A';
+      prevCompareLine = `上一阶段对比：上一阶段建联成功 ${prevCount} 位，本阶段 ${profiles.length} 位，差值 ${diff>=0?'+':''}${diff}（${pct === 'N/A' ? '上一阶段为0，无法计算比例' : pct + '%'}）`;
+    }
+  } catch(e) {}
+
+  const statsBlock = [`样本量：${profiles.length} 位`, platformLine, fansLine, prevCompareLine].join('\n');
+
   try {
     const resp = await fetch(window.location.origin + '/api/analyze', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        prompt: `以下是「${label}」期间建联成功（引导到私域）的 ${profiles.length} 位博主信息：
+        prompt: `${STRICT_ANALYSIS_RULES}
 
+【本次分析对象】"${label}"期间建联成功（引导到私域）的博主。
+
+【预计算统计数据，报告中的数值描述必须与下方一致，不要重新估算】
+${statsBlock}
+
+【博主明细（格式：序号,博主名,平台,粉丝量,公开信息摘要）】
 ${summary}
 
-请输出一份阶段分析报告，包含：
-
-【一、本阶段成功博主画像】
-- 粉丝量区间分布
-- 主要内容类型/赛道
-- 风格共性
-- 平台分布
-- 其他显著规律
-
-【二、本阶段建联方向建议】
-- 优先锁定哪类博主
-- 避免浪费资源在哪类博主
-- 话术/切入点建议
-- 下阶段行动计划（3条具体建议）
-
-语言简洁专业，数据支撑结论。`,
-        max_tokens: 2000
+请按上述报告结构输出本次阶段分析报告。第一节"数据概况"基于上方预计算统计数据展开，若"上一阶段对比"显示有环比数据，须在第一节中引用该差值；第三节"趋势预测"如本阶段样本量小于5，按规则说明样本不足并跳过预测；第五节"可执行建议"聚焦本阶段优先锁定的博主类型、应避免的方向、话术切入点、下阶段行动计划。`,
+        max_tokens: 2200
       })
     });
     const data = await resp.json();
@@ -1882,15 +2078,7 @@ async function rankRun() {
   // Step 2: 一次性发送所有截图，让AI识别并自动合并同一博主
   if (statusEl) statusEl.textContent = `AI 识别 ${allB64s.length} 张截图，自动合并同一博主...`;
   try {
-    const imgParts = allB64s.map(b64 => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } }));
-    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
-      body: JSON.stringify({
-        model: 'qwen-vl-plus', max_tokens: 2000,
-        messages: [{ role: 'user', content: [
-          ...imgParts,
-          { type: 'text', text: `以上是${allB64s.length}张截图，可能是博主主页截图或建联成功的聊天记录截图，可能有多张属于同一博主（头像相同即为同一人）。
+    const prompt = `以上是${allB64s.length}张截图，可能是博主主页截图或建联成功的聊天记录截图，可能有多张属于同一博主（头像相同即为同一人）。
 
 识别规则：
 - 如果是主页截图：读取页面上显示的博主昵称、粉丝数、简介等
@@ -1898,14 +2086,17 @@ async function rankRun() {
 - 头像相同的多张截图属于同一博主，合并为一条
 
 严格按JSON数组返回，不要其他文字：
-[{"name":"博主昵称","account":"账号ID（如有）","followers":"粉丝数（如有，否则空）","content_type":"内容类型（如有，否则空）","platform":"平台（小红书/抖音/B站等）","bio":"简介或备注（如有）","merged_count":合并了几张截图}]` }
-        ]}]
-      })
+[{"name":"博主昵称","account":"账号ID（如有）","followers":"粉丝数（如有，否则空）","content_type":"内容类型（如有，否则空）","platform":"平台（小红书/抖音/B站等）","bio":"简介或备注（如有）","merged_count":合并了几张截图}]`;
+    const resp = await fetch(window.location.origin + '/api/vision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: allB64s, prompt })
     });
     const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content || '';
+    const rawText = data.raw || (data.result ? JSON.stringify(data.result) : '');
+    const text = data.result ? JSON.stringify(data.result) : rawText;
     const match = text.match(/\[[\s\S]*\]/);
-    const profiles = match ? JSON.parse(match[0]) : [];
+    const profiles = data.result ? data.result : (match ? JSON.parse(match[0]) : []);
 
     for (const profile of profiles) {
       const name = profile.name || '';
@@ -2122,6 +2313,30 @@ function renderChatScript() {
 }
 
 let ocrCurrentSubTab = 'blogger'; // 'blogger' or 'chat'
+let ocrCurrentMember = null; // 当前使用OCR功能的成员
+
+// 成员选择弹窗（话术库 & 适配度分析公用）
+function ocrPickMember(onSelect) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:24px;min-width:300px;max-width:360px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">请先选择你的身份</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">使用话术库或适配度分析功能前需要确认成员，方便记录加分</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${CHECKIN_MEMBERS.filter(m => (memberStatusMap[m.name]||'active')==='active').map(m => `
+          <button onclick="window._ocrPickCb('${m.name}')" style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">${m.name}</button>
+        `).join('')}
+      </div>
+      <button onclick="document.body.removeChild(this.closest('[style*=fixed]'))" style="margin-top:14px;width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px">取消</button>
+    </div>`;
+  window._ocrPickCb = (name) => {
+    ocrCurrentMember = name;
+    document.body.removeChild(overlay);
+    onSelect(name);
+  };
+  document.body.appendChild(overlay);
+}
 
 function renderOcrWithTabs(subTab) {
   if (subTab) ocrCurrentSubTab = subTab;
@@ -2152,6 +2367,14 @@ function renderOcrWithTabs(subTab) {
 }
 
 function ocrSwitchSubTab(tab, btn) {
+  // 切到话术提取或适配度分析时，要求先选成员
+  if (tab === 'chat' && !ocrCurrentMember) {
+    ocrPickMember(name => {
+      ocrCurrentMember = name;
+      ocrSwitchSubTab('chat', btn);
+    });
+    return;
+  }
   ocrCurrentSubTab = tab;
   document.getElementById('ocr-sub-blogger').style.display = tab==='blogger'?'block':'none';
   document.getElementById('ocr-sub-chat').style.display = tab==='chat'?'block':'none';
@@ -2225,8 +2448,14 @@ function renderOcrChatContent() {
   el.innerHTML = `
   <!-- 聊天话术提取 -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
-    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">💬 聊天截图话术提取</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传与博主的聊天截图，AI 自动识别并提取有效话术，保存到话术库</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">💬 聊天截图话术提取</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${ocrCurrentMember ? `<span style="font-size:12px;color:var(--blue);background:rgba(91,127,255,.12);padding:3px 10px;border-radius:6px;border:1px solid rgba(91,127,255,.25)">👤 ${ocrCurrentMember}</span>` : ''}
+        <button onclick="ocrCurrentMember=null;renderOcrChatContent()" style="font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer">切换</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传与博主的聊天截图，AI 自动识别并提取有效话术，保存到话术库 · 每保存1条话术 <b style="color:var(--green)">+2分</b>（上限20分/周）</div>
     <div id="chat-drop" onclick="document.getElementById('chat-input').click()"
       style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s"
       ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
@@ -2263,8 +2492,14 @@ function renderOcrChatContent() {
 
   <!-- 博主适配分析 -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-top:14px">
-    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">🎯 一键分析博主是否适配</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">上传博主主页截图，AI 结合历史成功案例判断是否适合建联</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">🎯 一键分析博主是否适配</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${ocrCurrentMember ? `<span style="font-size:12px;color:var(--green);background:rgba(67,217,164,.12);padding:3px 10px;border-radius:6px;border:1px solid rgba(67,217,164,.25)">👤 ${ocrCurrentMember}</span>` : ''}
+        <button onclick="ocrCurrentMember=null;renderOcrChatContent()" style="font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer">切换</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">每次<b style="color:var(--text)">至少上传10张</b>博主主页截图，AI逐一分析每位博主适配度并计算总平均分 · 当日无建联成功时，平均分≥75可得 <b style="color:var(--green)">+5分</b></div>
     <div id="compat-drop" onclick="document.getElementById('compat-input').click()"
       style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s"
       ondragover="event.preventDefault();this.style.borderColor='var(--green)'"
@@ -2272,11 +2507,19 @@ function renderOcrChatContent() {
       ondrop="compatHandleDrop(event)">
       <div style="font-size:22px;margin-bottom:6px">🖼</div>
       <div style="font-size:13px;color:var(--text)">点击或拖拽上传博主主页截图</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">每位博主一张截图，<b style="color:var(--gold)">至少10张</b>才能开始分析</div>
     </div>
     <input type="file" id="compat-input" accept="image/*" multiple style="display:none" onchange="compatHandleFiles(this.files)">
-    <div id="compat-previews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-    <button class="dup-btn dup-btn-primary" id="compat-run-btn" onclick="compatRun()" style="margin-top:10px;width:100%;background:var(--green)" disabled>
-      🔍 分析适配度
+    <!-- 预览 + 计数 -->
+    <div style="margin-top:10px">
+      <div id="compat-count-bar" style="display:none;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span id="compat-count-label" style="font-size:12px;color:var(--muted)"></span>
+        <button onclick="compatClear()" style="font-size:11px;color:var(--red);background:transparent;border:1px solid rgba(255,107,107,.3);border-radius:5px;padding:2px 8px;cursor:pointer">清空重选</button>
+      </div>
+      <div id="compat-previews" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <button class="dup-btn dup-btn-primary" id="compat-run-btn" onclick="compatRun()" style="margin-top:12px;width:100%;background:var(--green);opacity:.4;cursor:not-allowed" disabled>
+      🔍 分析适配度（请先上传至少10张截图）
     </button>
     <div id="compat-status" style="font-size:13px;color:var(--muted);padding:4px 0;min-height:18px;margin-top:6px"></div>
     <div id="compat-result" style="margin-top:10px"></div>
@@ -2365,20 +2608,26 @@ async function chatRun() {
       }
     ];
 
-    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    const resp = await fetch(window.location.origin + '/api/vision', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
-      body: JSON.stringify({ model: 'qwen-vl-plus', max_tokens: 3000, messages })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: allB64s,
+        prompt: `以上是${allB64s.length}张与博主的聊天截图。请分析截图中我方（右侧气泡）的消息，提取有效的建联话术。
+按以下JSON数组格式返回，不要其他文字：
+[{"type":"话术类型(开场白/拒绝处理/价值塑造/跟进/成交/其他)","script":"具体话术内容，保持原文","platform":"平台(小红书/抖音/微信等)","note":"话术亮点或使用建议"}]
+每条话术单独一个对象。如果有多条有效话术，全部提取。`
+      })
     });
     const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content || '';
+    const text = data.result ? JSON.stringify(data.result) : (data.raw || '');
     const match = text.match(/\[[\s\S]*\]/);
-    if (match) {
-      const parsed = JSON.parse(match[0]);
+    if (data.result || match) {
+      const parsed = data.result || JSON.parse(match[0]);
       const now = new Date().toLocaleDateString('zh-CN');
       parsed.forEach(r => { r.date = now; chatScriptRows.push(r); });
       await saveChatScripts();
-      // 保存话术到数据库
+      // 保存话术到数据库（带成员姓名）
       try {
         await fetch(window.location.origin + '/api/tactics', {
           method: 'POST',
@@ -2387,7 +2636,8 @@ async function chatRun() {
             category: t.type || t.category || '其他',
             content: t.script || t.content || '',
             note: t.note || '',
-            source: t.platform || ''
+            source: t.platform || '',
+            member: ocrCurrentMember || ''
           }))})
         });
       } catch(e) { console.warn('话术保存失败:', e); }
@@ -2410,9 +2660,9 @@ async function saveChatScripts() {
   } catch(e) {}
   // Also save to supabase if table exists
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/chat_scripts`, {
+    await fetch(`${window.location.origin}/api/tactics`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(chatScriptRows.map(r => ({ type: r.type, script: r.script, platform: r.platform, note: r.note, date: r.date })))
     });
   } catch(e) {}
@@ -2420,9 +2670,7 @@ async function saveChatScripts() {
 
 async function loadChatScripts() {
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/chat_scripts?order=id.desc&limit=200`, {
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
-    });
+    const resp = await fetch(`${window.location.origin}/api/tactics`);
     if (resp.ok) {
       const rows = await resp.json();
       if (rows && rows.length) { chatScriptRows = rows; return; }
@@ -2472,36 +2720,106 @@ function compatHandleDrop(e) {
   compatHandleFiles(e.dataTransfer.files);
 }
 
+function compatClear() {
+  compatPendingFiles = [];
+  const previews = document.getElementById('compat-previews');
+  if (previews) previews.innerHTML = '';
+  const countBar = document.getElementById('compat-count-bar');
+  if (countBar) countBar.style.display = 'none';
+  const btn = document.getElementById('compat-run-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '.4';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = '🔍 分析适配度（请先上传至少10张截图）';
+  }
+  const statusEl = document.getElementById('compat-status');
+  if (statusEl) statusEl.textContent = '';
+  const resultEl = document.getElementById('compat-result');
+  if (resultEl) resultEl.innerHTML = '';
+}
+
+function compatUpdateCounter() {
+  const n = compatPendingFiles.length;
+  const countBar = document.getElementById('compat-count-bar');
+  const countLabel = document.getElementById('compat-count-label');
+  const btn = document.getElementById('compat-run-btn');
+  if (countBar) countBar.style.display = 'flex';
+  if (countLabel) {
+    if (n < 10) {
+      countLabel.innerHTML = `已选 <b style="color:var(--gold)">${n}</b> 张 · 还需再上传 <b style="color:var(--gold)">${10 - n}</b> 张才能开始分析`;
+    } else {
+      countLabel.innerHTML = `已选 <b style="color:var(--green)">${n}</b> 张 ✓ 可以开始分析了`;
+    }
+  }
+  if (btn) {
+    const ready = n >= 10;
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? '1' : '.4';
+    btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    btn.textContent = ready ? `🔍 开始分析全部 ${n} 位博主` : `🔍 分析适配度（还需 ${10 - n} 张）`;
+  }
+}
+
 function compatHandleFiles(files) {
+  const previews = document.getElementById('compat-previews');
   Array.from(files).forEach(f => {
     const reader = new FileReader();
     reader.onload = e => {
-      compatPendingFiles.push({ b64: e.target.result.split(',')[1] });
-      const previews = document.getElementById('compat-previews');
+      compatPendingFiles.push({ b64: e.target.result.split(',')[1], src: e.target.result });
       if (previews) {
+        const idx = compatPendingFiles.length - 1;
         const div = document.createElement('div');
         div.style.cssText = 'position:relative;display:inline-block';
-        div.innerHTML = `<img src="${e.target.result}" style="width:60px;height:60px;object-fit:cover;border-radius:6px">`;
+        div.innerHTML = `
+          <img src="${e.target.result}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;display:block">
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);border-radius:0 0 8px 8px;font-size:10px;color:#fff;text-align:center;padding:2px 0">#${idx+1}</div>
+          <button onclick="compatRemoveOne(${idx})" style="position:absolute;top:-5px;right:-5px;background:#ef4444;border:none;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px;font-weight:700">×</button>`;
         previews.appendChild(div);
       }
+      compatUpdateCounter();
     };
     reader.readAsDataURL(f);
   });
-  const btn = document.getElementById('compat-run-btn');
-  if (btn) btn.disabled = compatPendingFiles.length === 0;
+}
+
+function compatRemoveOne(idx) {
+  compatPendingFiles.splice(idx, 1);
+  // 重新渲染预览
+  const previews = document.getElementById('compat-previews');
+  if (previews) {
+    previews.innerHTML = '';
+    compatPendingFiles.forEach((f, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:relative;display:inline-block';
+      div.innerHTML = `
+        <img src="${f.src}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;display:block">
+        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);border-radius:0 0 8px 8px;font-size:10px;color:#fff;text-align:center;padding:2px 0">#${i+1}</div>
+        <button onclick="compatRemoveOne(${i})" style="position:absolute;top:-5px;right:-5px;background:#ef4444;border:none;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px;font-weight:700">×</button>`;
+      previews.appendChild(div);
+    });
+  }
+  compatUpdateCounter();
 }
 
 async function compatRun() {
-  if (!compatPendingFiles.length) return;
+  if (compatPendingFiles.length < 10) {
+    alert(`请至少上传10张截图，当前只有 ${compatPendingFiles.length} 张`);
+    return;
+  }
+  // 未选成员先弹窗
+  if (!ocrCurrentMember) {
+    ocrPickMember(() => compatRun());
+    return;
+  }
   const btn = document.getElementById('compat-run-btn');
   const statusEl = document.getElementById('compat-status');
   const resultEl = document.getElementById('compat-result');
   btn.disabled = true;
-  if (statusEl) statusEl.textContent = 'AI 分析中，请稍候...';
-  if (resultEl) resultEl.innerHTML = '';
+  btn.style.opacity = '.6';
 
   // 统计历史成功博主特征
-  const successRows = ALL_ROWS.filter(r => r.status === '引导到私域了');
+  const successRows = ALL_ROWS.filter(r => STATUS_SUCCESS.includes(r.status));
   const avgFollowers = successRows.length
     ? (successRows.map(r => parseFloat(r.followers)||0).filter(v=>v>0).reduce((a,b)=>a+b,0) / successRows.length).toFixed(1)
     : '未知';
@@ -2509,72 +2827,165 @@ async function compatRun() {
   successRows.forEach(r => { if(r.platform) platforms[r.platform] = (platforms[r.platform]||0)+1; });
   const topPlatform = Object.entries(platforms).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`${p}(${c}位)`).join('、');
 
-  try {
-    const imgParts = compatPendingFiles.map(f => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + f.b64 } }));
-    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + QWEN_KEY },
-      body: JSON.stringify({
-        model: 'qwen-vl-plus', max_tokens: 1500,
-        messages: [{ role: 'user', content: [
-          ...imgParts,
-          { type: 'text', text: `以上是博主主页截图。请分析该博主是否适合宣传以下产品，结合历史建联成功数据给出判断。
+  const total = compatPendingFiles.length;
+  const results = [];
+
+  // 逐张分析（每次API调用1张，避免混淆）
+  for (let i = 0; i < total; i++) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--blue)">分析第 ${i+1}/${total} 位博主中…</span>`;
+
+    const compatPrompt = `这是第${i+1}位博主的主页截图，请分析该博主是否适合宣传以下产品。
 
 【产品信息：飞羽出书 FeatherPub AI】
 - 核心定位：AI一站式出书平台，依托国际人工智能科学院出版社资源
 - 拳头产品：16666元包含版号的实体书籍出版发行一站式解决方案
 - 目标用户：有人生故事、个人回忆录、知识积累想出版的人
 - 核心卖点：AI辅助写作，一天写完一本书，human in the loop全程参与
-- 适合宣传的博主类型：AI科技、知识分享、个人成长、中老年人群、有故事有经历的博主
+- 适合类型：AI科技、知识分享、个人成长、中老年人群、有故事有经历的博主
 
-历史建联成功数据：
-- 总成功案例：${successRows.length}位
-- 平均粉丝量：${avgFollowers}万
-- 主要平台：${topPlatform || '暂无数据'}
+历史建联成功数据：总成功${successRows.length}位，平均粉丝${avgFollowers}万，主要平台：${topPlatform||'暂无'}
 
 请严格按JSON格式返回，不要其他文字：
-{"name":"博主名","platform":"平台","followers":"粉丝数","content_type":"内容类型","compatibility_score":85,"compatibility_level":"高/中/低","reasons":["适配原因1","适配原因2"],"risks":["风险点1"],"suggestion":"建联建议（1-2句）","opening":"推荐开场白话术（结合飞羽出书产品特点）"}` }
-        ]}]
-      })
-    });
-    const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    const result = match ? JSON.parse(match[0]) : null;
+{"name":"博主名","platform":"平台","followers":"粉丝数","content_type":"内容类型","compatibility_score":85,"compatibility_level":"高/中/低","reasons":["原因1"],"risks":["风险1"],"suggestion":"建联建议（1句）"}`;
 
-    if (result) {
-      const levelColor = result.compatibility_level === '高' ? 'var(--green)' : result.compatibility_level === '中' ? 'var(--gold)' : 'var(--red)';
-      const score = result.compatibility_score || 0;
-      resultEl.innerHTML = `
-        <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:16px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-            <div style="text-align:center;background:${levelColor}22;border:2px solid ${levelColor};border-radius:10px;padding:10px 16px">
-              <div style="font-size:24px;font-weight:800;color:${levelColor}">${score}</div>
-              <div style="font-size:11px;color:${levelColor}">适配度</div>
-            </div>
-            <div>
-              <div style="font-size:15px;font-weight:700;color:var(--text)">${result.name||'—'}</div>
-              <div style="font-size:12px;color:var(--muted)">${result.platform||''} · ${result.followers||'—'} · ${result.content_type||'—'}</div>
-              <div style="font-size:13px;font-weight:600;color:${levelColor};margin-top:4px">${result.compatibility_level||'—'}适配度</div>
-            </div>
-          </div>
-          ${result.reasons?.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:5px">✅ 适配原因</div>${result.reasons.map(r=>`<div style="font-size:12px;color:var(--text);padding:4px 0">▸ ${r}</div>`).join('')}</div>` : ''}
-          ${result.risks?.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:5px">⚠️ 风险点</div>${result.risks.map(r=>`<div style="font-size:12px;color:var(--gold);padding:4px 0">▸ ${r}</div>`).join('')}</div>` : ''}
-          ${result.suggestion ? `<div style="margin-bottom:10px;font-size:13px;color:var(--text);background:var(--surf);border-radius:8px;padding:10px">💡 ${result.suggestion}</div>` : ''}
-          ${result.opening ? `<div style="font-size:12px;color:var(--muted);margin-bottom:5px">推荐开场白：</div><div style="font-size:13px;color:var(--blue);background:rgba(91,127,255,.1);border-radius:8px;padding:10px;white-space:pre-wrap">${result.opening}</div>` : ''}
-        </div>`;
-      if (statusEl) statusEl.textContent = '✅ 分析完成';
-    } else {
-      if (statusEl) statusEl.textContent = '⚠️ 分析失败，请重试';
+    try {
+      const resp = await fetch(window.location.origin + '/api/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: [compatPendingFiles[i].b64], prompt: compatPrompt })
+      });
+      const data = await resp.json();
+      const rawText = data.result ? JSON.stringify(data.result[0] || data.result) : (data.raw || '');
+      const match = rawText.match(/\{[\s\S]*\}/);
+      const result = data.result?.[0] || (match ? JSON.parse(match[0]) : null);
+      results.push(result ? { ...result, imgSrc: compatPendingFiles[i].src, idx: i+1 } : { name: `第${i+1}张`, error: '识别失败', imgSrc: compatPendingFiles[i].src, idx: i+1, compatibility_score: 0 });
+    } catch(e) {
+      results.push({ name: `第${i+1}张`, error: e.message, imgSrc: compatPendingFiles[i].src, idx: i+1, compatibility_score: 0 });
     }
-  } catch(e) {
-    if (statusEl) statusEl.textContent = '❌ 错误：' + e.message;
+
+    // 实时渲染已完成的结果
+    renderCompatResults(results, total);
   }
 
-  compatPendingFiles = [];
+  // 全部完成后保存到 Supabase
+  const today = new Date().toISOString().slice(0,10);
+  const validResults = results.filter(r => !r.error && r.compatibility_score > 0);
+  const avgScore = validResults.length
+    ? Math.round(validResults.reduce((s,r) => s + (r.compatibility_score||0), 0) / validResults.length)
+    : 0;
+
+  try {
+    const rows = validResults.map(r => ({
+      member_name: ocrCurrentMember || '',
+      score_date: today,
+      blogger_name: r.name || '',
+      compat_score: r.compatibility_score || 0,
+      platform: r.platform || '',
+      content_type: r.content_type || ''
+    }));
+    if (rows.length) {
+      await fetch(`${SUPABASE_URL}/rest/v1/compat_scores`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(rows)
+      });
+      // 更新本地缓存
+      if (!window.compatScoreCache) window.compatScoreCache = [];
+      window.compatScoreCache.push(...rows);
+    }
+    const qualifies = avgScore >= 75;
+    if (statusEl) statusEl.innerHTML = `✅ 全部分析完成 · 共 ${validResults.length} 位博主 · 总平均适配分 <b style="color:${qualifies?'var(--green)':'var(--gold)'}">${avgScore}分</b>${qualifies?' · 🎯 达标，今日可得绩效加分':' · 需平均≥70分才能得绩效加分'} · 已记录到 ${ocrCurrentMember} 的绩效`;
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = `✅ 分析完成，保存失败：${e.message}`;
+  }
+
   btn.disabled = false;
+  btn.style.opacity = '1';
 }
 
+function renderCompatResults(results, total) {
+  const resultEl = document.getElementById('compat-result');
+  if (!resultEl) return;
+
+  const validResults = results.filter(r => !r.error && r.compatibility_score > 0);
+  const avgScore = validResults.length
+    ? Math.round(validResults.reduce((s,r) => s + (r.compatibility_score||0), 0) / validResults.length)
+    : 0;
+  const pending = total - results.length;
+
+  const avgColor = avgScore >= 75 ? 'var(--green)' : avgScore >= 60 ? 'var(--gold)' : 'var(--red)';
+
+  resultEl.innerHTML = `
+    <!-- 总平均分 banner -->
+    <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">总平均适配分（${validResults.length}/${total} 已完成）</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-size:40px;font-weight:800;color:${avgColor};line-height:1">${validResults.length ? avgScore : '—'}</span>
+          <span style="font-size:14px;color:var(--muted)">/ 100</span>
+          ${validResults.length ? `<span style="font-size:13px;font-weight:600;color:${avgColor};background:${avgColor}22;padding:2px 10px;border-radius:6px">${avgScore>=75?'🎯 达标可得绩效加分':avgScore>=60?'中等适配':'适配度偏低'}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:12px">
+        <div style="background:rgba(67,217,164,.1);border-radius:8px;padding:8px 12px">
+          <div style="color:var(--green);font-weight:700;font-size:18px">${validResults.filter(r=>r.compatibility_score>=75).length}</div>
+          <div style="color:var(--muted)">高适配</div>
+        </div>
+        <div style="background:rgba(245,166,35,.1);border-radius:8px;padding:8px 12px">
+          <div style="color:var(--gold);font-weight:700;font-size:18px">${validResults.filter(r=>r.compatibility_score>=50&&r.compatibility_score<75).length}</div>
+          <div style="color:var(--muted)">中适配</div>
+        </div>
+        <div style="background:rgba(255,107,107,.1);border-radius:8px;padding:8px 12px">
+          <div style="color:var(--red);font-weight:700;font-size:18px">${validResults.filter(r=>r.compatibility_score<50).length}</div>
+          <div style="color:var(--muted)">低适配</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 各博主结果卡片 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+      ${results.map(r => {
+        if (r.error) return `
+          <div style="background:var(--surf2);border:1px solid rgba(255,107,107,.3);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start">
+            <img src="${r.imgSrc}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--muted)">#${r.idx} 识别失败</div>
+              <div style="font-size:11px;color:var(--red);margin-top:3px">${r.error}</div>
+            </div>
+          </div>`;
+        const sc = r.compatibility_score || 0;
+        const lc = sc >= 75 ? 'var(--green)' : sc >= 50 ? 'var(--gold)' : 'var(--red)';
+        return `
+          <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:12px">
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+              <div style="position:relative;flex-shrink:0">
+                <img src="${r.imgSrc}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;display:block">
+                <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);background:${lc};color:#000;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;white-space:nowrap">${sc}分</div>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#${r.idx} ${r.name||'未识别'}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.platform||''} · ${r.followers||'—'}</div>
+                <div style="font-size:11px;color:${lc};margin-top:2px">${r.content_type||''} · ${r.compatibility_level||'—'}适配</div>
+              </div>
+            </div>
+            ${r.suggestion ? `<div style="font-size:11px;color:var(--muted);background:var(--surf);border-radius:6px;padding:6px 8px;margin-top:2px">💡 ${r.suggestion}</div>` : ''}
+            ${r.reasons?.length ? `<div style="margin-top:6px">${r.reasons.slice(0,2).map(x=>`<div style="font-size:11px;color:var(--text);padding:1px 0">▸ ${x}</div>`).join('')}</div>` : ''}
+          </div>`;
+      }).join('')}
+      ${pending > 0 ? Array(pending).fill(0).map((_,i) => `
+        <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;min-height:90px">
+          <div style="text-align:center;color:var(--muted)">
+            <div style="font-size:18px;margin-bottom:4px">⏳</div>
+            <div style="font-size:11px">#${results.length+i+1} 等待分析</div>
+          </div>
+        </div>`).join('') : ''}
+    </div>`;
+}
 // ── 推荐建联博主 ──
 async function recommendBloggers() {
   const btn = document.getElementById('recommend-run-btn');
@@ -2780,34 +3191,22 @@ async function ocrRun() {
     });
 
     try {
-      const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const resp = await fetch(window.location.origin + '/api/vision', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + QWEN_KEY
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'qwen-vl-plus',
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
-              { type: 'text', text: `请识别图片中的博主主页信息，严格按以下JSON数组格式返回，不要任何其他文字：
+          images: [b64],
+          prompt: `请识别图片中的博主主页信息，严格按以下JSON数组格式返回，不要任何其他文字：
 [{"name":"博主名称","account":"博主账号ID（如抖音号/小红书号/B站UID等，不是昵称）","link":"主页链接（如有否则空）","followers":"粉丝数（如19.4万）","blogger_type":"博主类型（如AI科技/生活方式/知识分享等）","error":""}]
-如无法识别在error字段说明原因，其他字段留空。followers只填粉丝数不填获赞数。` }
-            ]
-          }]
+如无法识别在error字段说明原因，其他字段留空。followers只填粉丝数不填获赞数。`
         })
       });
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      if (!text) {
-        newRows.push({ _error: data.error?.message || '识别失败', name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+      if (data.error) {
+        newRows.push({ _error: data.error, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
       } else {
+        const parsed = data.result;
         try {
-          const match = text.match(/\[[\s\S]*\]/);
-          const parsed = match ? JSON.parse(match[0]) : null;
           if (parsed && Array.isArray(parsed)) {
             parsed.forEach(r => {
               if (r.error) {
@@ -2816,8 +3215,16 @@ async function ocrRun() {
                 newRows.push({ name: r.name||'', account: r.account||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status:'', owner:'' });
               }
             });
+          } else if (data.raw) {
+            const match = data.raw.match(/\[[\s\S]*\]/);
+            const fallback = match ? JSON.parse(match[0]) : null;
+            if (fallback) {
+              fallback.forEach(r => newRows.push({ name: r.name||'', account: r.account||'', followers: r.followers||'', blogger_type: r.blogger_type||'', link: r.link||'', status:'', owner:'' }));
+            } else {
+              newRows.push({ _error: '格式解析失败：' + data.raw.slice(0,80), name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+            }
           } else {
-            newRows.push({ _error: '格式解析失败：' + text.slice(0,80), name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
+            newRows.push({ _error: '识别无结果', name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
           }
         } catch(pe) {
           newRows.push({ _error: '解析错误：' + pe.message, name:'', platform:'', followers:'', blogger_type:'', link:'', status:'', owner:'' });
@@ -3024,144 +3431,121 @@ function renderGuide() {
     <div class="card-title"><div class="dot" style="background:var(--blue)"></div>📖 完整使用说明</div>
     <div style="color:var(--muted2);font-size:14px;line-height:2">
 
-      <div style="background:var(--surf2);border-radius:10px;padding:14px 18px;margin-bottom:16px">
+      <div style="background:var(--surf2);border-radius:10px;padding:14px 18px;margin-bottom:20px">
         <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🌐 看板地址</div>
-        <div style="font-family:monospace;color:var(--blue);font-size:14px">https://gummy-tracker.top</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">无需安装任何软件，直接用手机或电脑浏览器打开即可，国内可正常访问</div>
+        <div style="font-family:monospace;color:var(--blue);font-size:14px;margin-bottom:4px">https://gummy-tracker.top</div>
+        <div style="font-size:12px;color:var(--muted)">无需安装任何软件，手机或电脑浏览器直接打开，国内可正常访问</div>
       </div>
 
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin:16px 0 8px">一、系统概览</div>
-      <div>本看板是飞羽出书团队专用的博主建联管理系统，解决数据分散、进度不透明、考评缺乏依据三大问题。数据流向为：<b style="color:var(--text)">飞书电子表格 → 每日自动同步 → Supabase数据库 → 本看板实时展示</b>。右上角显示最后同步时间，每天09:00自动同步一次。</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 12px">一、系统概览</div>
+      <div style="margin-bottom:14px">本看板是飞羽出书团队专用的博主建联管理系统。数据流向：<b style="color:var(--text)">飞书电子表格 → 每天09:00自动同步 → Supabase数据库 → 看板实时展示</b>。右上角显示最后同步时间。</div>
 
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">二、各功能模块详解</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 12px">二、各功能模块说明</div>
 
-      <div style="background:var(--surf2);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📊 总览</div>
-        <div>展示团队整体建联数据，包括今日录入博主数、引导成功数、已联系数、有效回复率。支持按<b style="color:var(--text)">全部历史 / 今天 / 本周 / 本月</b>四个维度切换查看。下方有今日状态分布饼图和平台分布图，以及本周汇总数据。</div>
-      </div>
+      ${[
+        ['📊 总览', 'var(--blue)', '展示今日/本周/本月建联数据、成功率、状态饼图、平台分布。支持全部历史/今天/本周/本月切换。'],
+        ['👥 跟进人', 'var(--orange)', '按成员统计各自的录入量、已联系数、建联成功数、转化率和本周工作量。'],
+        ['📋 博主列表', 'var(--green)', '展示所有博主完整数据，支持按跟进人、状态筛选，点击"主页↗"直达博主主页。'],
+        ['🔔 回访', 'var(--gold)', '自动筛选：2天无回复→待二次回访；4天无回复→建议放弃。'],
+        ['📈 趋势', '#8b5cf6', '折线图展示近期每日建联成功数和建联系数变化。'],
+        ['✅ 签到', 'var(--green)', '每日打卡：许家铭仅需复盘截图；其他成员需聊天截图+建联记录+复盘截图三类。管理员可查看所有人截图并导出。'],
+        ['📅 打卡总览', 'var(--blue)', '查看全团队每日签到状态总览，有无上传截图一目了然。'],
+        ['📅 数据分析', '#8b5cf6', '按月/阶段(1-7日/8-14日/15-21日/22日-月底)分析成功博主特征，AI生成报告自动保存，已分析的标✅，支持导出/导入。'],
+        ['🎯 建联排序', 'var(--orange)', '上传截图→AI识别（同一博主自动合并）→可删除错误条目→生成高/中/低三列优先级看板，自动保存历史记录。'],
+        ['📸 截图识别', '#ec4899', '上传博主主页截图→AI识别博主名/号/粉丝/类型→可编辑表格→查重→导出CSV或复制到飞书。同时可提取聊天话术保存到话术库，以及一键分析博主对飞羽出书的适配度。'],
+        ['📖 使用指南', 'var(--muted)', '完整使用说明、知识库管理、AI答疑功能。'],
+      ].map(([tab, color, desc]) => `
+        <div style="border-left:3px solid ${color};padding:10px 14px;margin-bottom:10px;background:var(--surf2);border-radius:0 8px 8px 0">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px">${tab}</div>
+          <div style="font-size:13px;color:var(--muted2);line-height:1.6">${desc}</div>
+        </div>`).join('')}
 
-      <div style="background:var(--surf2);border-left:3px solid var(--orange);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">👥 跟进人</div>
-        <div>按跟进人统计各自的建联数据，包括录入总量、已联系数、建联成功数、转化率和本周工作量。数据实时更新，管理员可以直观看到每位成员的工作进度。</div>
-      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 12px">三、飞书表格录入规范</div>
 
-      <div style="background:var(--surf2);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📋 博主列表</div>
-        <div>展示所有博主的完整数据，每条记录包含博主名、平台、粉丝量、回复状态、跟进人、录入日期等信息。点击"主页↗"可直接跳转到博主主页。支持按跟进人和状态筛选，方便查找特定博主。</div>
-      </div>
-
-      <div style="background:var(--surf2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🔔 回访</div>
-        <div>自动筛选需要跟进的博主：<b style="color:var(--text)">2天无回复</b>的博主列入"待二次回访"，<b style="color:var(--text)">4天无回复</b>的博主列入"建议放弃"。回访成功后直接在飞书表格修改状态为"引导到私域了"，下次同步后自动更新。</div>
-      </div>
-
-      <div style="background:var(--surf2);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📈 趋势</div>
-        <div>可视化展示近期每日建联成功数和建联系数的折线图，帮助管理层了解团队整体趋势，发现异常波动。</div>
-      </div>
-
-      <div style="background:var(--surf2);border-left:3px solid var(--purple, #a855f7);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📅 数据分析</div>
-        <div>
-          按阶段分析建联成功博主的特征，为下一阶段建联方向提供依据。<br><br>
-          <b style="color:var(--text)">使用步骤：</b><br>
-          1. 在下拉菜单选择时间段（支持整月或月内4个阶段：1-7日、8-14日、15-21日、22日-月底）<br>
-          2. 点击"开始分析"，系统自动搜索该时间段内成功博主信息<br>
-          3. AI生成包含"成功博主画像"和"建联方向建议"的完整报告<br>
-          4. 报告自动保存到数据库，下拉菜单中已分析过的时间段会显示✅标记<br>
-          5. 点击下方绿色快捷按钮可直接查看历史报告，支持导出Markdown<br><br>
-          <span style="color:var(--danger)">⚠️ 同一时间段已有报告时按钮变为"重新分析"，不会重复消耗额度</span>
-        </div>
-      </div>
-
-      <div style="background:var(--surf2);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎯 建联排序</div>
-        <div>
-          上传建联成功的截图（主页截图或聊天记录截图均可），AI自动识别博主信息并给出优先级排序。<br><br>
-          <b style="color:var(--text)">使用步骤：</b><br>
-          1. 点击上传区域或拖拽图片，支持同时上传多张截图<br>
-          2. 同一博主的多张截图（头像相同）会自动合并为一条<br>
-          3. AI识别完毕后先展示结果，可以点击"🗑 删除"去掉识别错误的条目<br>
-          4. 确认无误后点击"确认并生成优先级排序"<br>
-          5. 结果以三列看板展示：🔴高优先级 / 🟡中优先级 / 🟢低优先级，每位博主附上具体建议理由<br>
-          6. 结果自动保存，历史记录可随时查看，支持导出Markdown<br><br>
-          <b style="color:var(--text)">注意事项：</b><br>
-          · 上传聊天记录截图时，AI只看左边（博主发的消息），不会把你自己识别进去<br>
-          · 建议上传博主的主页截图，识别准确率更高<br>
-          · 如果截图太长分成了多部分，全部一起上传，AI会自动合并
-        </div>
-      </div>
-
-      <div style="background:var(--surf2);border-left:3px solid #ec4899;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px">
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📸 截图识别</div>
-        <div>
-          上传博主主页截图，AI自动识别并整理成表格，省去手动录入的时间。<br><br>
-          <b style="color:var(--text)">可识别字段：</b>博主名、博主号、粉丝量、博主类型、主页链接<br><br>
-          <b style="color:var(--text)">使用步骤：</b><br>
-          1. 上传截图（支持多张同时上传）<br>
-          2. 点击"开始识别"，逐张识别<br>
-          3. 识别完成后在表格中填写"跟进人"和"回复情况"<br>
-          4. 点击列标题旁的⎘按钮可单独复制该列数据<br>
-          5. 点击"🔍 查重"检查是否与已有博主重复（重复的标红显示）<br>
-          6. 点击"⬇ 导出CSV"或"📋 复制到飞书"导出数据<br><br>
-          <span style="color:var(--danger)">⚠️ 识别结果需人工核对，可直接在表格中点击单元格修改</span>
-        </div>
-      </div>
-
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">三、飞书表格录入规范</div>
-
-      <div style="margin-bottom:12px"><b style="color:var(--text)">表格列说明：</b></div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
-        ${[["A列","数量（自动编号）"],["B列","博主链接（必填）"],["C列","回复情况（必填，见下方状态说明）"],["D列","博主名（必填）"],["E列","粉丝量（万为单位，如19.4）"],["F列","博主号（抖音号/小红书号等）"],["G列","跟进人（自动填充）"],["H列","查重结果（系统自动写入）"],["I列","质量评分（管理员填写，满分100）"],["J列","备注"],["K列","博主类型"]].map(([col,desc])=>`
-        <div style="background:var(--surf2);border-radius:6px;padding:8px 12px;display:flex;gap:8px">
-          <span style="color:var(--blue);font-weight:700;white-space:nowrap">${col}</span>
-          <span style="color:var(--muted2);font-size:13px">${desc}</span>
-        </div>`).join("")}
-      </div>
-
-      <div style="margin-bottom:8px"><b style="color:var(--text)">回复情况状态说明：</b></div>
+      <div style="margin-bottom:10px"><b style="color:var(--text)">列说明：</b></div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px">
-        ${[["抖音私信建联","已发送抖音私信"],["小红书私信建联","已发送小红书私信"],["微信建联","已加微信"],["引导到私域了","建联成功✅"],["拒绝","博主明确拒绝"],["需要且未二次回访","需跟进未跟进"],["无需二次回访","无需再联系"],["二次回访成功","二次建联成功✅"],["二次回访无果","二次建联失败"]].map(([s,d])=>`
-        <div style="background:var(--surf2);border-radius:6px;padding:7px 12px">
-          <span style="color:var(--text);font-size:13px;font-weight:500">${s}</span>
-          <span style="color:var(--muted);font-size:12px;margin-left:6px">${d}</span>
-        </div>`).join("")}
-      </div>
-
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">四、新同学操作指南</div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
         ${[
-          ["第一步","打开飞书表格，找到今天日期的工作表（格式：月.日，如 6.7）"],
-          ["第二步","在自己负责的区块录入博主信息，B列填链接、C列选回复情况、D列填博主名、E列填粉丝数"],
-          ["第三步","录入前先检查D列有没有变红，变红说明和其他工作表重复了，需要删除"],
-          ["第四步","每天21:00系统自动查重，H列会写入【已重复】，请在0:00前完成修正"],
-          ["第五步","0:00后表格锁定，次日09:00日报推送后解锁，请提前完成录入"]
-        ].map(([step,desc])=>`
-        <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surf2);border-radius:8px;padding:10px 14px">
-          <span style="background:var(--blue);color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap">${step}</span>
-          <span style="color:var(--muted2);font-size:13px;line-height:1.6">${desc}</span>
-        </div>`).join("")}
+          ['B列','博主链接（必填）'],['C列','回复情况（必填，从下拉选）'],
+          ['D列','博主名（必填，变红=重复需删除）'],['E列','粉丝量（万，如19.4）'],
+          ['F列','博主号（平台账号ID）'],['G列','跟进人（自动分配）'],
+          ['H列','查重结果（系统自动写入）'],['I列','质量评分（管理员填）'],
+          ['J列','备注'],['K列','博主类型'],
+        ].map(([col,desc]) => `
+          <div style="background:var(--surf2);border-radius:6px;padding:7px 12px;display:flex;gap:8px;align-items:center">
+            <span style="color:var(--blue);font-weight:700;white-space:nowrap;font-size:13px">${col}</span>
+            <span style="color:var(--muted2);font-size:12px">${desc}</span>
+          </div>`).join('')}
       </div>
 
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 8px">五、常见问题</div>
+      <div style="margin-bottom:10px"><b style="color:var(--text)">回复情况状态：</b></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:16px">
+        ${[
+          ['引导到私域了','✅ 建联成功'],['二次回访成功','✅ 建联成功'],
+          ['抖音私信建联','建联中'],['小红书私信建联','建联中'],
+          ['微信建联','建联中'],['微信私信建联','建联中'],
+          ['需要且未二次回访','待跟进'],['无需二次回访','已结束'],
+          ['二次回访无果','已结束'],['拒绝','已结束'],
+        ].map(([s,d]) => `
+          <div style="background:var(--surf2);border-radius:6px;padding:6px 12px">
+            <span style="font-size:12px;color:var(--text);font-weight:500">${s}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:6px">${d}</span>
+          </div>`).join('')}
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 12px">四、新同学每日操作流程</div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:16px">
+        ${[
+          ['第一步','打开飞书表格，找到今天日期的工作表（格式：月.日，如 6.8）'],
+          ['第二步','在自己区块录入：B列填链接、C列选状态、D列填博主名、E列填粉丝数'],
+          ['第三步','录入前检查D列是否变红（变红=已重复，需删除该行）'],
+          ['第四步','21:00系统自动查重，H列写入"已重复"，当天检查并修正'],
+          ['第五步','完成建联工作后，在签到Tab上传聊天截图、建联记录和复盘截图完成打卡'],
+        ].map(([step,desc]) => `
+          <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surf2);border-radius:8px;padding:9px 14px">
+            <span style="background:var(--blue);color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap">${step}</span>
+            <span style="color:var(--muted2);font-size:13px;line-height:1.6">${desc}</span>
+          </div>`).join('')}
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 12px">五、签到成员要求</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px">
+        <div style="background:var(--surf2);border-radius:8px;padding:10px 12px;border:1px solid rgba(245,158,11,.3)">
+          <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:6px">许家铭（仅复盘）</div>
+          <div style="font-size:12px;color:var(--muted)">✅ 复盘截图</div>
+          <div style="font-size:12px;color:var(--muted)">— 聊天截图（不需要）</div>
+          <div style="font-size:12px;color:var(--muted)">— 建联记录（不需要）</div>
+        </div>
+        <div style="background:var(--surf2);border-radius:8px;padding:10px 12px;border:1px solid rgba(34,197,94,.3);grid-column:span 2">
+          <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">其他所有成员（三项全需）</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+            <div style="font-size:12px;color:var(--muted)">✅ 聊天截图</div>
+            <div style="font-size:12px;color:var(--muted)">✅ 建联记录</div>
+            <div style="font-size:12px;color:var(--muted)">✅ 复盘截图</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">杜承睿、崔靖、卢泳琦、李可、汉强生、刘焱、寇诺琪、谢家顺</div>
+        </div>
+      </div>
+
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:20px 0 12px">六、常见问题</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
         ${[
-          ["看板数据和飞书表格不一致？","右上角查看最后同步时间，每天09:00自动同步。如需立即更新，联系管理员手动触发。"],
-          ["截图识别结果不准确？","可直接点击表格单元格修改。建议使用博主主页截图，效果最好。"],
-          ["建联排序识别到我自己？","说明截图里有你自己的聊天内容，识别完用🗑删除按钮删掉即可。"],
-          ["数据分析很慢？","每位博主需单独搜索，30位约需3-5分钟，请耐心等待不要关闭页面。"],
-          ["报告怎么查看历史记录？","数据分析Tab底部有绿色按钮，点击可切换查看任意历史报告。建联排序Tab也有历史记录列表。"],
-          ["日报没收到？","请确认当天飞书表格有录入数据。如没有数据，系统会跳过推送。"],
-          ["手机能用吗？","可以，直接用手机浏览器打开 gummy-tracker.top 即可，功能完整。"]
-        ].map(([q,a])=>`
-        <div style="background:var(--surf2);border-radius:8px;padding:12px 16px">
-          <div style="color:var(--text);font-weight:600;font-size:13px;margin-bottom:4px">Q：${q}</div>
-          <div style="color:var(--muted2);font-size:13px;line-height:1.6">A：${a}</div>
-        </div>`).join("")}
+          ['看板数据和飞书表格不一致？','右上角查看最后同步时间，每天09:00自动同步。需立即更新联系管理员手动触发。'],
+          ['截图识别结果不准确？','可直接点击表格单元格修改。建议使用博主主页截图，效果最好。'],
+          ['建联排序识别到我自己？','上传的是聊天截图时会识别到自己。在确认界面用🗑删除按钮去掉，再生成排序。'],
+          ['数据分析很慢？','每位博主需单独搜索，30位约需3-5分钟，请勿关闭页面。'],
+          ['已分析的报告怎么查看？','下拉菜单中有✅标记的时间段，选中后直接展示报告不重新分析。'],
+          ['手机能用吗？','可以，gummy-tracker.top 手机浏览器直接打开，所有功能正常。'],
+          ['签到上传了但没变✅？','确认所有必要类型截图都已上传。已上传但未更新，刷新页面重试。'],
+          ['离职成员历史数据还在吗？','在。离职只是隐藏签到卡片，历史数据、打卡总览、数据分析全部保留。'],
+        ].map(([q,a]) => `
+          <div style="background:var(--surf2);border-radius:8px;padding:11px 16px">
+            <div style="color:var(--text);font-weight:600;font-size:13px;margin-bottom:4px">Q：${q}</div>
+            <div style="color:var(--muted2);font-size:13px;line-height:1.6">A：${a}</div>
+          </div>`).join('')}
       </div>
 
-      <div style="text-align:center;padding:16px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);margin-top:8px">
-        如需功能调整或遇到问题，请联系系统负责人 · 看板地址：gummy-tracker.top
+      <div style="text-align:center;padding:14px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);margin-top:8px">
+        如需功能调整或遇到问题请联系系统负责人 · 看板地址：gummy-tracker.top
       </div>
     </div>
   </div>
@@ -3400,9 +3784,9 @@ async function saveKbItem() {
   const category = document.getElementById("kb-category").value;
   if (!title || !content) { alert("标题和内容不能为空"); return; }
   try {
-    const resp = await fetch(SUPABASE_URL + "/rest/v1/knowledge_base", {
+    const resp = await fetch(window.location.origin + "/api/kb", {
       method: "POST",
-      headers: { "apikey": SUPABASE_ANON, "Authorization": "Bearer " + SUPABASE_ANON, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, content, category })
     });
     if (resp.ok) {
@@ -3433,9 +3817,9 @@ async function saveKbEdit(id) {
   const content = document.getElementById("kb-edit-content-" + id).value.trim();
   if (!title || !content) { alert("标题和内容不能为空"); return; }
   try {
-    const resp = await fetch(SUPABASE_URL + "/rest/v1/knowledge_base?id=eq." + id, {
+    const resp = await fetch(window.location.origin + "/api/kb/" + id, {
       method: "PATCH",
-      headers: { "apikey": SUPABASE_ANON, "Authorization": "Bearer " + SUPABASE_ANON, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: title, content: content, updated_at: new Date().toISOString() })
     });
     if (resp.ok) {
@@ -3451,9 +3835,8 @@ async function saveKbEdit(id) {
 async function deleteKbItem(id) {
   if (!confirm("确认删除这条材料？")) return;
   try {
-    await fetch(SUPABASE_URL + "/rest/v1/knowledge_base?id=eq." + id, {
-      method: "DELETE",
-      headers: { "apikey": SUPABASE_ANON, "Authorization": "Bearer " + SUPABASE_ANON }
+    await fetch(window.location.origin + "/api/kb/" + id, {
+      method: "DELETE"
     });
     await loadKbList();
   } catch(e) {
@@ -3597,19 +3980,46 @@ const CHECKIN_MEMBERS = [
   { name: '谢家顺', requireChat: true, requireBlogger: true, requireReview: true },
 ];
 
+let memberStatusMap = {}; // { '杜承睿': 'active'/'inactive' }
 let checkinData = {}; // { 'YYYY-MM-DD': { '杜承睿': { chat:[], blogger:[], review:[], submitted: bool } } }
 let checkinCurrentDate = new Date().toISOString().slice(0,10);
 let checkinUploading = null; // { member, type }
 
-async function loadCheckinData() {
+async function loadMemberStatus() {
   try {
-    const today = new Date().toISOString().slice(0,10);
-    const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
-    const url = `${window.location.origin}/api/checkins`;
+    const resp = await fetch(window.location.origin + '/api/members');
+    const data = await resp.json();
+    if (Array.isArray(data)) {
+      memberStatusMap = {};
+      data.forEach(m => { memberStatusMap[m.member_name] = m.status; });
+    }
+  } catch(e) {}
+}
+
+async function setMemberStatus(name, status) {
+  try {
+    await fetch(window.location.origin + '/api/members', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ member_name: name, status, note: status === 'inactive' ? '已离职' : '' })
+    });
+    memberStatusMap[name] = status;
+    rendered.delete('checkin');
+    rendered.delete('attendance');
+    renderCheckin();
+    rendered.add('checkin');
+  } catch(e) { alert('操作失败：' + e.message); }
+}
+
+async function loadCheckinData(month) {
+  try {
+    // 默认拉当月，切换月份时拉对应月
+    const ym = month || new Date().toISOString().slice(0,7);
+    const url = `${window.location.origin}/api/checkins?month=${ym}`;
     const resp = await fetch(url);
     if (!resp.ok) return;
     const rows = await resp.json();
-    checkinData = {};
+    // 合并而非覆盖，保留其他月份已加载的数据
     rows.forEach(r => {
       if (!checkinData[r.checkin_date]) checkinData[r.checkin_date] = {};
       checkinData[r.checkin_date][r.member_name] = {
@@ -3617,64 +4027,110 @@ async function loadCheckinData() {
         chat: r.chat_images || [],
         blogger: r.blogger_images || [],
         review: r.review_images || [],
-        submitted: r.submitted || false
+        submitted: r.submitted || false,
+        adminOverride: r.admin_override || null
       };
     });
   } catch(e) { console.error('loadCheckinData error', e); }
 }
 
 async function saveCheckinRecord(memberName, date) {
-  const rec = (checkinData[date] || {})[memberName];
-  if (!rec) return;
+  if (!checkinData[date]) checkinData[date] = {};
+  if (!checkinData[date][memberName]) checkinData[date][memberName] = { chat:[], blogger:[], review:[], submitted: false };
+  const rec = checkinData[date][memberName];
+  const hasImages = (rec.chat||[]).length + (rec.blogger||[]).length + (rec.review||[]).length > 0;
+  if (hasImages) rec.submitted = true;
   const payload = {
     member_name: memberName,
     checkin_date: date,
-    chat_images: rec.chat,
-    blogger_images: rec.blogger,
-    review_images: rec.review,
-    submitted: rec.submitted || false
+    chat_images: rec.chat || [],
+    blogger_images: rec.blogger || [],
+    review_images: rec.review || [],
+    submitted: rec.submitted || false,
+    admin_override: rec.adminOverride || null
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_ANON,
+    'Authorization': 'Bearer ' + SUPABASE_ANON,
+    'Prefer': 'return=representation'
   };
   try {
-    if (rec.id) {
-      await fetch(`${window.location.origin}/api/checkins`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    // 直接调 Supabase，绕过 Vercel 后端，避免中文编码问题
+    const existResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/checkins?member_name=eq.${encodeURIComponent(memberName)}&checkin_date=eq.${date}&select=id`,
+      { headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON } }
+    );
+    const existing = await existResp.json();
+    let r;
+    if (existing && existing.length > 0) {
+      r = await fetch(
+        `${SUPABASE_URL}/rest/v1/checkins?member_name=eq.${encodeURIComponent(memberName)}&checkin_date=eq.${date}`,
+        { method: 'PATCH', headers, body: JSON.stringify(payload) }
+      );
     } else {
-      const r = await fetch(`${window.location.origin}/api/checkins`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await r.json();
-      if (data && data[0] && data[0].id) {
-        if (!checkinData[date]) checkinData[date] = {};
-        if (!checkinData[date][memberName]) checkinData[date][memberName] = { chat:[], blogger:[], review:[], submitted: false };
-        checkinData[date][memberName].id = data[0].id;
-      }
+      r = await fetch(
+        `${SUPABASE_URL}/rest/v1/checkins`,
+        { method: 'POST', headers, body: JSON.stringify(payload) }
+      );
     }
-  } catch(e) { console.error('saveCheckinRecord error', e); }
+    const data = await r.json();
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.id) checkinData[date][memberName].id = row.id;
+    if (row?.chat_images) checkinData[date][memberName].chat = row.chat_images;
+    if (row?.blogger_images) checkinData[date][memberName].blogger = row.blogger_images;
+    if (row?.review_images) checkinData[date][memberName].review = row.review_images;
+  } catch(e) { console.error('saveCheckinRecord error:', e); }
 }
 
-// 图片上传到 Supabase Storage (base64 存储，强压缩)
-async function uploadCheckinImage(file) {
-  return new Promise((resolve) => {
+// 图片压缩后上传到 Supabase Storage，返回公开 URL
+// memberName/imgType 可选，用于文件名标注归属
+async function uploadCheckinImage(file, memberName, imgType) {
+  // 1. 压缩图片（最大800px，quality 0.7，兼顾清晰度和大小）
+  const compressed = await new Promise(resolve => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const MAX = 400; // 最大400px
+      const MAX = 800;
       let w = img.width, h = img.height;
-      if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-      else { w = Math.round(w * MAX / h); h = MAX; }
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.5)); // quality 0.5
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.7);
     };
     img.src = url;
   });
+
+  // 2. 上传到 Supabase Storage（文件名含姓名+类型，方便归档）
+  const typeMap = { chat: 'chat', blogger: 'blogger', review: 'review', compat: 'compat' };
+  const safeName = memberName ? memberName.split('').map(c => c.charCodeAt(0) > 127 ? encodeURIComponent(c).replace(/%/g,'') : c).join('') : 'member';
+  const safeType = typeMap[imgType] || (imgType || 'img');
+  const filename = `${safeName}_${safeType}_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  const resp = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/checkin-images/${filename}`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true'
+      },
+      body: compressed
+    }
+  );
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error('图片上传失败：' + err);
+  }
+
+  // 3. 返回公开 URL
+  return `${SUPABASE_URL}/storage/v1/object/public/checkin-images/${filename}`;
 }
 
 // 导出当天所有截图为 zip
@@ -3723,7 +4179,7 @@ async function cleanupOldCheckinImages() {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
     const cutoffStr = cutoff.toISOString().slice(0,10);
-    const url = `${SUPABASE_URL}/rest/v1/${CHECKIN_TABLE}?checkin_date=lt.${cutoffStr}`;
+    const url = `${window.location.origin}/api/checkins?before=${cutoffStr}`;
     const resp = await fetch(url, {
       headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
     });
@@ -3735,10 +4191,10 @@ async function cleanupOldCheckinImages() {
       (r.review_images && r.review_images.length)
     );
     for (const row of toClean) {
-      await fetch(`${SUPABASE_URL}/rest/v1/${CHECKIN_TABLE}?id=eq.${row.id}`, {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_images: [], blogger_images: [], review_images: [] })
+      await fetch(`${window.location.origin}/api/checkins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_name: row.member_name, checkin_date: row.checkin_date, chat_images: [], blogger_images: [], review_images: [] })
       });
     }
     if (toClean.length) console.log(`清理了 ${toClean.length} 条旧截图`);
@@ -3756,10 +4212,21 @@ function checkinStatusIcon(member, date) {
   const rec = (checkinData[date] || {})[member] || {};
   const today = new Date().toISOString().slice(0,10);
 
-  // 许家铭全算
-  if (member === '许家铭') return '✅';
+  // 管理员手动覆盖
+  if (rec.adminOverride === 'present') return '✅';
+  if (rec.adminOverride === 'absent') return '❌';
 
-  // 今天之前：只要飞书表格里当天有该成员的数据就算打卡成功
+  // 许家铭只需要复盘截图（不需要硬编码全算，走正常逻辑即可）
+
+  // 先看截图（任何日期）
+  const chatOk = !cfg?.requireChat || (rec.chat && rec.chat.length > 0);
+  const bloggerOk = !cfg?.requireBlogger || (rec.blogger && rec.blogger.length > 0);
+  const reviewOk = !cfg?.requireReview || (rec.review && rec.review.length > 0);
+  const hasAnyImg = (rec.chat && rec.chat.length) || (rec.blogger && rec.blogger.length) || (rec.review && rec.review.length);
+  if (rec.submitted && chatOk && bloggerOk && reviewOk) return '✅';
+  if (hasAnyImg) return '⚠️';
+
+  // 没有截图时，历史日期看飞书表格
   if (date < today) {
     const normalize = s => (s||'').trim().replace(/\s+/g,'');
     const hasFeishuData = ALL_ROWS.some(r =>
@@ -3769,18 +4236,16 @@ function checkinStatusIcon(member, date) {
     return '❌';
   }
 
-  // 今天及以后：需要截图
-  const chatOk = !cfg.requireChat || (rec.chat && rec.chat.length > 0);
-  const bloggerOk = !cfg.requireBlogger || (rec.blogger && rec.blogger.length > 0);
-  const reviewOk = !cfg.requireReview || (rec.review && rec.review.length > 0);
-  if (chatOk && bloggerOk && reviewOk) return '✅';
-  if ((rec.chat && rec.chat.length) || (rec.blogger && rec.blogger.length) || (rec.review && rec.review.length)) return '⚠️';
   return '❌';
 }
 
 let checkinCurrentMember = null; // 当前登录的成员
 
 function renderCheckin() {
+  // 过滤掉离职成员
+  const activeMembers = CHECKIN_MEMBERS.filter(m =>
+    (memberStatusMap[m.name] || 'active') === 'active'
+  );
   const el = document.getElementById('pane-checkin');
   const dates = [];
   const today = new Date();
@@ -3844,7 +4309,7 @@ function renderCheckin() {
 
   <!-- 成员签到卡片 -->
   <div id="checkin-members-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
-    ${CHECKIN_MEMBERS.map(m => renderCheckinMemberCard(m, checkinCurrentDate)).join('')}
+    ${(isAdmin ? activeMembers : activeMembers.filter(m => m.name === checkinCurrentMember)).map(m => renderCheckinMemberCard(m, checkinCurrentDate)).join('')}
   </div>
 </div>`;
 }
@@ -3857,28 +4322,35 @@ function checkinSelectMember(name) {
 }
 
 function renderCheckinMemberCard(memberCfg, date) {
+  const isInactive = (memberStatusMap[memberCfg.name] || 'active') === 'inactive';
   const m = memberCfg.name;
-  const rec = getCheckinRec(m, date);
+  // 直接读数据，不用getCheckinRec（避免自动创建空记录覆盖已有数据）
+  const rec = (checkinData[date] || {})[m] || { chat:[], blogger:[], review:[], submitted: false };
   const icon = checkinStatusIcon(m, date);
   const isXjm = m === '许家铭';
 
   const canUploadThis = isAdmin || checkinCurrentMember === m;
-  const canViewImages = isAdmin;
+  const canViewImages = isAdmin || checkinCurrentMember === m;
+
+  // 把图片缓存到全局，避免base64塞进onclick属性
+  const _imgCacheKey = `${m}_${date}`;
+  if (!window._checkinImgCache) window._checkinImgCache = {};
+  window._checkinImgCache[_imgCacheKey] = { chat: [], blogger: [], review: [] };
 
   const uploadBtn = (type, label, images) => {
     const imgCount = images.length;
+    window._checkinImgCache[_imgCacheKey][type] = images;
     return `
     <div style="margin-bottom:10px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${label} (${imgCount}张${imgCount>0?canViewImages?' · 点击查看':'':' · 待上传'})</div>
-      ${canViewImages ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
-        ${images.map((img, i) => `
+      <div id="ci-preview-${m}-${type}" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
+        ${canViewImages && imgCount > 0 ? images.map((img, i) => `
           <div style="position:relative">
-            <img src="${img}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="checkinViewImg('${img}')">
+            <img src="${img}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="checkinViewImgByIdx('${_imgCacheKey}','${type}',${i})">
             <button onclick="checkinDeleteImg('${m}','${type}',${i},'${date}')" style="position:absolute;top:-4px;right:-4px;background:#ef4444;border:none;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:16px">×</button>
-          </div>`).join('')}
-      </div>` : imgCount > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
-        ${images.map(() => `<div style="width:48px;height:48px;background:var(--surf2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px">🖼</div>`).join('')}
-      </div>` : ''}
+          </div>`).join('') : imgCount > 0 && !canViewImages ? images.map(() => `
+          <div style="width:52px;height:52px;background:var(--surf2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px">🖼</div>`).join('') : ''}
+      </div>
       ${canUploadThis ? `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--blue);cursor:pointer;border:1px dashed var(--blue);border-radius:6px;padding:4px 10px">
         <input type="file" accept="image/*" multiple style="display:none" onchange="checkinHandleUpload(event,'${m}','${type}','${date}')">
         + 上传截图
@@ -3887,48 +4359,263 @@ function renderCheckinMemberCard(memberCfg, date) {
   };
 
   return `
-  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative">
+  <div id="checkin-card-${m}" style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:600;color:var(--text)">${m}</div>
-      <span style="font-size:18px">${icon}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${m}</div>
+        ${isInactive ? '<span style="font-size:11px;color:#fca5a5;background:rgba(239,68,68,.1);padding:2px 8px;border-radius:4px">已离职</span>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${isAdmin ? `<button onclick="setMemberStatus('${m}', '${isInactive ? 'active' : 'inactive'}')" style="font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid ${isInactive ? 'var(--green)' : '#ef4444'};background:transparent;color:${isInactive ? 'var(--green)' : '#ef4444'};cursor:pointer">${isInactive ? '✓ 恢复' : '离职'}</button>` : ''}
+        <span style="font-size:18px">${icon}</span>
+      </div>
     </div>
     ${isXjm ? `
       ${uploadBtn('review', '📋 复盘截图', rec.review)}
     ` : `
       ${memberCfg.requireChat ? uploadBtn('chat', '💬 聊天截图', rec.chat) : ''}
-      ${memberCfg.requireBlogger ? uploadBtn('blogger', '🔗 建联记录', rec.blogger) : ''}
+      ${memberCfg.requireBlogger ? (() => {
+        const hasSuccess = ALL_ROWS.some(r =>
+          r.owner?.trim() === m && r.record_date === date && STATUS_SUCCESS.includes(r.status) && !r.is_dup
+        );
+        const compatDay = (window.compatScoreCache||[]).filter(r => r.member_name===m && r.score_date===date);
+        const compatAvg = compatDay.length ? Math.round(compatDay.reduce((s,r)=>s+(r.compat_score||0),0)/compatDay.length) : null;
+        const compatQualify = compatAvg !== null && compatAvg >= 75;
+        const compatImgCount = (rec.blogger||[]).length;
+        // 已选模式：看blogger是否有图（有图=已选建联成功），或compat_scores有记录（已选适配度）
+        const hasBloggerImg = (rec.blogger||[]).length > 0;
+        const hasCompatRecord = compatDay.length > 0;
+        // 当前选择的模式存在window上，key = member_date
+        const modeKey = 'bloggerMode_' + m + '_' + date;
+        const currentMode = window[modeKey] || (hasBloggerImg ? 'success' : hasCompatRecord ? 'compat' : null);
+
+        if (!currentMode && canUploadThis) {
+          // 未选择：显示两个选项按钮
+          return `<div style="margin-bottom:10px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">🔗 建联截图 · 请选择今日情况：</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button onclick="window['${modeKey}']='success';const c=document.getElementById('checkin-card-${m}');if(c){const cfg=CHECKIN_MEMBERS.find(x=>x.name==='${m}');c.outerHTML=renderCheckinMemberCard(cfg,'${date}');}"
+                style="flex:1;min-width:120px;padding:10px;border-radius:8px;border:1px solid var(--blue);background:rgba(91,127,255,.1);color:var(--blue);cursor:pointer;font-size:12px;font-weight:600;text-align:center">
+                🔗 有建联成功<br><span style="font-size:10px;font-weight:400;color:var(--muted)">上传建联成功截图</span>
+              </button>
+              <button onclick="window['${modeKey}']='compat';const c=document.getElementById('checkin-card-${m}');if(c){const cfg=CHECKIN_MEMBERS.find(x=>x.name==='${m}');c.outerHTML=renderCheckinMemberCard(cfg,'${date}');}"
+                style="flex:1;min-width:120px;padding:10px;border-radius:8px;border:1px solid var(--gold);background:rgba(245,166,35,.1);color:var(--gold);cursor:pointer;font-size:12px;font-weight:600;text-align:center">
+                🎯 无建联成功<br><span style="font-size:10px;font-weight:400;color:var(--muted)">分析博主适配度得分</span>
+              </button>
+            </div>
+          </div>`;
+        }
+
+        const resolvedMode = currentMode || (hasBloggerImg ? 'success' : 'compat');
+
+        if (resolvedMode === 'success') {
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span style="font-size:11px;color:var(--blue)">🔗 建联成功截图</span>
+              ${canUploadThis ? `<button onclick="window['${modeKey}']=null;const c=document.getElementById('checkin-card-${m}');if(c){const cfg=CHECKIN_MEMBERS.find(x=>x.name==='${m}');c.outerHTML=renderCheckinMemberCard(cfg,'${date}');}" style="font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:4px;padding:1px 7px;cursor:pointer">切换</button>` : ''}
+            </div>
+            ${uploadBtn('blogger', '', rec.blogger)}
+          </div>`;
+        } else {
+          return `<div style="margin-bottom:10px;padding:10px;background:rgba(245,166,35,.05);border:1px solid rgba(245,166,35,.2);border-radius:8px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:600;color:var(--gold)">🎯 博主适配度分析</span>
+              <span style="font-size:10px;color:var(--gold);background:rgba(245,166,35,.15);padding:1px 7px;border-radius:4px">平均≥70分得+20分</span>
+              ${compatAvg!==null ? `<span style="font-size:11px;font-weight:700;color:${compatQualify?'var(--green)':'var(--gold)'};background:${compatQualify?'rgba(67,217,164,.12)':'rgba(245,166,35,.12)'};padding:1px 8px;border-radius:4px">${compatQualify?'✅ 平均'+compatAvg+'分 · +20分':'⚡ 平均'+compatAvg+'分 · 需≥70'}</span>` : ''}
+              ${canUploadThis ? `<button onclick="window['${modeKey}']=null;const c=document.getElementById('checkin-card-${m}');if(c){const cfg=CHECKIN_MEMBERS.find(x=>x.name==='${m}');c.outerHTML=renderCheckinMemberCard(cfg,'${date}');}" style="font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:4px;padding:1px 7px;cursor:pointer;margin-left:auto">切换</button>` : ''}
+            </div>
+            ${canUploadThis ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gold);cursor:pointer;border:1px dashed rgba(245,166,35,.5);border-radius:6px;padding:4px 10px">
+                <input type="file" accept="image/*" multiple style="display:none" onchange="checkinHandleCompatUpload(event,'${m}','${date}')">
+                + 上传博主主页截图
+              </label>
+              <span style="font-size:11px;color:var(--muted)">${compatImgCount}张</span>
+              ${compatImgCount >= 10 ? `<button onclick="checkinRunCompatAnalysis('${m}','${date}')" style="font-size:12px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.3);border-radius:6px;padding:4px 10px;cursor:pointer">🔍 分析适配度</button>` : `<span style="font-size:11px;color:var(--muted)">需至少10张</span>`}
+            </div>` : ''}
+            <div id="ci-compat-status-${m}" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+          </div>`;
+        }
+      })() : ''}
       ${memberCfg.requireReview ? uploadBtn('review', '📋 复盘截图', rec.review) : ''}
     `}
-    <div id="ci-save-status-${m}" style="font-size:11px;color:var(--green);min-height:14px"></div>
+    <div id="ci-save-status-${m}" style="font-size:11px;color:var(--green);min-height:14px;margin-top:4px"></div>
   </div>`;
 }
 
+// 待保存的截图临时存这里，不影响其他人数据
 async function checkinHandleUpload(event, member, type, date) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
   const statusEl = document.getElementById(`ci-save-status-${member}`);
   if (statusEl) statusEl.textContent = '上传中...';
-  const rec = getCheckinRec(member, date);
+
   for (const file of files) {
-    const dataUrl = await uploadCheckinImage(file);
-    rec[type].push(dataUrl);
+    try {
+      const url = await uploadCheckinImage(file, member, type);
+
+      // 写入checkinData（用服务器返回的最新数据合并，避免卡片重渲染导致数据丢失）
+      if (!checkinData[date]) checkinData[date] = {};
+      if (!checkinData[date][member]) checkinData[date][member] = { chat:[], blogger:[], review:[], submitted: false };
+      checkinData[date][member][type] = [...(checkinData[date][member][type] || []), url];
+      checkinData[date][member].submitted = true;
+
+      // 保存到数据库
+      const payload = {
+        member_name: member,
+        checkin_date: date,
+        chat_images: checkinData[date][member].chat || [],
+        blogger_images: checkinData[date][member].blogger || [],
+        review_images: checkinData[date][member].review || [],
+        submitted: true,
+        admin_override: checkinData[date][member].adminOverride || null
+      };
+
+      const r = await fetch(`${window.location.origin}/api/checkins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      if (data?.id) checkinData[date][member].id = data.id;
+      // 用服务器返回的最新数据更新内存，确保一致
+      if (data?.chat_images) checkinData[date][member].chat = data.chat_images;
+      if (data?.blogger_images) checkinData[date][member].blogger = data.blogger_images;
+      if (data?.review_images) checkinData[date][member].review = data.review_images;
+
+      if (statusEl) statusEl.textContent = '✅ 已保存';
+
+      // 刷新卡片（此时checkinData已是最新，不会丢数据）
+      const cfg = CHECKIN_MEMBERS.find(m => m.name === member);
+      if (cfg) {
+        const cardEl = document.getElementById(`checkin-card-${member}`);
+        if (cardEl) cardEl.outerHTML = renderCheckinMemberCard(cfg, date);
+      }
+    } catch(e) {
+      if (statusEl) statusEl.textContent = '❌ 上传失败：' + e.message;
+      console.error('checkinHandleUpload error', e);
+    }
   }
+
+  setTimeout(() => { const s = document.getElementById(`ci-save-status-${member}`); if(s) s.textContent=''; }, 3000);
+}
+
+// ── 签到页博主适配度截图上传（无建联成功时替代建联成功截图）──
+async function checkinHandleCompatUpload(event, member, date) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  const statusEl = document.getElementById(`ci-compat-status-${member}`);
+  if (statusEl) statusEl.textContent = `上传中 (0/${files.length})...`;
+
+  // 把截图存到 blogger 槽（同时作为截图上传分来源）
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const url = await uploadCheckinImage(files[i], member, 'compat');
+      if (!checkinData[date]) checkinData[date] = {};
+      if (!checkinData[date][member]) checkinData[date][member] = { chat:[], blogger:[], review:[], submitted: false };
+      checkinData[date][member].blogger = [...(checkinData[date][member].blogger || []), url];
+      checkinData[date][member].submitted = true;
+      if (statusEl) statusEl.textContent = `上传中 (${i+1}/${files.length})...`;
+    } catch(e) {
+      if (statusEl) statusEl.textContent = `❌ 第${i+1}张上传失败：${e.message}`;
+    }
+  }
+  // 保存到数据库
   await saveCheckinRecord(member, date);
-  if (statusEl) { statusEl.textContent = '✅ 已保存'; setTimeout(() => { if(statusEl) statusEl.textContent=''; }, 2000); }
-  // re-render just this member's card
-  rendered.delete('checkin');
-  renderCheckin();
-  rendered.add('checkin');
+  // 刷新卡片
+  const cfg = CHECKIN_MEMBERS.find(m => m.name === member);
+  if (cfg) {
+    const cardEl = document.getElementById(`checkin-card-${member}`);
+    if (cardEl) cardEl.outerHTML = renderCheckinMemberCard(cfg, date);
+  }
+  if (statusEl) statusEl.textContent = `✅ 已上传 ${files.length} 张，共 ${(checkinData[date]?.[member]?.blogger||[]).length} 张，满10张可分析`;
+}
+
+// ── 签到页一键分析适配度（提取blogger槽图片，调用vision API）──
+async function checkinRunCompatAnalysis(member, date) {
+  const images = (checkinData[date]?.[member]?.blogger || []);
+  if (images.length < 10) { alert(`需要至少10张截图，当前 ${images.length} 张`); return; }
+  const statusEl = document.getElementById(`ci-compat-status-${member}`);
+  if (statusEl) statusEl.innerHTML = `<span style="color:var(--blue)">分析中，请稍候…</span>`;
+
+  // 下载图片转base64
+  const toB64 = async url => {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(blob); });
+  };
+
+  const successRows = ALL_ROWS.filter(r => STATUS_SUCCESS.includes(r.status));
+  const avgFollowers = successRows.length ? (successRows.map(r=>parseFloat(r.followers)||0).filter(v=>v>0).reduce((a,b)=>a+b,0)/successRows.length).toFixed(1) : '未知';
+
+  const results = [];
+  for (let i = 0; i < images.length; i++) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--blue)">分析第 ${i+1}/${images.length} 位…</span>`;
+    try {
+      const b64 = await toB64(images[i]);
+      const prompt = `这是第${i+1}位博主的主页截图，请分析该博主是否适合宣传以下产品。
+【产品：飞羽出书 FeatherPub AI】核心定位：AI一站式出书平台；目标用户：有故事/知识积累想出版的人；适合类型：AI科技、知识分享、个人成长、中老年人群。
+历史成功建联均粉：${avgFollowers}万。
+请严格按JSON格式返回，不要其他文字：
+{"name":"博主名","compatibility_score":85,"compatibility_level":"高/中/低","suggestion":"建联建议（1句）"}`;
+      const resp = await fetch(`${window.location.origin}/api/vision`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ images:[b64], prompt })
+      });
+      const data = await resp.json();
+      const raw = data.result ? JSON.stringify(data.result[0]||data.result) : (data.raw||'');
+      const match = raw.match(/\{[\s\S]*\}/);
+      const r = match ? JSON.parse(match[0]) : null;
+      results.push(r ? { ...r, idx:i+1 } : { name:`第${i+1}张`, compatibility_score:0, idx:i+1, error:'识别失败' });
+    } catch(e) {
+      results.push({ name:`第${i+1}张`, compatibility_score:0, idx:i+1, error:e.message });
+    }
+  }
+
+  const valid = results.filter(r => !r.error && r.compatibility_score > 0);
+  const avg = valid.length ? Math.round(valid.reduce((s,r)=>s+r.compatibility_score,0)/valid.length) : 0;
+  const qualifies = avg >= 70;
+
+  // 保存到 compat_scores
+  if (valid.length) {
+    try {
+      const rows = valid.map(r => ({ member_name:member, score_date:date, blogger_name:r.name||'', compat_score:r.compatibility_score||0 }));
+      await fetch(`${SUPABASE_URL}/rest/v1/compat_scores`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_ANON, 'Authorization':'Bearer '+SUPABASE_ANON, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify(rows)
+      });
+      if (!window.compatScoreCache) window.compatScoreCache = [];
+      window.compatScoreCache.push(...rows);
+    } catch(e) { console.warn('compat_scores 保存失败', e); }
+  }
+
+  if (statusEl) statusEl.innerHTML = `✅ 分析完成 · ${valid.length}位博主 · 平均适配分 <b style="color:${qualifies?'var(--green)':'var(--gold)'}">${avg}分</b>${qualifies?' · 🎯 +5分已记录':'· 需≥70分'}`;
+
+  // 刷新卡片显示最新状态
+  const cfg = CHECKIN_MEMBERS.find(m => m.name === member);
+  if (cfg) {
+    const cardEl = document.getElementById(`checkin-card-${member}`);
+    if (cardEl) cardEl.outerHTML = renderCheckinMemberCard(cfg, date);
+  }
 }
 
 async function checkinDeleteImg(member, type, idx, date) {
-  if (!isAdmin) return;
+  if (!isAdmin && checkinCurrentMember !== member) return;
   const rec = getCheckinRec(member, date);
   rec[type].splice(idx, 1);
   await saveCheckinRecord(member, date);
-  rendered.delete('checkin');
-  renderCheckin();
-  rendered.add('checkin');
+  // 只更新当前成员卡片
+  const cfg = CHECKIN_MEMBERS.find(m => m.name === member);
+  if (cfg) {
+    const cardEl = document.getElementById(`checkin-card-${member}`);
+    if (cardEl) cardEl.outerHTML = renderCheckinMemberCard(cfg, date);
+  }
+}
+
+function checkinViewImgByIdx(cacheKey, type, idx) {
+  const src = (window._checkinImgCache?.[cacheKey]?.[type] || [])[idx];
+  if (!src) return;
+  checkinViewImg(src);
 }
 
 function checkinViewImg(src) {
@@ -3956,6 +4643,7 @@ function checkinSelectDate(date, btn) {
 }
 
 async function checkinRefresh() {
+  await loadMemberStatus();
   await loadCheckinData();
   // 加载话术库
   try {
@@ -4076,8 +4764,15 @@ function renderAttendance() {
               const isToday = d === today;
               const bg = icon === '✅' ? 'rgba(67,217,164,.15)' : icon === '⚠️' ? 'rgba(245,166,35,.15)' : 'rgba(255,107,107,.08)';
               const border = isToday ? '1px solid var(--blue)' : '1px solid transparent';
+              const rec = (checkinData[d] || {})[m.name] || {};
+              const hasImgs = (rec.chat||[]).length + (rec.blogger||[]).length + (rec.review||[]).length > 0;
+              // 有截图时显示相机图标，点击查看截图；否则点击切换状态
+              const cellContent = hasImgs ? `${icon}<span style="font-size:8px;position:absolute;bottom:1px;right:2px">📷</span>` : icon;
+              const adminClick = isAdmin
+                ? `onclick="adminCellClick('${m.name}','${d}')" style="width:28px;height:28px;border-radius:6px;background:${bg};border:${border};display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:14px;cursor:pointer;transition:opacity .15s;position:relative" onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'"`
+                : `style="width:28px;height:28px;border-radius:6px;background:${bg};border:${border};display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:14px"`;
               return `<td style="padding:4px 2px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03)">
-                <div style="width:28px;height:28px;border-radius:6px;background:${bg};border:${border};display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:14px">${icon}</div>
+                <div ${adminClick}>${cellContent}</div>
               </td>`;
             }).join('')}
             <td style="padding:8px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03)">
@@ -4098,11 +4793,1533 @@ function renderAttendance() {
 </div>`;
 }
 
-function attendanceChangeMonth(ym) {
-  attendanceMonth = ym;
+function adminCellClick(member, date) {
+  // 直接切换打卡状态
+  adminToggleCheckin(member, date);
+}
+
+async function adminToggleCheckin(member, date) {
+  if (!isAdmin) return;
+  const icon = checkinStatusIcon(member, date);
+
+  if (!checkinData[date]) checkinData[date] = {};
+  if (!checkinData[date][member]) checkinData[date][member] = { chat:[], blogger:[], review:[], submitted: false };
+
+  if (icon === '✅') {
+    // 已打卡 → 取消打卡
+    checkinData[date][member].adminOverride = 'absent';
+    checkinData[date][member].chat = [];
+    checkinData[date][member].blogger = [];
+    checkinData[date][member].review = [];
+    checkinData[date][member].submitted = false;
+  } else {
+    // 未打卡/部分 → 标记已打卡
+    checkinData[date][member].adminOverride = 'present';
+    checkinData[date][member].submitted = true;
+  }
+
+  try {
+    await fetch(`${window.location.origin}/api/checkins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        member_name: member,
+        checkin_date: date,
+        chat_images: checkinData[date][member].chat,
+        blogger_images: checkinData[date][member].blogger,
+        review_images: checkinData[date][member].review,
+        submitted: checkinData[date][member].submitted,
+        admin_override: checkinData[date][member].adminOverride
+      })
+    });
+  } catch(e) { console.error('adminToggleCheckin error', e); }
+
   rendered.delete('attendance');
   renderAttendance();
   rendered.add('attendance');
+}
+
+async function attendanceChangeMonth(ym) {
+  attendanceMonth = ym;
+  await loadCheckinData(ym);
+  rendered.delete('attendance');
+  renderAttendance();
+  rendered.add('attendance');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📊 绩效评分 Tab
+// 维度1: 日常建联 (40分) ← 飞书 ALL_ROWS
+// 维度2: 截图上传 (40分，含三类全勤+10) ← checkinData
+// 维度3: 工作质量 (20分) ← 成功率
+// 附加分: 博主适配度+话术库 (计入周总分，最多+10)
+// ══════════════════════════════════════════════════════════════
+
+let perfCurrentWeek = (() => {
+  // 当前ISO周（周一为起点）
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  return { mon, fri,
+    label: `${mon.getMonth()+1}/${mon.getDate()}—${fri.getMonth()+1}/${fri.getDate()}`,
+    dates: Array.from({length:5},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); })
+  };
+})();
+
+function perfWeekDates(offset=0) {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - day + 1 + offset*7);
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  const dates = Array.from({length:5},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); });
+  return { mon, fri, dates,
+    label:`${mon.getFullYear()}年${mon.getMonth()+1}月${mon.getDate()}日—${fri.getMonth()+1}月${fri.getDate()}日`,
+    weekNum: (() => { const d=new Date(mon); d.setHours(0,0,0,0); d.setDate(d.getDate()+3-(d.getDay()+6)%7); const week1=new Date(d.getFullYear(),0,4); return 1+Math.round(((d-week1)/86400000-3+(week1.getDay()+6)%7)/7); })()
+  };
+}
+
+let perfWeekOffset = 0;
+
+// 计算某人某周绩效
+function calcMemberPerf(memberName, dates) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  // ── 维度1：日常建联 (40分) ──────────────────────────────
+  // 从 ALL_ROWS 按日期+owner 统计
+  const dailyContact = {}; // { 'YYYY-MM-DD': count }
+  const dailySuccess = {};
+  dates.forEach(d => { dailyContact[d] = 0; dailySuccess[d] = 0; });
+
+  ALL_ROWS.forEach(r => {
+    if (!r.owner || r.owner.trim() !== memberName) return;
+    if (r.is_dup) return; // 重复数据不计入工作量
+    const d = r.record_date;
+    if (!dates.includes(d)) return;
+    // 有建联状态才算建联
+    if (r.status) {
+      dailyContact[d] = (dailyContact[d] || 0) + 1;
+      if (STATUS_SUCCESS.includes(r.status)) dailySuccess[d] = (dailySuccess[d] || 0) + 1;
+    }
+  });
+
+  // 每日建联分（活跃度指标，用于日打分/明细表展示，邀请数≥5视为活跃）
+  let contactScore = 0;
+  const contactDetail = {};
+  dates.forEach(d => {
+    const cnt = dailyContact[d] || 0;
+    contactDetail[d] = cnt;
+    if (d > today) return; // 未来不计
+    if (cnt >= 5) contactScore += 3; // 满分3分/天，5天=15（达标线：5位/天）
+    else if (cnt > 0) contactScore += 1; // 不足扣分
+    else contactScore -= 0; // 0位：本身不加分（已从满分扣了）
+  });
+  // 「建联数量达标(15分)」：邀请数≥5 为前提门槛，且当天建联成功数≥3 才算达标
+  const workDays = dates.filter(d => d <= today).length;
+  const reachDays = dates.filter(d => {
+    if (d > today) return false;
+    const invited = dailyContact[d] || 0;
+    const success  = dailySuccess[d] || 0;
+    return invited >= 5 && success >= 3; // 邀请数门槛 + 成功数达标(3-5位)
+  }).length;
+  const s_contact_qty = workDays > 0 ? Math.round(reachDays / workDays * 15) : 0;
+
+  // 表格信息完整性 10分（从飞书数据有owner即视为有填表，用完整度代理：完整行/总建联行）
+  const ownerRows = ALL_ROWS.filter(r => r.owner?.trim() === memberName && dates.includes(r.record_date) && !r.is_dup);
+  const completeRows = ownerRows.filter(r => r.name && r.status);
+  const s_table = ownerRows.length > 0 ? Math.round(completeRows.length / ownerRows.length * 10) : 0;
+
+  // 博主类型达标 10分（有blogger_type且不为空视为达标）
+  const typeOk = ownerRows.filter(r => r.blogger_type && r.blogger_type !== '未知');
+  const s_type = ownerRows.length > 0 ? Math.round(typeOk.length / ownerRows.length * 10) : 0;
+
+  // 粉丝数记录 5分
+  const fansOk = ownerRows.filter(r => r.followers && r.followers > 0);
+  const s_fans = ownerRows.length > 0 ? Math.round(fansOk.length / ownerRows.length * 5) : 0;
+
+  const dim1 = s_contact_qty + s_table + s_type + s_fans; // /40
+
+  // ── 维度2：截图上传 (40分) ── 每日打卡状态 + 三类截图全勤奖励
+  let s_review = 0, s_chat = 0, s_blogger_img = 0;
+  const cfg = CHECKIN_MEMBERS.find(m => m.name === memberName) || {};
+  dates.forEach(d => {
+    if (d > today) return;
+    const rec = (checkinData[d] || {})[memberName] || {};
+    if ((rec.review||[]).length > 0) s_review += 2;  // 最多10分(5天×2)
+    if ((rec.chat||[]).length > 0) s_chat += 2;       // 最多10分
+    if ((rec.blogger||[]).length > 0) s_blogger_img += 2; // 最多10分
+  });
+  s_review = Math.min(10, s_review);
+  s_chat = Math.min(10, s_chat);
+  s_blogger_img = Math.min(10, s_blogger_img);
+  // 三类截图本周均有上传 → +10分（原"博主质量"分数并入此处）
+  const dim2 = s_review + s_chat + s_blogger_img; // /30
+
+  // ── 维度3：工作质量 (20分) ──
+  const totalContact = ownerRows.length;
+  const totalSuccess = ownerRows.filter(r => STATUS_SUCCESS.includes(r.status)).length;
+  const avgFans = ownerRows.filter(r=>r.followers>0).reduce((a,r)=>a+r.followers,0) / (ownerRows.filter(r=>r.followers>0).length||1) / 10000;
+  const successRate = totalContact > 0 ? totalSuccess / totalContact : 0;
+  // 质量分：成功率×20（博主质量已并入截图上传维度）
+  const dim3 = Math.round(Math.min(20, successRate * 20 * 2));
+
+  // ── 附加分 ── 话术库（每条+2分，上限20） + 博主适配度（平均≥70且当日无建联成功，+20/天）｜二者合计按10分上限计入周总分
+  // 话术库：从 chatScriptRows 里统计本周该成员保存的条数
+  const weekTacticsCount = chatScriptRows.filter(r => {
+    if (!r.member || r.member !== memberName) return false;
+    // 尝试按日期过滤（tactics有date字段，格式可能是 YYYY/M/D 或 YYYY-MM-DD）
+    if (!r.date) return true; // 无日期的不过滤（保底）
+    try {
+      const rd = new Date(r.date.replace(/\//g,'-'));
+      const rdStr = rd.toISOString().slice(0,10);
+      return dates.includes(rdStr);
+    } catch(e) { return false; }
+  }).length;
+  const bonus_script = Math.min(20, weekTacticsCount * 2); // +2分/条，上限20分
+
+  // 博主适配度：从全局 compatScoreCache 读取（由 loadCompatScores 填充）
+  // 规则：当日有建联成功则不算；当日平均适配分≥75，该天得5分，每周累计不超过25分
+  let bonus_adapt = 0;
+  dates.forEach(d => {
+    if (d > today) return;
+    // 检查当日是否有建联成功
+    const hasSuccess = ALL_ROWS.some(r =>
+      r.owner?.trim() === memberName && r.record_date === d && STATUS_SUCCESS.includes(r.status) && !r.is_dup
+    );
+    if (hasSuccess) return; // 有建联成功，该天不算适配度分
+    // 取该成员当天的适配度记录
+    const dayScores = (window.compatScoreCache || []).filter(r =>
+      r.member_name === memberName && r.score_date === d
+    );
+    if (!dayScores.length) return;
+    const avg = dayScores.reduce((s,r) => s + (r.compat_score||0), 0) / dayScores.length;
+    if (avg >= 70) bonus_adapt += 20; // 平均≥70分得+20，每天最多触发一次
+  });
+  bonus_adapt = Math.min(100, bonus_adapt); // 单项不单独限制，最终合计计入周总分时再按10分上限截断
+
+  const bonusTotal = Math.min(10, bonus_adapt + bonus_script); // 附加分计入周总分，上限10
+
+  const total = Math.min(100, dim1 + dim2 + dim3 + bonusTotal); // 40+30+20+10=100
+
+  return {
+    total: Math.round(total),
+    dim1, dim2, dim3, bonusTotal,
+    s_contact_qty, s_table, s_type, s_fans,
+    s_review, s_chat, s_blogger_img,
+    reachDays, workDays, totalContact, totalSuccess,
+    contactDetail,
+    bonus_adapt, bonus_script,
+    avgFans: Math.round(avgFans * 10) / 10,
+  };
+}
+
+function perfGrade(score) {
+  if (score >= 90) return { color:'#22c55e', bg:'rgba(34,197,94,.12)' };
+  if (score >= 80) return { color:'var(--blue)', bg:'rgba(91,127,255,.12)' };
+  if (score >= 70) return { color:'var(--gold)', bg:'rgba(245,166,35,.12)' };
+  if (score >= 60) return { color:'var(--orange)', bg:'rgba(251,146,60,.12)' };
+  return                   { color:'var(--red)',  bg:'rgba(255,107,107,.12)' };
+}
+
+let perfView = 'week'; // 'week' | 'day' | 'month'
+let perfDayDate = new Date().toISOString().slice(0,10);
+
+// 手动触发飞书数据同步
+// 手动触发飞书数据同步（带进度条，轮询 GitHub Actions 运行状态）
+async function perfSyncFeishu() {
+  const btn = document.getElementById('perf-sync-btn');
+  const statusEl = document.getElementById('perf-sync-status');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.5'; btn.textContent = '🔄 同步中...'; }
+
+  const renderBar = (pct, label, color) => {
+    if (!statusEl) return;
+    statusEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;max-width:260px;height:6px;background:var(--surf2);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color || 'var(--blue)'};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap">${label}</span>
+      </div>`;
+  };
+
+  renderBar(5, '正在触发同步任务...', 'var(--blue)');
+
+  try {
+    const resp = await fetch(`${window.location.origin}/api/sync-feishu`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.error) {
+      if (statusEl) statusEl.innerHTML = `❌ 同步失败：${data.error}`;
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🔄 同步飞书数据'; }
+      return;
+    }
+
+    renderBar(10, '任务已触发，等待 GitHub 启动...', 'var(--blue)');
+
+    // 轮询任务状态，最多2分钟（每3秒一次，共40次）
+    let lastConclusion = null;
+    let triggeredAt = Date.now();
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const sResp = await fetch(`${window.location.origin}/api/sync-feishu/status`);
+        const sData = await sResp.json();
+        if (sData.error) {
+          // 查询状态失败不算致命，继续等待
+          renderBar(Math.min(15 + i * 2, 90), '同步进行中...', 'var(--blue)');
+          continue;
+        }
+        // 只关心本次触发之后开始的任务
+        const createdAt = sData.created_at ? new Date(sData.created_at).getTime() : 0;
+        const isCurrentRun = createdAt >= triggeredAt - 15000; // 容忍15秒时间差
+
+        if (sData.status === 'completed' && isCurrentRun) {
+          if (sData.conclusion === 'success') {
+            renderBar(100, '同步完成 ✅', 'var(--green)');
+          } else {
+            renderBar(100, `同步结束（${sData.conclusion || '未知状态'}）`, 'var(--red)');
+            if (statusEl) statusEl.innerHTML += `<div style="margin-top:4px"><a href="${sData.html_url}" target="_blank" style="font-size:11px;color:var(--blue)">查看运行日志 →</a></div>`;
+          }
+          lastConclusion = sData.conclusion;
+          break;
+        } else if (sData.status === 'in_progress' || (sData.status === 'queued' && isCurrentRun)) {
+          const pct = Math.min(15 + i * 2.5, 90);
+          renderBar(pct, sData.status === 'queued' ? '排队中...' : '同步进行中...', 'var(--blue)');
+        } else {
+          renderBar(Math.min(15 + i * 2, 90), '等待任务开始...', 'var(--blue)');
+        }
+      } catch (e) {
+        renderBar(Math.min(15 + i * 2, 90), '同步进行中...', 'var(--blue)');
+      }
+    }
+
+    if (lastConclusion === null) {
+      renderBar(100, '同步任务耗时较长，请稍后手动刷新页面', 'var(--gold)');
+    }
+
+    // 刷新前端数据
+    if (statusEl) statusEl.innerHTML += `<div style="margin-top:4px;font-size:11px;color:var(--muted)">正在刷新页面数据...</div>`;
+    await loadData();
+    await loadCheckinData();
+    rendered.delete('perf');
+    renderPerf();
+    rendered.add('perf');
+    const s2 = document.getElementById('perf-sync-status');
+    if (s2 && lastConclusion === 'success') {
+      s2.innerHTML = '✅ 同步完成，数据已刷新';
+    } else if (s2) {
+      s2.innerHTML += `<div style="margin-top:4px;font-size:11px;color:var(--green)">✅ 数据已刷新</div>`;
+    }
+
+  } catch (e) {
+    if (statusEl) statusEl.innerHTML = `❌ 同步失败：${e.message}`;
+  }
+
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🔄 同步飞书数据'; }
+}
+
+function renderPerf() {
+  const el = document.getElementById('pane-perf');
+  if (!el) return;
+
+  const wk = perfWeekDates(perfWeekOffset);
+  const today = new Date().toISOString().slice(0,10);
+
+  // ── 每人本周数据 ──
+  const perfData = CHECKIN_MEMBERS.map(m => ({ name: m.name, ...calcMemberPerf(m.name, wk.dates) }))
+    .sort((a,b) => b.total - a.total);
+
+  // ── 日视图数据 ──
+  const dayData = CHECKIN_MEMBERS.map(m => {
+    const cnt = ALL_ROWS.filter(r => r.owner?.trim()===m.name && r.record_date===perfDayDate && r.status && !r.is_dup).length;
+    const rec = (checkinData[perfDayDate]||{})[m.name] || {};
+    const chatN = (rec.chat||[]).length;
+    const blogN = (rec.blogger||[]).length;
+    const reviewN = (rec.review||[]).length;
+    const imgs = chatN + blogN + reviewN;
+    const isFuture = perfDayDate > today;
+    // 从0开始加分：做了才有分
+    let score = 0;
+    if (!isFuture) {
+      // 建联分（满50）：≥5位得50，1-4位得20，0位得0
+      if (cnt >= 5) score += 50;
+      else if (cnt > 0) score += 20;
+      // 截图分（满50）：三类各15分 + 三类全勤奖励5分
+      if (chatN > 0)   score += 15;
+      if (blogN > 0)   score += 15;
+      if (reviewN > 0) score += 15;
+      if (chatN > 0 && blogN > 0 && reviewN > 0) score += 5; // 全勤奖励
+    }
+    return { name: m.name, cnt, imgs, chatN, blogN, reviewN, score: Math.min(100, score), isFuture };
+  }).sort((a,b) => b.score - a.score);
+
+  el.innerHTML = `
+<div style="max-width:1100px">
+  <!-- 标题栏 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text)">📊 绩效评分</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">依据《运营岗位制度管理办法》v2026-06-10</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${isAdmin ? `<button onclick="perfSyncFeishu()" id="perf-sync-btn" style="padding:5px 12px;border-radius:7px;border:1px solid rgba(91,127,255,.4);font-size:12px;cursor:pointer;background:rgba(91,127,255,.08);color:var(--blue)">🔄 同步飞书数据</button>` : ''}
+      <button onclick="perfView='day';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='day'?'var(--blue)':'var(--surf2)'};color:${perfView==='day'?'#fff':'var(--muted)'}">📅 日打分</button>
+      <button onclick="perfView='week';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='week'?'var(--blue)':'var(--surf2)'};color:${perfView==='week'?'#fff':'var(--muted)'}">📆 周汇总</button>
+      <button onclick="perfView='month';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='month'?'var(--blue)':'var(--surf2)'};color:${perfView==='month'?'#fff':'var(--muted)'}">🗓 月累计</button>
+      <button onclick="perfView='report';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='report'?'var(--blue)':'var(--surf2)'};color:${perfView==='report'?'#fff':'var(--muted)'}">📋 周报</button>
+    </div>
+  </div>
+  ${isAdmin ? `<div id="perf-sync-status" style="font-size:11px;color:var(--muted);min-height:16px;margin-bottom:12px"></div>` : '<div style="margin-bottom:12px"></div>'}
+
+  ${perfView === 'day' ? renderPerfDayView(dayData) : ''}
+  ${perfView === 'week' ? renderPerfWeekView(perfData, wk) : ''}
+  ${perfView === 'month' ? renderPerfMonthView() : ''}
+  ${perfView === 'report' ? renderPerfReportView() : ''}
+
+
+  <!-- 评分说明 -->
+  <details style="margin-top:20px">
+    <summary style="font-size:12px;color:var(--muted);cursor:pointer;padding:8px 0">📋 评分维度说明</summary>
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.8">
+      <b style="color:var(--text)">总分100分（含附加分）</b><br>
+      • <b style="color:var(--text)">日常建联（40分）</b>：数量达标15分 + 信息完整10分 + 博主类型10分 + 粉丝记录5分｜数据来源：飞书表格<br>
+      • <b style="color:var(--text)">截图上传（30分）</b>：复盘截图10分 + 建联成功截图10分 + 建联列表截图10分｜数据来源：每日签到<br>
+      • <b style="color:var(--text)">工作质量（20分）</b>：成功率20分｜数据来源：飞书表格<br>
+      • <b style="color:var(--green)">附加分（计入周总分，最多+10）</b>：💬 话术库每保存1条+2分（上限20分/周）· 🎯 适配度分析平均≥70且当日无建联成功得+20分/天｜两项合计后按10分上限计入周总分
+    </div>
+  </details>
+</div>`;
+}
+
+function renderPerfDayView(dayData) {
+  const today = new Date().toISOString().slice(0,10);
+  // Date navigator
+  const prev = new Date(perfDayDate); prev.setDate(prev.getDate()-1);
+  const next = new Date(perfDayDate); next.setDate(next.getDate()+1);
+  const weekNames = ['日','一','二','三','四','五','六'];
+  const wname = weekNames[new Date(perfDayDate).getDay()];
+
+  return `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="perfDayDate='${prev.toISOString().slice(0,10)}';renderPerf()" style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px;cursor:pointer">‹</button>
+    <span style="font-size:14px;font-weight:600;color:var(--text)">${perfDayDate} 周${wname}</span>
+    <button onclick="perfDayDate='${next.toISOString().slice(0,10)}';renderPerf()" ${perfDayDate>=today?'disabled style="opacity:.3"':'style="cursor:pointer"'} style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px">›</button>
+    <button onclick="perfDayDate='${today}';renderPerf()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer">今天</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+    ${dayData.map(m => {
+      const gc = perfGrade(m.score);
+      const chatN = m.chatN ?? 0, blogN = m.blogN ?? 0, reviewN = m.reviewN ?? 0;
+      const contactScore = m.cnt >= 5 ? 50 : m.cnt > 0 ? 20 : 0;
+      const fullHouse = chatN>0 && blogN>0 && reviewN>0;
+      const imgScore = (chatN>0?15:0) + (blogN>0?15:0) + (reviewN>0?15:0) + (fullHouse?5:0);
+      return `<div style="background:var(--surf);border:1px solid ${m.score===0?'rgba(255,107,107,.2)':'var(--border)'};border-radius:12px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:600;color:var(--text)">${m.name}</span>
+          <span style="font-size:20px;font-weight:800;color:${gc.color};background:${gc.bg};padding:2px 10px;border-radius:8px">${m.isFuture ? '—' : m.score+'分'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:8px">
+          <div style="background:var(--surf2);border-radius:6px;padding:6px 8px">
+            <div style="color:var(--muted);font-size:11px">建联数 <span style="color:${contactScore>0?'var(--green)':'var(--red)'}">+${contactScore}</span></div>
+            <div style="color:${m.cnt>=5?'var(--green)':m.cnt>0?'var(--gold)':'var(--red)'};font-weight:700;font-size:16px">${m.cnt}<span style="font-size:11px;font-weight:400;color:var(--muted)">位</span></div>
+          </div>
+          <div style="background:var(--surf2);border-radius:6px;padding:6px 8px">
+            <div style="color:var(--muted);font-size:11px">截图 <span style="color:${imgScore>0?'var(--green)':'var(--red)'}">+${imgScore}</span></div>
+            <div style="color:${m.imgs>0?'var(--green)':'var(--red)'};font-weight:700;font-size:16px">${m.imgs}<span style="font-size:11px;font-weight:400;color:var(--muted)">张</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span style="font-size:11px;padding:2px 7px;border-radius:5px;background:${chatN>0?'rgba(67,217,164,.12)':'rgba(255,255,255,.04)'};color:${chatN>0?'var(--green)':'var(--muted)'}">📋 建联列表${chatN}张${chatN>0?' +15':''}</span>
+          <span style="font-size:11px;padding:2px 7px;border-radius:5px;background:${blogN>0?'rgba(67,217,164,.12)':'rgba(255,255,255,.04)'};color:${blogN>0?'var(--green)':'var(--muted)'}">🔗 建联成功${blogN}张${blogN>0?' +15':''}</span>
+          <span style="font-size:11px;padding:2px 7px;border-radius:5px;background:${reviewN>0?'rgba(67,217,164,.12)':'rgba(255,255,255,.04)'};color:${reviewN>0?'var(--green)':'var(--muted)'}">📝 复盘${reviewN}张${reviewN>0?' +15':''}</span>
+          ${fullHouse ? `<span style="font-size:11px;padding:2px 7px;border-radius:5px;background:rgba(255,215,0,.15);color:var(--gold);font-weight:600">🏆 三类全勤 +5</span>` : ''}
+        </div>
+        ${!m.isFuture && m.score === 0 ? `<div style="margin-top:8px;font-size:11px;color:var(--red);background:rgba(255,107,107,.08);border-radius:6px;padding:4px 8px">⚠️ 今日无任何记录</div>` : !m.isFuture && m.cnt === 0 ? `<div style="margin-top:8px;font-size:11px;color:var(--orange);background:rgba(251,146,60,.08);border-radius:6px;padding:4px 8px">⚠️ 无建联记录</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderPerfWeekView(perfData, wk) {
+  return `
+  <!-- 周切换 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="perfWeekOffset--;rendered.delete('perf');renderPerf();rendered.add('perf')" style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px;cursor:pointer">‹ 上周</button>
+    <span style="font-size:14px;font-weight:600;color:var(--text)">W${wk.weekNum}  ${wk.label}</span>
+    <button onclick="perfWeekOffset++;rendered.delete('perf');renderPerf();rendered.add('perf')" ${perfWeekOffset>=0?'disabled style="opacity:.3"':'style="cursor:pointer"'} style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:13px">下周 ›</button>
+    <button onclick="perfWeekOffset=0;rendered.delete('perf');renderPerf();rendered.add('perf')" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer">本周</button>
+  </div>
+
+  <!-- 分数卡 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px">
+    ${(() => {
+      // 后20%为末位（至少1人），按排名动态判断
+      const total = perfData.length;
+      const bottomN = Math.max(1, Math.ceil(total * 0.2));
+      return perfData.map((m, i) => {
+        const gc = perfGrade(m.total);
+        const rank = i + 1;
+        const isBottom = rank > total - bottomN; // 排名靠后20%
+        const borderColor = isBottom ? 'rgba(255,107,107,.35)' : 'var(--border)';
+        return `<div style="background:var(--surf);border:1px solid ${borderColor};border-radius:12px;padding:14px;position:relative">
+          <div style="position:absolute;top:10px;right:12px;font-size:11px;color:var(--muted)">#${rank}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">${m.name}</div>
+          <div style="font-size:36px;font-weight:800;color:${gc.color};line-height:1">${m.total}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;font-size:11px;text-align:center">
+            <div style="background:var(--surf2);border-radius:5px;padding:4px 2px"><div style="color:var(--muted)">建联</div><div style="color:var(--text);font-weight:600">${m.dim1}/40</div></div>
+            <div style="background:var(--surf2);border-radius:5px;padding:4px 2px"><div style="color:var(--muted)">截图</div><div style="color:var(--text);font-weight:600">${m.dim2}/30</div></div>
+            <div style="background:var(--surf2);border-radius:5px;padding:4px 2px"><div style="color:var(--muted)">质量</div><div style="color:var(--text);font-weight:600">${m.dim3}/20</div></div>
+          </div>
+          ${m.bonusTotal > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--green);text-align:center">+${m.bonusTotal} 附加分</div>` : ''}
+          ${isBottom ? `<div style="margin-top:6px;font-size:11px;color:var(--red);background:rgba(255,107,107,.08);border-radius:5px;padding:3px 6px;text-align:center">⚠️ 末位20% · 待复核</div>` : ''}
+        </div>`;
+      }).join('');
+    })()}
+  </div>
+
+  <!-- 日明细表格（含每日加分拆解） -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">📋 本周每日得分明细</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">建联分 = 飞书数据 · 截图分 = 签到记录 · 附加分 = 截图≥10张触发+20 / 复盘截图+2/张</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th rowspan="2" style="padding:7px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:bottom">姓名</th>
+            ${wk.dates.map(d => {
+              const wn = ['日','一','二','三','四','五','六'][new Date(d).getDay()];
+              const today = new Date().toISOString().slice(0,10);
+              const isToday = d === today;
+              return `<th colspan="4" style="padding:6px 4px;text-align:center;color:${isToday?'var(--blue)':'var(--muted)'};border-bottom:1px solid var(--border);border-left:1px solid rgba(255,255,255,.06);font-weight:${isToday?700:500}">周${wn} ${d.slice(5)}</th>`;
+            }).join('')}
+            <th rowspan="2" style="padding:7px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border);border-left:1px solid rgba(255,255,255,.06);white-space:nowrap;vertical-align:bottom">周总分</th>
+            
+          </tr>
+          <tr>
+            ${wk.dates.map(() =>
+              ['建联','截图','附加','小计'].map((lbl,li) =>
+                `<th style="padding:4px 3px;text-align:center;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);${li===0?'border-left:1px solid rgba(255,255,255,.06)':''}font-weight:400;white-space:nowrap">${lbl}</th>`
+              ).join('')
+            ).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${perfData.map((m, mi) => {
+            const gc = perfGrade(m.total);
+            const today = new Date().toISOString().slice(0,10);
+            // 计算每天各项分数
+            const dayScores = wk.dates.map(d => {
+              const future = d > today;
+              const cnt = m.contactDetail[d] || 0;
+              const rec = (checkinData[d]||{})[m.name]||{};
+              const chatN = (rec.chat||[]).length;
+              const blogN = (rec.blogger||[]).length;
+              const reviewN = (rec.review||[]).length;
+              const totalImgs = chatN + blogN + reviewN;
+
+              // 建联分（当日贡献，满分3分/天 → 周×5=15，此处显示当日占比）
+              let contactPt = future ? null : cnt >= 5 ? 3 : cnt > 0 ? 1 : 0;
+
+              // 截图分（每类有上传得2，满分6/天 → 周最多30）
+              let screenshotPt = future ? null : (chatN>0?2:0) + (blogN>0?2:0) + (reviewN>0?2:0);
+
+              // 附加分（话术库当日+适配度）
+              let bonusPt = future ? null : 0;
+              let bonusTacticsCnt = 0, bonusTacticsPt = 0, bonusCompatPt = 0;
+              if (!future) {
+                // 话术库：每条 +2 分（周维度上限20分）
+                bonusTacticsCnt = chatScriptRows.filter(r => {
+                  if (!r.member || r.member !== m.name) return false;
+                  try { return new Date(r.date?.replace(/\//g,'-')).toISOString().slice(0,10) === d; } catch(e){ return false; }
+                }).length;
+                bonusTacticsPt = bonusTacticsCnt * 2;
+                // 适配度：当日无建联成功 + 平均分≥70 → +20
+                const hasSuccess = ALL_ROWS.some(r =>
+                  r.owner?.trim()===m.name && r.record_date===d && STATUS_SUCCESS.includes(r.status) && !r.is_dup
+                );
+                if (!hasSuccess) {
+                  const dayCompat = (window.compatScoreCache||[]).filter(r => r.member_name===m.name && r.score_date===d);
+                  if (dayCompat.length) {
+                    const avg = dayCompat.reduce((s,r)=>s+(r.compat_score||0),0)/dayCompat.length;
+                    if (avg >= 70) bonusCompatPt = 20;
+                  }
+                }
+                bonusPt = bonusTacticsPt + bonusCompatPt;
+              }
+
+              const dayTotal = future ? null : contactPt + screenshotPt + bonusPt;
+              return { cnt, chatN, blogN, reviewN, totalImgs, contactPt, screenshotPt, bonusPt, bonusTacticsCnt, bonusTacticsPt, bonusCompatPt, dayTotal, future };
+            });
+
+            return `<tr style="background:${mi%2?'rgba(255,255,255,.015)':'transparent'}">
+              <td style="padding:8px 10px;font-weight:600;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap">${m.name}</td>
+              ${dayScores.map((ds, di) => {
+                if (ds.future) return `
+                  <td colspan="4" style="padding:5px 4px;text-align:center;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.06);font-size:11px">—</td>`;
+
+                const cColor = ds.cnt>=5?'var(--green)':ds.cnt>0?'var(--gold)':'var(--red)';
+                const sColor = ds.screenshotPt>=6?'var(--green)':ds.screenshotPt>0?'var(--gold)':'var(--red)';
+                const bColor = ds.bonusPt>0?'var(--green)':'var(--muted)';
+
+                // 截图tooltip
+                const sTitle = `聊天${ds.chatN}张 建联${ds.blogN}张 复盘${ds.reviewN}张`;
+                // 附加分tooltip
+                const bParts = [];
+                if (ds.bonusTacticsPt > 0) bParts.push(`话术库${ds.bonusTacticsCnt}条×2 = +${ds.bonusTacticsPt}`);
+                if (ds.bonusCompatPt > 0) bParts.push(`适配度平均≥70→+20`);
+                const bTitle = bParts.length ? bParts.join(' · ') : '暂无附加分（话术库0条，适配度未达标或有建联成功）';
+                const bIcon = ds.bonusCompatPt > 0 ? '🎯' : ds.bonusTacticsPt > 0 ? '💬' : '';
+
+                return `
+                  <td style="padding:5px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.06)">
+                    <div style="font-weight:700;color:${cColor};font-size:13px">+${ds.contactPt}</div>
+                    <div style="font-size:10px;color:var(--muted)">${ds.cnt}位</div>
+                  </td>
+                  <td style="padding:5px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04)" title="${sTitle}">
+                    <div style="font-weight:700;color:${sColor};font-size:13px">+${ds.screenshotPt}</div>
+                    <div style="font-size:10px;color:var(--muted)">${ds.totalImgs}张</div>
+                  </td>
+                  <td style="padding:5px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04)" title="${bTitle}">
+                    <div style="font-weight:700;color:${bColor};font-size:13px">${ds.bonusPt>0?'+'+ds.bonusPt:'—'}</div>
+                    <div style="font-size:10px;color:var(--muted)">${bIcon}${ds.bonusTacticsCnt>0&&!ds.bonusCompatPt?ds.bonusTacticsCnt+'条':''}</div>
+                  </td>
+                  <td style="padding:5px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04)">
+                    <div style="font-weight:800;font-size:14px;color:var(--text)">${ds.dayTotal}</div>
+                  </td>`;
+              }).join('')}
+              <td style="padding:8px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.06);font-weight:800;font-size:16px;color:${gc.color}">${m.total}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <!-- 图例 -->
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted)">
+      <span>建联分：≥5位 <b style="color:var(--green)">+3</b> · 1-4位 <b style="color:var(--gold)">+1</b> · 0位 <b style="color:var(--red)">+0</b></span>
+      <span>截图分：每类有上传 <b style="color:var(--green)">+2</b>（建联列表/建联成功/复盘各+2，满+6）</span>
+      <span>附加分：💬 话术库每条 <b style="color:var(--green)">+2</b>（周上限20分）· 🎯 适配度平均≥70且当日无建联成功 <b style="color:var(--green)">+20/天</b></span>
+    </div>
+  </div>`;
+}
+
+function renderPerfMonthView() {
+  // 取当前月所有周
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const today = now.toISOString().slice(0,10);
+
+  // 当月所有日期
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const monthDates = Array.from({length:daysInMonth}, (_,i) => {
+    return `${ym}-${String(i+1).padStart(2,'0')}`;
+  }).filter(d => d <= today);
+
+  const monthPerf = CHECKIN_MEMBERS.map(m => ({
+    name: m.name,
+    ...calcMemberPerf(m.name, monthDates)
+  })).sort((a,b) => b.total - a.total);
+
+  // 按周分组计算趋势
+  const weeks = [];
+  for (let off = -3; off <= 0; off++) {
+    const wk = perfWeekDates(off);
+    const wDates = wk.dates.filter(d => d.startsWith(ym) && d <= today);
+    if (wDates.length > 0) weeks.push({ label: `W${wk.weekNum}`, dates: wDates });
+  }
+
+  return `
+  <div style="font-size:13px;color:var(--muted);margin-bottom:16px">📅 ${now.getFullYear()}年${now.getMonth()+1}月  · 截至今日</div>
+
+  <!-- 月度排名卡 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px">
+    ${(() => {
+      const total = monthPerf.length;
+      const bottomN = Math.max(1, Math.ceil(total * 0.2));
+      return monthPerf.map((m, i) => {
+        const gc = perfGrade(m.total);
+        const rank = i + 1;
+        const isBottom = rank > total - bottomN;
+        const checkinDays = monthDates.filter(d => {
+          const rec = (checkinData[d]||{})[m.name]||{};
+          return (rec.chat||[]).length>0||(rec.review||[]).length>0||(rec.blogger||[]).length>0;
+        }).length;
+        return `<div style="background:var(--surf);border:1px solid ${isBottom?'rgba(255,107,107,.35)':'var(--border)'};border-radius:12px;padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${m.name}</div>
+            <div style="font-size:11px;color:var(--muted)">#${rank}</div>
+          </div>
+          <div style="font-size:32px;font-weight:800;color:${gc.color};line-height:1">${m.total}</div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+            建联${m.totalContact}位 · 打卡${checkinDays}天 · 成功${m.totalSuccess}位
+          </div>
+          ${m.bonusTotal>0?`<div style="font-size:11px;color:var(--green);margin-top:4px">+${m.bonusTotal} 附加分</div>`:''}
+          ${isBottom?`<div style="font-size:11px;color:var(--red);margin-top:4px">⚠️ 月度末位20% · 待复核</div>`:''}
+        </div>`;
+      }).join('');
+    })()}
+  </div>
+
+  <!-- 周趋势表 -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">📈 本月各周趋势</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="padding:7px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">姓名</th>
+            ${weeks.map(w=>`<th style="padding:7px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">${w.label}</th>`).join('')}
+            <th style="padding:7px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">月累计</th>
+            
+          </tr>
+        </thead>
+        <tbody>
+          ${(() => {
+            const total = monthPerf.length;
+            const bottomN = Math.max(1, Math.ceil(total * 0.2));
+            return monthPerf.map((m,i)=>{
+            const gc = perfGrade(m.total);
+            const isBottom = (i+1) > total - bottomN;
+            return `<tr style="background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:7px 10px;font-weight:600;color:${isBottom?'var(--red)':'var(--text)'};border-bottom:1px solid rgba(255,255,255,.03)">${m.name}${isBottom?' ⚠️':''}</td>
+              ${weeks.map(w=>{
+                const wperf = calcMemberPerf(m.name, w.dates);
+                const wgc = perfGrade(wperf.total);
+                return `<td style="padding:7px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03)">
+                  <span style="color:${wgc.color};font-weight:600">${wperf.total}</span>
+                </td>`;
+              }).join('')}
+              <td style="padding:7px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03);font-weight:700;color:${gc.color}">${m.total}</td>
+            </tr>`;
+          }).join('');
+          })()}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// 📋 周报（自动/手动生成的绩效评估报告）
+// ══════════════════════════════════════════
+let perfReportList = [];
+let perfReportCurrent = null; // 当前展示的报告详情 {period_key, period_label, report_data, ...}
+let perfReportLoading = false;
+let perfReportProgress = null; // { done, total, label }
+
+async function perfReportLoadList() {
+  try {
+    const resp = await fetch(`${window.location.origin}/api/perf-report/list`);
+    const data = await resp.json();
+    perfReportList = Array.isArray(data) ? data : [];
+  } catch(e) {
+    perfReportList = [];
+  }
+}
+
+function perfCurrentMonday() {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - day + 1);
+  return mon.toISOString().slice(0,10);
+}
+
+function perfReportRerender() {
+  const pane = document.getElementById('pane-perf');
+  if (pane && pane.style.display === 'none') return; // 绩效Tab未显示时不重渲染
+  rendered.delete('perf'); renderPerf(); rendered.add('perf');
+}
+
+// 分步生成：init → 逐个 gen-member → gen-overview → gen-bottom
+async function perfReportGenerate(monday, force) {
+  if (perfReportLoading) return;
+  perfReportLoading = true;
+  perfReportProgress = { done: 0, total: 1, label: '正在初始化报告...' };
+  perfReportRerender();
+
+  try {
+    // Step 1: init
+    const initResp = await fetch(`${window.location.origin}/api/perf-report/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monday, force: !!force })
+    });
+    const initData = await initResp.json();
+    if (initData.error) throw new Error(initData.error);
+
+    if (initData.skipped) {
+      await perfReportLoadList();
+      if (initData.period_key) await perfReportOpen(initData.period_key);
+      perfReportLoading = false;
+      perfReportProgress = null;
+      perfReportRerender();
+      return;
+    }
+
+    const periodKey = initData.period_key;
+    const memberNames = initData.member_names || [];
+    const totalSteps = initData.total_steps || (memberNames.length + 2);
+    perfReportProgress = { done: 0, total: totalSteps, label: `已计算各成员分数，开始生成分析文本...` };
+    perfReportRerender();
+
+    // Step 2: 逐个成员生成AI文本
+    for (let i = 0; i < memberNames.length; i++) {
+      const name = memberNames[i];
+      perfReportProgress = { done: i, total: totalSteps, label: `正在生成 ${name} 的绩效分析（${i+1}/${memberNames.length}）...` };
+      perfReportRerender();
+      const r = await fetch(`${window.location.origin}/api/perf-report/gen-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_key: periodKey, member_name: name })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(`${name}: ${d.error}`);
+      perfReportProgress = { done: i+1, total: totalSteps, label: `已完成 ${name} 的绩效分析` };
+      perfReportRerender();
+    }
+
+    // Step 3: 数据概况
+    perfReportProgress = { done: memberNames.length, total: totalSteps, label: '正在生成整体数据概况...' };
+    perfReportRerender();
+    const ovResp = await fetch(`${window.location.origin}/api/perf-report/gen-overview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ period_key: periodKey })
+    });
+    const ovData = await ovResp.json();
+    if (ovData.error) throw new Error(ovData.error);
+    perfReportProgress = { done: memberNames.length + 1, total: totalSteps, label: '已生成数据概况' };
+    perfReportRerender();
+
+    // Step 4: 末位建议 + 标记完成
+    perfReportProgress = { done: memberNames.length + 1, total: totalSteps, label: '正在生成末位管理建议...' };
+    perfReportRerender();
+    const botResp = await fetch(`${window.location.origin}/api/perf-report/gen-bottom`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ period_key: periodKey })
+    });
+    const botData = await botResp.json();
+    if (botData.error) throw new Error(botData.error);
+    perfReportProgress = { done: totalSteps, total: totalSteps, label: '✅ 报告生成完成' };
+    perfReportRerender();
+
+    await perfReportLoadList();
+    await perfReportOpen(periodKey);
+  } catch(e) {
+    alert('生成失败：' + e.message);
+  }
+  perfReportLoading = false;
+  perfReportProgress = null;
+  perfReportRerender();
+}
+
+async function perfReportOpen(periodKey) {
+  perfReportLoading = true;
+  perfReportProgress = { done: 0, total: 1, label: '加载报告...' };
+  rendered.delete('perf'); renderPerf(); rendered.add('perf');
+  try {
+    const resp = await fetch(`${window.location.origin}/api/perf-report/get?period_key=${encodeURIComponent(periodKey)}`);
+    const data = await resp.json();
+    if (!data.error) perfReportCurrent = data;
+  } catch(e) {}
+  perfReportLoading = false;
+  perfReportProgress = null;
+  rendered.delete('perf'); renderPerf(); rendered.add('perf');
+}
+
+function perfReportBack() {
+  perfReportCurrent = null;
+  rendered.delete('perf'); renderPerf(); rendered.add('perf');
+}
+
+// 将 AI 返回的 【小标题】内容 文本转换为简单HTML
+function perfReportAiTextToHtml(text) {
+  if (!text) return '<div style="color:var(--muted);font-size:12px">（AI未返回内容）</div>';
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  let html = '';
+  lines.forEach(line => {
+    const headerMatch = line.match(/^【(.+?)】\s*(.*)$/);
+    if (headerMatch) {
+      html += `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-top:8px">${trEscapeHtml(headerMatch[1])}</div>`;
+      if (headerMatch[2]) html += `<div style="font-size:12px;color:var(--text);margin-top:2px">${trEscapeHtml(headerMatch[2])}</div>`;
+    } else {
+      const cleaned = line.replace(/^[-•·]\s*/, '');
+      html += `<div style="font-size:12px;color:var(--text);margin-top:2px;padding-left:12px;position:relative"><span style="position:absolute;left:0;color:var(--muted)">·</span>${trEscapeHtml(cleaned)}</div>`;
+    }
+  });
+  return html;
+}
+
+function renderPerfReportView() {
+  if (!perfReportCurrent) perfReportLoadList(); // 触发异步加载（结果通过re-render展示）
+
+  if (perfReportLoading) {
+    const p = perfReportProgress || { done: 0, total: 1, label: '处理中...' };
+    const pct = p.total > 0 ? Math.round(p.done / p.total * 100) : 0;
+    return `
+      <div style="max-width:480px;margin:60px auto;text-align:center">
+        <div style="font-size:13px;color:var(--text);margin-bottom:12px">${p.label}</div>
+        <div style="height:8px;background:var(--surf2);border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:6px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">${p.done} / ${p.total}　${pct}%</div>
+      </div>
+    `;
+  }
+
+  // ── 详情视图 ──
+  if (perfReportCurrent) {
+    const rd = perfReportCurrent.report_data || {};
+    const members = rd.members || [];
+    const unfinished = rd.status === 'generating';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <button onclick="perfReportBack()" style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">← 返回列表</button>
+        <span style="font-size:14px;font-weight:600;color:var(--text)">${rd.period_label || perfReportCurrent.period_label}</span>
+        ${isAdmin ? `<button onclick="perfReportGenerate('${rd.monday}', true)" style="margin-left:auto;background:rgba(91,127,255,.08);border:1px solid rgba(91,127,255,.4);color:var(--blue);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">🔄 重新生成</button>` : ''}
+      </div>
+      ${unfinished ? `
+        <div style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--gold)">⚠️ 本周报告尚未生成完成（部分分析文本缺失）</span>
+          ${isAdmin ? `<button onclick="perfReportGenerate('${rd.monday}', true)" style="background:var(--gold);color:#1a1f2e;border:none;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">▶ 继续生成</button>` : ''}
+        </div>
+      ` : ''}
+
+      <!-- 数据概况 -->
+      <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">📊 数据概况与现状复盘</div>
+        ${perfReportAiTextToHtml(rd.overview_text)}
+      </div>
+
+      <!-- 排名总表 -->
+      <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">🏆 综合排名与得分</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr>
+              <th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">排名</th>
+              <th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">姓名</th>
+              <th style="padding:6px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">建联(40)</th>
+              <th style="padding:6px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">截图(30)</th>
+              <th style="padding:6px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">质量(20)</th>
+              <th style="padding:6px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">附加(10)</th>
+              <th style="padding:6px 8px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">总分</th>
+            </tr></thead>
+            <tbody>
+              ${members.map(m => `
+                <tr style="${m.isBottom ? 'background:rgba(255,107,107,.06)' : ''}">
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted)">#${m.rank}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">${m.name}${m.isBottom ? ' <span style="font-size:10px;color:var(--red)">末位20%</span>' : ''}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;color:var(--text)">${m.dim1}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;color:var(--text)">${m.dim2}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;color:var(--text)">${m.dim3}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;color:var(--text)">${m.bonusTotal}</td>
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;color:${perfGrade(m.total).color};font-weight:700">${m.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 每人详细分析 -->
+      ${members.map(m => `
+        <div style="background:var(--surf);border:1px solid ${m.isBottom?'rgba(255,107,107,.3)':'var(--border)'};border-radius:12px;padding:16px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:700;color:var(--text)">${m.name}</span>
+            <span style="font-size:12px;color:var(--muted)">#${m.rank} · ${m.total}/100</span>
+            ${m.isBottom ? `<span style="font-size:10px;color:var(--red);background:rgba(255,107,107,.1);border-radius:4px;padding:1px 6px">末位20%·待复核</span>` : ''}
+          </div>
+          ${perfReportAiTextToHtml(m.aiText)}
+          <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+            建联总数 ${m.totalContact} · 成功 ${m.totalSuccess} · 达标天数 ${m.reachDays}/${m.workDays} ·
+            建联${m.s_contact_qty}/15 表格${m.s_table}/10 类型${m.s_type}/10 粉丝${m.s_fans}/5 ·
+            复盘${m.s_review}/10 成功截图${m.s_chat}/10 列表截图${m.s_blogger_img}/10
+          </div>
+          <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+            ${(m.dayBreakdown||[]).map(db => `
+              <div style="font-size:10px;background:var(--surf2);border-radius:5px;padding:3px 7px;color:${db.future?'var(--muted)':'var(--text)'}">
+                ${db.date.slice(5)}：${db.future?'—':`建联${db.cnt} 📋${db.chatN} 🔗${db.blogN} 📝${db.reviewN}`}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+
+      <!-- 末位管理建议 -->
+      ${rd.bottom_advice_text ? `
+        <div style="background:var(--surf);border:1px solid rgba(255,107,107,.3);border-radius:12px;padding:16px">
+          <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:8px">⚠️ 末位管理建议（后${rd.bottom_n||1}人）</div>
+          ${perfReportAiTextToHtml(rd.bottom_advice_text)}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // ── 列表视图 ──
+  const thisMonday = perfCurrentMonday();
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--muted)">每周自动生成绩效评估报告；周五及以后若本周报告未生成，打开页面会自动触发。</div>
+      ${isAdmin ? `<button onclick="perfReportGenerate('${thisMonday}', false)" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">✨ 生成本周报告</button>` : ''}
+    </div>
+    ${!perfReportList.length ? `
+      <div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">暂无周报，${isAdmin ? '点击右上角按钮生成' : '请等待管理员生成'}</div>
+    ` : `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${perfReportList.map(r => `
+          <div onclick="perfReportOpen('${r.period_key}')" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${r.period_label}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.member_count||0} 人 · 生成于 ${r.created_at ? new Date(r.created_at).toLocaleString('zh-CN',{hour12:false}) : ''}</div>
+            </div>
+            <span style="color:var(--muted);font-size:16px">›</span>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+
+// ══════════════════════════════════════════
+// 知识检测：单题多选
+const TR_QUIZ = {
+  q: '作为运营组新人，以下哪些是你每天/每周必须做的事情？（多选，选出所有正确项）',
+  opts: [
+    '每个工作日主动建联3-5位博主',
+    '当日24:00前上传三类签到截图（复盘/建联成功/建联列表）',
+    '飞书表格里发现D列变红（重复）要立即删除该行',
+    '建联成功后及时把回复情况改成"引导到私域了"',
+    '攒到周五一次性补填本周所有飞书数据即可',
+    '博主类型（K列）可以不填，不影响评分',
+  ],
+  correctSet: [0,1,2,3],
+  fb: '前四项是每天/每次建联都要做的：数量达标3-5位、当日24:00前传齐三类截图、删除重复行（否则不计分还拉低完整性）、及时更新建联成功状态（影响成功率和"建联数量达标"判定）。最后两项是错的——飞书要每天填写而不是攒到周五；博主类型会计入"博主类型达标(10分)"，不填会扣分。'
+};
+
+const TR_TOTAL_STEPS = 11; // 不含证书页，证书算第12页
+const TR_STEP_TITLES = [
+  '欢迎加入','核心职责','建联表格填写规范','建联状态说明','每日签到与截图',
+  '绩效评分总览','截图与质量细则','附加分与系统工具','末位管理与红线','知识检测','答疑环节'
+];
+
+let trState = {
+  step: 0,
+  name: (typeof checkinCurrentMember !== 'undefined' && checkinCurrentMember) ? checkinCurrentMember : '',
+  quizSelected: [],     // 多选已选下标
+  quizSubmitted: false,
+  qaHistory: [],        // {role:'user'|'ai', text}
+};
+
+function trEscapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderTraining(){
+  const el = document.getElementById('pane-training');
+  el.innerHTML = `
+    <div class="tr-app">
+      <div class="tr-progress-track"><div class="tr-progress-fill" id="trProgressFill"></div></div>
+      <div class="tr-step-label">
+        <span id="trStepLabel">开始</span>
+        <span class="tr-badge" id="trStepBadge">运营组新人培训</span>
+      </div>
+      <div class="tr-content" id="trContent"></div>
+      <div class="tr-nav" id="trNav"></div>
+    </div>
+  `;
+  trRender();
+}
+
+function trRender(){
+  const content = document.getElementById('trContent');
+  const nav = document.getElementById('trNav');
+  const progressFill = document.getElementById('trProgressFill');
+  const stepLabel = document.getElementById('trStepLabel');
+  const stepBadge = document.getElementById('trStepBadge');
+
+  if(trState.step === 0){
+    progressFill.style.width = '0%';
+    stepLabel.textContent = '开始';
+  } else if(trState.step <= TR_TOTAL_STEPS){
+    progressFill.style.width = (trState.step / (TR_TOTAL_STEPS+1) * 100) + '%';
+    stepLabel.textContent = `步骤 ${trState.step} / ${TR_TOTAL_STEPS}`;
+  } else {
+    progressFill.style.width = '100%';
+    stepLabel.textContent = '完成';
+  }
+  stepBadge.textContent = trState.step === 0 ? '运营组新人培训'
+    : trState.step <= TR_TOTAL_STEPS ? TR_STEP_TITLES[trState.step-1]
+    : '培训证书';
+
+  content.innerHTML = trRenderContent();
+  nav.innerHTML = trRenderNav();
+  trBindEvents();
+}
+
+function trRenderContent(){
+  switch(trState.step){
+    case 0: return trScreenName();
+    case 1: return trScreenWelcome();
+    case 2: return trScreenDuties();
+    case 3: return trScreenTable();
+    case 4: return trScreenStatus();
+    case 5: return trScreenCheckin();
+    case 6: return trScreenScoreOverview();
+    case 7: return trScreenScoreDetail();
+    case 8: return trScreenBonusTools();
+    case 9: return trScreenRedlines();
+    case 10: return trScreenQuiz();
+    case 11: return trScreenQA();
+    case 12: return trScreenCertificate();
+    default: return '';
+  }
+}
+
+function trRenderNav(){
+  if(trState.step === 0){
+    return `<div></div><button class="tr-btn tr-primary" id="trBtnNext" ${trState.name.trim()?'':'disabled'}>开始培训 →</button>`;
+  }
+  if(trState.step === TR_TOTAL_STEPS + 1){
+    return ''; // 证书页自带按钮
+  }
+  if(trState.step === TR_TOTAL_STEPS - 1){
+    // 知识检测：先"提交答案"，提交后变"下一步"
+    const backBtn = `<button class="tr-btn tr-ghost" id="trBtnBack">← 上一步</button>`;
+    if(!trState.quizSubmitted){
+      const disabled = trState.quizSelected.length === 0;
+      return `${backBtn}<button class="tr-btn tr-primary" id="trBtnQuizSubmit" ${disabled?'disabled':''}>提交答案</button>`;
+    }
+    return `${backBtn}<button class="tr-btn tr-primary" id="trBtnNext">答疑环节 →</button>`;
+  }
+  const backBtn = `<button class="tr-btn tr-ghost" id="trBtnBack">← 上一步</button>`;
+  let nextLabel = '下一步 →';
+  if(trState.step === TR_TOTAL_STEPS - 2) nextLabel = '知识检测 →';
+  if(trState.step === TR_TOTAL_STEPS) nextLabel = '领取证书 →';
+  return `${backBtn}<button class="tr-btn tr-primary" id="trBtnNext">${nextLabel}</button>`;
+}
+
+function trBindEvents(){
+  const btnNext = document.getElementById('trBtnNext');
+  const btnBack = document.getElementById('trBtnBack');
+
+  if(btnNext) btnNext.onclick = () => { trState.step++; trRender(); };
+  if(btnBack) btnBack.onclick = () => { trState.step--; trRender(); };
+
+  if(trState.step === 0){
+    const input = document.getElementById('trNameInput');
+    input.addEventListener('input', e => {
+      trState.name = e.target.value;
+      document.getElementById('trBtnNext').disabled = !trState.name.trim();
+    });
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && trState.name.trim()){ trState.step++; trRender(); }
+    });
+    input.focus();
+  }
+
+  if(trState.step === TR_TOTAL_STEPS - 1){
+    // 多选选项点击
+    if(!trState.quizSubmitted){
+      document.querySelectorAll('.tr-quiz-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const oi = parseInt(btn.dataset.o);
+          const idx = trState.quizSelected.indexOf(oi);
+          if(idx >= 0) trState.quizSelected.splice(idx, 1);
+          else trState.quizSelected.push(oi);
+          trRender();
+        });
+      });
+    }
+    const submitBtn = document.getElementById('trBtnQuizSubmit');
+    if(submitBtn) submitBtn.onclick = () => { trState.quizSubmitted = true; trRender(); };
+  }
+
+  if(trState.step === TR_TOTAL_STEPS){
+    // 答疑环节
+    if(typeof kbItems !== 'undefined' && kbItems.length === 0 && typeof loadKbList === 'function'){
+      loadKbList();
+    }
+    const sendBtn = document.getElementById('trQaSend');
+    const input = document.getElementById('trQaInput');
+    if(sendBtn) sendBtn.onclick = () => trAskAI();
+    if(input) input.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); trAskAI(); }
+    });
+  }
+
+  if(trState.step === TR_TOTAL_STEPS + 1){
+    const printBtn = document.getElementById('trBtnPrint');
+    if(printBtn) printBtn.onclick = () => window.print();
+    const restartBtn = document.getElementById('trBtnRestart');
+    if(restartBtn) restartBtn.onclick = () => {
+      trState = { step:0, name:'', quizSelected:[], quizSubmitted:false, qaHistory:[] };
+      trRender();
+    };
+  }
+}
+
+// 答疑环节：基于知识库的AI问答
+async function trAskAI(){
+  const input = document.getElementById('trQaInput');
+  const q = (input.value || '').trim();
+  if(!q) return;
+  input.value = '';
+  trState.qaHistory.push({ role:'user', text:q });
+  trState.qaHistory.push({ role:'ai', text:'__loading__' });
+  trRender();
+
+  try {
+    const kbContext = (typeof kbItems !== 'undefined' && kbItems.length > 0)
+      ? kbItems.map(i => `【${i.category}·${i.title}】\n${i.content}`).join('\n\n')
+      : '（暂无知识库材料）';
+
+    const trainingContext = '【新人培训要点】\n'
+      + '1. 每个工作日主动建联博主3-5位，粉丝数尽量≤5万，优先垂类/生活方式类/中小型/近期活跃的博主。\n'
+      + '2. 飞书表格须当天填写（B链接/C回复情况/D博主名/E粉丝量/F博主号/K博主类型），D列变红的重复行须立即删除（已重复记录不计分）。\n'
+      + '3. 回复情况分四类：建联中（私信建联）/✅成功（引导到私域了、二次回访成功）/待跟进（需要且未二次回访）/已结束（拒绝等）。\n'
+      + '4. 每日24:00前在「✅签到」上传复盘截图、建联成功截图、建联列表截图三类，飞书填表不能替代签到。\n'
+      + '5. 周绩效共100分：日常建联40（建联数量达标15，需当日邀请数≥5且建联成功数≥3；表格完整性10；博主类型10；粉丝记录5）+ 截图上传30（三类各10，按本周上传天数/5×10折算）+ 工作质量20（建联成功率）+ 附加分计入总分最多10（话术库+2/条，适配度达标+20/天）。\n'
+      + '6. 末位管理：不分ABCD等级，按总分排名，后20%进入观察；伪造记录或截图该维度记0分并立即末位复核。\n'
+      + '7. 系统小工具：截图识别（AI提取博主信息）、建联排序、回访提醒（2天/4天）、数据分析。';
+
+    const systemPrompt = '你是"博主建联看板"系统里给运营组新人答疑的助手。请优先依据下面的【新人培训要点】和【知识库材料】回答问题；'
+      + '如果问题超出这些材料范围，回复"这个问题超出我的知识范围，建议询问Leader或管理员"。回答要简洁、口语化、对新人友好，尽量在150字以内。\n\n'
+      + trainingContext + '\n\n【知识库材料】\n' + kbContext;
+
+    const resp = await fetch(window.location.origin + '/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: systemPrompt + '\n\n新人提问：' + q, max_tokens: 300 })
+    });
+    const data = await resp.json();
+    const answer = data.text || '抱歉，暂时无法回答，请询问管理员';
+    trState.qaHistory[trState.qaHistory.length - 1] = { role:'ai', text: answer };
+  } catch(e) {
+    trState.qaHistory[trState.qaHistory.length - 1] = { role:'ai', text: '请求失败，请稍后重试' };
+  }
+  trRender();
+  const hist = document.getElementById('trQaHistory');
+  if(hist) hist.scrollTop = hist.scrollHeight;
+}
+
+function trScreenName(){
+  return `
+    <div class="tr-name-gate">
+      <div class="tr-chip-icon">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <rect x="14" y="14" width="28" height="28" rx="4" fill="#5B7FFF" opacity=".15" stroke="#5B7FFF" stroke-width="2"/>
+          <rect x="22" y="22" width="12" height="12" rx="2" fill="#43D9A4" opacity=".25" stroke="#43D9A4" stroke-width="1.5"/>
+          ${[10,18,26,34].map(y => `<line x1="6" y1="${y}" x2="14" y2="${y}" stroke="#5B7FFF" stroke-width="2"/><line x1="42" y1="${y}" x2="50" y2="${y}" stroke="#43D9A4" stroke-width="2"/>`).join('')}
+        </svg>
+      </div>
+      <div class="tr-eyebrow">运营组 · 新人入职培训</div>
+      <h1>开始之前，<br>先告诉我们你的名字</h1>
+      <p>培训完成后，你的名字会出现在结业证书上。</p>
+      <input type="text" class="tr-name-input" id="trNameInput" placeholder="输入你的姓名" maxlength="20" value="${trEscapeHtml(trState.name)}">
+    </div>
+  `;
+}
+
+function trScreenWelcome(){
+  return `
+    <div class="tr-eyebrow">关于我们</div>
+    <h1>欢迎加入，${trEscapeHtml(trState.name)}</h1>
+    <p class="tr-lead">你将加入 <strong>深圳爱真牛人工智能科技有限公司</strong> 的运营组，核心工作是<strong class="tr-accent-blue">博主建联</strong>——为公司的AI教育业务寻找并联系合适的内容创作者合作。</p>
+    <h2>公司定位</h2>
+    <ul class="tr-rules">
+      <li>是<b>国际人工智能科学院（AAIS）</b>在中国大陆<b>唯一落地执行公司</b></li>
+      <li><b>亚太人工智能学会官方唯一授权</b>（AI培训）公司</li>
+      <li>品牌口号："学AI，找AI真牛"</li>
+    </ul>
+    <h2>你的工具</h2>
+    <p>团队使用的就是你现在打开的<strong>「博主建联看板」</strong>——记录建联进度、每日签到打卡、查看绩效评分。接下来的培训会带你了解每天要做什么、怎么做、以及怎么被评分。</p>
+  `;
+}
+
+function trScreenDuties(){
+  return `
+    <div class="tr-eyebrow">第一节</div>
+    <h1>每天要做什么</h1>
+    <p class="tr-lead">运营岗位的核心任务是<strong>每日主动建联博主</strong>，目标人群、数量和质量都有明确标准。</p>
+    <h2>建联数量</h2>
+    <ul class="tr-rules">
+      <li>每个工作日须主动建联博主 <b class="tr-accent-blue">3-5 位</b>，不得无故低于下限</li>
+      <li>粉丝数尽量控制在 <b>50,000 以内</b>，以中小型博主为主，无强制上限</li>
+    </ul>
+    <h2>优先建联的博主类型</h2>
+    <ul class="tr-rules">
+      <li>与品牌/产品调性匹配的<b>垂类内容创作者</b></li>
+      <li><b>生活方式类</b>博主（家居、美食、健康等）</li>
+      <li>粉丝互动率较高的<b>中小型博主</b>（粉丝数 1,000-50,000 为主力区间）</li>
+      <li><b>近期活跃</b>（30天内有发布内容）的博主</li>
+    </ul>
+    <h2>避免建联的情况</h2>
+    <ul class="tr-rules">
+      <li>内容与品牌调性明显不符</li>
+      <li>存在<b class="tr-accent-red">负面舆情或违规记录</b>的博主</li>
+    </ul>
+  `;
+}
+
+function trScreenTable(){
+  return `
+    <div class="tr-eyebrow">第二节</div>
+    <h1>飞书表格填写规范</h1>
+    <p class="tr-lead">每完成一次建联，须当天在飞书对应日期工作表（格式：<b>月.日</b>，如 6.8）的自己负责区块内录入信息。</p>
+    <div class="tr-grid-table">
+      <div class="tr-col-key">B列</div><div class="tr-col-val"><b>博主链接</b>　⚠必填，完整主页链接（小红书/抖音/B站等），不可填短链</div>
+      <div class="tr-col-key">C列</div><div class="tr-col-val"><b>回复情况</b>　⚠必填，从下拉菜单选择（下一节详细说明）</div>
+      <div class="tr-col-key">D列</div><div class="tr-col-val"><b>博主名</b>　⚠必填，变红表示重复，须<b class="tr-accent-red">立即删除该行</b></div>
+      <div class="tr-col-key">E列</div><div class="tr-col-val"><b>粉丝量</b>　单位：万人，填数字即可（如 3.8 代表 38,000）</div>
+      <div class="tr-col-key">F列</div><div class="tr-col-val"><b>博主号</b>　抖音号/小红书号/B站UID等（非昵称）</div>
+      <div class="tr-col-key">K列</div><div class="tr-col-val"><b>博主类型</b>　如：AI科技、生活方式、知识分享、母婴等</div>
+    </div>
+    <h2>查重机制</h2>
+    <p>D列变红即代表与他人重复，须立即删除该行；系统每天 21:00 会自动写入 H 列查重结果。<strong class="tr-accent-gold">标记为"已重复"的记录不计入任何绩效统计</strong>，所以重复行不仅要删，也不会帮你加分。</p>
+  `;
+}
+
+function trScreenStatus(){
+  const rows = [
+    {tag:'建联中', cls:'tr-tag-progress', desc:'<b>抖音私信建联 / 小红书私信建联 / 微信建联</b>　已发送私信，等待对方回复'},
+    {tag:'✅成功', cls:'tr-tag-success', desc:'<b>引导到私域了 / 二次回访成功</b>　已成功建联，对方已引导至私域'},
+    {tag:'待跟进', cls:'tr-tag-followup', desc:'<b>需要且未二次回访</b>　需要跟进但尚未行动，回访Tab会自动提醒'},
+    {tag:'已结束', cls:'tr-tag-closed', desc:'<b>拒绝 / 二次回访无果 / 无需二次回访</b>　无需继续跟进'},
+  ];
+  return `
+    <div class="tr-eyebrow">第三节</div>
+    <h1>回复情况（C列）状态说明</h1>
+    <p class="tr-lead">这一列直接决定了你的"建联数量"和"建联成功率"怎么算，务必如实、及时更新。</p>
+    ${rows.map(r => `
+      <div class="tr-status-row">
+        <span class="tr-status-tag ${r.cls}">${r.tag}</span>
+        <span class="tr-status-desc">${r.desc}</span>
+      </div>
+    `).join('')}
+    <h2>为什么这一列很重要</h2>
+    <p>系统每天会统计你"填了回复情况的记录数"作为<strong class="tr-accent-blue">邀请数</strong>，统计"引导到私域了"的数量作为<strong class="tr-accent-green">建联成功数</strong>——这两个数字直接影响你的绩效评分（下一节会详细讲）。</p>
+  `;
+}
+
+function trScreenCheckin(){
+  return `
+    <div class="tr-eyebrow">第四节</div>
+    <h1>每日签到与截图</h1>
+    <p class="tr-lead">每个工作日须在「博主建联看板」上传以下三类截图，<strong class="tr-accent-gold">当日24:00前</strong>完成。</p>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">📝</div>
+      <div class="tr-tool-body"><b>每日复盘截图</b><span>当日工作总结，含建联数量、沟通情况、问题反馈</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">🔗</div>
+      <div class="tr-tool-body"><b>建联成功截图</b><span>与博主达成合作意向的聊天截图，需能看出博主昵称；成功后当日内上传</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">📋</div>
+      <div class="tr-tool-body"><b>建联列表截图</b><span>当日在建联系统/表格中的完整列表截图</span></div>
+    </div>
+    <h2>操作步骤</h2>
+    <ul class="tr-rules">
+      <li>点击顶部「✅ 签到」Tab</li>
+      <li>点击自己的名字卡片（首次需选择身份）</li>
+      <li>分别点击「+ 上传截图」按钮，上传三类截图</li>
+      <li>三类截图全部上传后，签到状态自动变为 ✅</li>
+    </ul>
+    <p><strong class="tr-accent-red">注意：</strong>当日签到必须上传截图，飞书录入数据<strong>不能替代</strong>今日签到——两者是分开统计的。</p>
+  `;
+}
+
+function trScreenScoreOverview(){
+  return `
+    <div class="tr-eyebrow">第五节</div>
+    <h1>绩效评分总览</h1>
+    <p class="tr-lead">每周绩效总分 <strong class="tr-accent-gold">100分</strong>，由四大块组成：</p>
+    <div class="tr-score-grid">
+      <div class="tr-score-card"><div class="tr-num">40<span class="tr-of">分</span></div><div class="tr-lbl">日常建联（飞书数据）</div></div>
+      <div class="tr-score-card"><div class="tr-num">30<span class="tr-of">分</span></div><div class="tr-lbl">截图上传（签到数据）</div></div>
+      <div class="tr-score-card"><div class="tr-num">20<span class="tr-of">分</span></div><div class="tr-lbl">工作质量（成功率）</div></div>
+      <div class="tr-score-card tr-gold"><div class="tr-num">≤10<span class="tr-of">分</span></div><div class="tr-lbl">附加分（话术库/适配度）</div></div>
+    </div>
+    <h2>日常建联（40分）拆解</h2>
+    <ul class="tr-rules">
+      <li><b>建联数量达标</b>　15分</li>
+      <li><b>表格信息完整性</b>　10分（博主名+回复情况填写完整）</li>
+      <li><b>博主类型达标</b>　10分（K列已填写）</li>
+      <li><b>粉丝数记录完整度</b>　5分（E列已填写）</li>
+    </ul>
+    <p>所有数据均来自飞书表格，<strong class="tr-accent-gold">已自动剔除"已重复"的记录</strong>——所以第二节说的"删除重复行"非常重要，留着不删既不算数也会拉低"信息完整性"的占比。</p>
+  `;
+}
+
+function trScreenScoreDetail(){
+  return `
+    <div class="tr-eyebrow">第五节 · 续</div>
+    <h1>"建联数量达标"怎么判定？</h1>
+    <p class="tr-lead">这是最容易被忽略的一项，分两步判定：</p>
+    <ul class="tr-rules">
+      <li><b>① 前提门槛</b>：当日<strong class="tr-accent-blue">邀请数（填了回复情况的记录数）须 ≥5 位</strong>。不满足，当天直接记为不达标——后面成功了几个都不算。</li>
+      <li><b>② 达标线</b>：满足①之后，当日<strong class="tr-accent-green">建联成功数须 ≥3 位</strong>，这一天才算真正达标。</li>
+    </ul>
+    <p>「建联数量达标15分」= 达标天数 ÷ 工作天数 × 15。简单说：<strong>每天先发够5个邀请，再争取其中至少3个成功</strong>。</p>
+    <h2>截图上传（30分）拆解</h2>
+    <div class="tr-score-grid">
+      <div class="tr-score-card"><div class="tr-num">10<span class="tr-of">分</span></div><div class="tr-lbl">复盘截图</div></div>
+      <div class="tr-score-card"><div class="tr-num">10<span class="tr-of">分</span></div><div class="tr-lbl">建联成功截图</div></div>
+      <div class="tr-score-card"><div class="tr-num">10<span class="tr-of">分</span></div><div class="tr-lbl">建联列表截图</div></div>
+    </div>
+    <p>每类截图按"本周有上传天数 ÷ 5 × 10"折算（每天上传+2分，上限10分）。</p>
+    <h2>工作质量（20分）</h2>
+    <p>只看一项：<strong>建联成功率</strong> = 本周建联成功数 ÷ 本周建联总数，按比例换算，成功率100%即满分20分。</p>
+  `;
+}
+
+function trScreenBonusTools(){
+  return `
+    <div class="tr-eyebrow">第六节</div>
+    <h1>附加分与系统小工具</h1>
+    <p class="tr-lead">附加分计入周总分，每周最多 <strong class="tr-accent-gold">+10分</strong>。还有几个系统工具能帮你提效。</p>
+    <h2>附加分规则</h2>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">💬</div>
+      <div class="tr-tool-body"><b>话术库　+2分/条</b><span>每保存1条有效话术加2分，重复内容不计分；周维度上限20分</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">🎯</div>
+      <div class="tr-tool-body"><b>博主适配度　+20分/天</b><span>当日无建联成功时，上传≥10张博主主页截图，AI分析后平均适配分≥70分得+20分，每天限1次</span></div>
+    </div>
+    <h2>实用小工具</h2>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">📸</div>
+      <div class="tr-tool-body"><b>截图识别</b><span>上传博主主页截图，AI自动提取博主名、账号、粉丝数、类型，可导出至飞书</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">📊</div>
+      <div class="tr-tool-body"><b>建联排序</b><span>上传截图，AI结合历史数据给出高/中/低优先级建议</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">🔔</div>
+      <div class="tr-tool-body"><b>回访提醒</b><span>自动筛选2天无回复（待回访）和4天无回复（建议放弃）的博主</span></div>
+    </div>
+    <div class="tr-tool-row">
+      <div class="tr-tool-icon">📈</div>
+      <div class="tr-tool-body"><b>数据分析</b><span>按月/阶段分析成功博主特征，AI生成报告供下阶段参考</span></div>
+    </div>
+  `;
+}
+
+function trScreenRedlines(){
+  return `
+    <div class="tr-eyebrow">第七节</div>
+    <h1>末位管理与红线</h1>
+    <p class="tr-lead">本制度<strong>不设ABCD等级</strong>，所有人按总分排名展示。排名处于<strong class="tr-accent-red">后20%</strong>（向上取整，至少1人）的成员，会进入末位管理观察范围。</p>
+    <h2>触发末位复核的情形</h2>
+    <ul class="tr-rules">
+      <li>无故连续 <b>3个工作日</b>（不含周末）无建联数据且未提前说明原因</li>
+      <li>周绩效排名<b>连续处于后20%</b> → Leader会指出具体不足，限期改进</li>
+      <li>月度排名<b>持续处于后20%</b> → 由Leader+HR+管理层共同决定处置方式</li>
+    </ul>
+    <h2 class="tr-accent-red">绝对不能做的事</h2>
+    <p style="color:var(--text);font-size:14px;font-weight:700;background:rgba(255,107,107,.10);border:1px solid rgba(255,107,107,.3);border-radius:10px;padding:12px 14px;">
+      ⚠️ <strong class="tr-accent-red">伪造建联记录或截图</strong> → 该维度直接记0分，并立即进入末位复核流程，与平时表现无关。
+    </p>
+    <p style="margin-top:12px">最终淘汰决定由 <strong>Leader + HR + 管理层</strong>共同作出，系统只整理证据与排名情况，不直接下结论。</p>
+  `;
+}
+
+function trScreenQuiz(){
+  const item = TR_QUIZ;
+  const submitted = trState.quizSubmitted;
+  const opts = item.opts.map((opt, oi) => {
+    const isSelected = trState.quizSelected.includes(oi);
+    const isCorrect = item.correctSet.includes(oi);
+    let cls = '';
+    if(submitted){
+      if(isCorrect && isSelected) cls = 'tr-correct';        // ✅ 选对了
+      else if(!isCorrect && isSelected) cls = 'tr-wrong';      // ❌ 多选错了
+      else if(isCorrect && !isSelected) cls = 'tr-missed';     // ⭕ 漏选
+    } else if(isSelected){
+      cls = 'tr-selected';
+    }
+    let mark = '';
+    if(submitted){
+      if(isCorrect && isSelected) mark = '✅ ';
+      else if(!isCorrect && isSelected) mark = '❌ ';
+      else if(isCorrect && !isSelected) mark = '⭕ ';
+    } else {
+      mark = isSelected ? '☑ ' : '☐ ';
+    }
+    return `<button class="tr-quiz-opt ${cls}" data-o="${oi}" ${submitted?'disabled':''}>${mark}${trEscapeHtml(opt)}</button>`;
+  }).join('');
+
+  return `
+    <div class="tr-eyebrow">知识检测</div>
+    <h1>检验一下今天学到的内容</h1>
+    <p class="tr-lead">${trEscapeHtml(item.q)}</p>
+    <div class="tr-quiz-box">
+      <div class="tr-quiz-q"><span class="tr-qmark">?</span>请勾选所有正确选项</div>
+      ${opts}
+      ${submitted ? `<div class="tr-quiz-fb"><b>解析：</b>${trEscapeHtml(item.fb)}</div>` : ''}
+    </div>
+  `;
+}
+
+function trScreenQA(){
+  const history = trState.qaHistory.map(item => {
+    if(item.role === 'user'){
+      return `<div style="align-self:flex-end;background:var(--blue);color:#fff;padding:9px 13px;border-radius:12px 12px 4px 12px;max-width:85%;font-size:13px">${trEscapeHtml(item.text)}</div>`;
+    }
+    const isLoading = item.text === '__loading__';
+    return `<div style="align-self:flex-start;background:var(--surf2);color:${isLoading?'var(--muted)':'var(--text)'};padding:9px 13px;border-radius:12px 12px 12px 4px;max-width:85%;font-size:13px;white-space:pre-wrap">${isLoading?'思考中…':trEscapeHtml(item.text)}</div>`;
+  }).join('');
+
+  return `
+    <div class="tr-eyebrow">最后一步</div>
+    <h1>答疑环节</h1>
+    <p class="tr-lead">还有不清楚的地方吗？可以直接问AI助手，它会结合知识库和今天学的内容回答你（这一步可以跳过，直接领取证书）。</p>
+    <div class="tr-quiz-box" style="padding:14px">
+      <div id="trQaHistory" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;margin-bottom:10px;${history?'':'min-height:0'}">
+        ${history || `<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px 0">例如："建联成功之后要做什么？" "三类截图具体是哪三类？"</div>`}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="trQaInput" placeholder="输入你的问题…" style="flex:1;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'Noto Sans SC',sans-serif;outline:none">
+        <button class="tr-btn tr-primary" id="trQaSend" style="margin-left:0;flex:0 0 auto">发送</button>
+      </div>
+    </div>
+  `;
+}
+
+function trScreenCertificate(){
+  const correctCount = trState.quizSelected.filter(o => TR_QUIZ.correctSet.includes(o)).length;
+  const wrongCount = trState.quizSelected.filter(o => !TR_QUIZ.correctSet.includes(o)).length;
+  const fullyCorrect = wrongCount === 0 && correctCount === TR_QUIZ.correctSet.length;
+  const quizResult = fullyCorrect ? '全部正确' : `${correctCount}/${TR_QUIZ.correctSet.length} 项正确`;
+  const qaCount = trState.qaHistory.filter(h => h.role === 'user').length;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const certNo = `AIZN-OPS-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.floor(1000+Math.random()*9000)}`;
+
+  return `
+    <div class="tr-cert-wrap">
+      <div class="tr-cert">
+        <div class="tr-org">深圳爱真牛人工智能科技有限公司 · <b>运营组</b></div>
+        <div class="tr-title">新人入职培训 · 结业证书</div>
+        <div class="tr-recipient-label">兹证明</div>
+        <div class="tr-recipient">${trEscapeHtml(trState.name)}</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:0">已于 ${dateStr} 完成博主建联岗位入职培训，<br>了解日常建联规范、签到截图要求、绩效评分细则与末位管理制度。</p>
+        <div class="tr-meta-row">
+          <div class="tr-meta-item"><div class="tr-meta-num" style="font-size:14px">${quizResult}</div><div class="tr-meta-lbl">知识检测</div></div>
+          <div class="tr-meta-item"><div class="tr-meta-num">${qaCount}</div><div class="tr-meta-lbl">答疑提问</div></div>
+          <div class="tr-meta-item"><div class="tr-meta-num" style="font-size:11px;letter-spacing:.04em">${certNo}</div><div class="tr-meta-lbl">证书编号</div></div>
+        </div>
+      </div>
+      <div class="tr-cert-actions">
+        <button class="tr-btn tr-ghost" id="trBtnRestart">↺ 重新培训</button>
+        <button class="tr-btn tr-primary" id="trBtnPrint">🖨 打印 / 保存证书</button>
+      </div>
+    </div>
+  `;
 }
 
 const TABS = {
@@ -4117,6 +6334,8 @@ const TABS = {
   ocr:        renderOcr,
   checkin:    renderCheckin,
   attendance: renderAttendance,
+  perf:       renderPerf,
+  training:   renderTraining,
 };
 let rendered = new Set();
 
@@ -4126,6 +6345,24 @@ function switchTab(tab, btn) {
   btn.classList.add("on");
   if (!rendered.has(tab)) { TABS[tab](); rendered.add(tab); }
   if (tab === 'guide') { loadAISummary(); loadKbList(); }
+}
+
+// 加载博主适配度得分缓存（供绩效计算用）
+async function loadCompatScores() {
+  try {
+    const ym = new Date().toISOString().slice(0, 7);
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/compat_scores?score_date=gte.${ym}-01&select=*`,
+      { headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON } }
+    );
+    if (resp.ok) {
+      window.compatScoreCache = await resp.json();
+    } else {
+      window.compatScoreCache = [];
+    }
+  } catch(e) {
+    window.compatScoreCache = [];
+  }
 }
 
 async function init() {
@@ -4140,9 +6377,21 @@ async function init() {
   await loadData();
   await loadCheckinData();
   await loadChatScripts();
-  cleanupOldCheckinImages(); // 后台清理，不阻塞加载
+  await loadCompatScores();
+  // cleanupOldCheckinImages(); // 已禁用，图片存在Storage无需清理
   renderOverview();
   rendered.add("overview");
+
+  // 周五及以后自动检查本周绩效报告是否需要生成；需要则在后台按分步流程生成
+  // （进度条仅在用户停留在"周报"视图时可见；生成过程不阻塞页面其他渲染）
+  fetch(`${window.location.origin}/api/perf-report/auto-check`)
+    .then(r => r.json())
+    .then(d => {
+      if (d && d.needGenerate && d.monday) {
+        perfReportGenerate(d.monday, false);
+      }
+    })
+    .catch(() => {});
 }
 
 init();
