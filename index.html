@@ -353,6 +353,7 @@ a.lnk:hover { opacity:1; }
     <button class="tab"     onclick="switchTab('attendance',this)">📅 打卡总览</button>
     <button class="tab"     onclick="switchTab('perf',this)">📊 绩效评分</button>
     <button class="tab"     onclick="switchTab('guide',this)">📖 使用指南</button>
+    <button class="tab"     onclick="switchTab('classify',this)">🏷 博主分类</button>
     <button class="tab"     onclick="switchTab('training',this)">🎓 新人培训</button>
 
   </div>
@@ -365,6 +366,7 @@ a.lnk:hover { opacity:1; }
   <div id="pane-ocr"     style="display:none"></div>
   <div id="pane-periodic" style="display:none"></div>
   <div id="pane-guide"    style="display:none"></div>
+  <div id="pane-classify" style="display:none"></div>
   <div id="pane-trend"    style="display:none"></div>
   <div id="pane-checkin"  style="display:none"></div>
   <div id="pane-attendance" style="display:none"></div>
@@ -528,7 +530,7 @@ async function loadData() {
       SB.query("daily_reports", {
         select: "report_date,total,contacted,success,rate,w_total,w_contacted,w_success,w_rate",
         order:  "report_date.desc",
-        limit:  "60"
+        limit:  "14"
       })
     ]);
     document.getElementById("syncTime").textContent = `最后同步 ${new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}`;
@@ -888,7 +890,7 @@ function renderTrend() {
     el.innerHTML=`<div class="card"><div class="empty">暂无历史日报数据<br><small style="color:var(--muted)">每天运行同步脚本后会自动生成</small></div></div>`;
     return;
   }
-  const reports = [...REPORTS].sort((a,b)=>(b.report_date||"").localeCompare(a.report_date||""));
+  const reports = [...REPORTS].reverse();
   const maxS = Math.max(...reports.map(r=>r.success||0),1);
   const maxC = Math.max(...reports.map(r=>r.contacted||0),1);
 
@@ -919,7 +921,7 @@ function renderTrend() {
     <div class="card-title"><div class="dot" style="background:var(--gold)"></div>历史日报记录</div>
     <div class="tw"><table>
       <thead><tr><th>日期</th><th>录入</th><th>联系</th><th>成功</th><th>转化率</th></tr></thead>
-      <tbody>${reports.map(r=>`<tr>
+      <tbody>${[...reports].reverse().map(r=>`<tr>
         <td style="color:var(--muted)">${r.report_date}</td>
         <td>${r.total||0}</td>
         <td>${r.contacted||0}</td>
@@ -3968,7 +3970,9 @@ function toggleAdmin() {
 const CHECKIN_TABLE = 'checkins';
 
 // 签到人员配置
-const CHECKIN_MEMBERS = [
+// 默认成员列表（仅作为数据库无数据时的初始值）
+// 实际运行时通过 loadMemberStatus() 从 member_status 表 merge 更新
+let CHECKIN_MEMBERS = [
   { name: '杜承睿', requireChat: true, requireBlogger: true, requireReview: true },
   { name: '崔靖',   requireChat: true, requireBlogger: true, requireReview: true },
   { name: '卢泳琦', requireChat: true, requireBlogger: true, requireReview: true },
@@ -3992,6 +3996,16 @@ async function loadMemberStatus() {
     if (Array.isArray(data)) {
       memberStatusMap = {};
       data.forEach(m => { memberStatusMap[m.member_name] = m.status; });
+
+      // 把数据库里有但 CHECKIN_MEMBERS 里没有的成员 merge 进来
+      data.forEach(m => {
+        if (!CHECKIN_MEMBERS.find(c => c.name === m.member_name)) {
+          CHECKIN_MEMBERS.push({
+            name: m.member_name,
+            requireChat: true, requireBlogger: true, requireReview: true
+          });
+        }
+      });
     }
   } catch(e) {}
 }
@@ -4009,6 +4023,33 @@ async function setMemberStatus(name, status) {
     renderCheckin();
     rendered.add('checkin');
   } catch(e) { alert('操作失败：' + e.message); }
+}
+
+async function addMember() {
+  const name = prompt('请输入新成员姓名（与飞书表格中填写的跟进人名字保持一致）：');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (CHECKIN_MEMBERS.find(m => m.name === trimmed)) {
+    alert(`"${trimmed}" 已在成员列表中`);
+    return;
+  }
+  try {
+    await fetch(window.location.origin + '/api/members', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ member_name: trimmed, status: 'active', note: '新增成员' })
+    });
+    // 本地同步
+    CHECKIN_MEMBERS.push({ name: trimmed, requireChat: true, requireBlogger: true, requireReview: true });
+    memberStatusMap[trimmed] = 'active';
+    // 刷新相关视图
+    rendered.delete('checkin');
+    rendered.delete('attendance');
+    rendered.delete('perf');
+    renderCheckin();
+    rendered.add('checkin');
+    alert(`✅ 成员"${trimmed}"已添加，签到、绩效评分等功能已自动纳入。`);
+  } catch(e) { alert('添加失败：' + e.message); }
 }
 
 async function loadCheckinData(month) {
@@ -4287,6 +4328,7 @@ function renderCheckin() {
     <div style="display:flex;gap:8px;align-items:center">
       ${isAdmin ? '<span style="font-size:12px;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.25);padding:4px 10px;border-radius:6px">🔓 管理员模式</span>' : `<span style="font-size:12px;color:var(--blue);background:rgba(91,127,255,.1);border:1px solid rgba(91,127,255,.25);padding:4px 10px;border-radius:6px">👤 ${checkinCurrentMember}</span>`}
       ${!isAdmin ? `<button onclick="checkinCurrentMember=null;rendered.delete('checkin');renderCheckin();rendered.add('checkin')" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">切换</button>` : ''}
+      ${isAdmin ? `<button onclick="addMember()" style="background:rgba(67,217,164,.08);border:1px solid rgba(67,217,164,.4);color:var(--green);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">＋ 添加成员</button>` : ''}
       ${isAdmin ? `<button onclick="checkinExportZip('${checkinCurrentDate}')" style="background:var(--blue);border:none;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">⬇ 导出截图</button>` : ''}
       <button onclick="checkinRefresh()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
     </div>
@@ -6322,6 +6364,234 @@ function trScreenCertificate(){
   `;
 }
 
+// ══════════════════════════════════════════
+// 🏷 博主分类
+// ══════════════════════════════════════════
+const BLOGGER_TYPE_COLORS = {
+  'AI科技':   '#5b7fff', '生活方式': '#43d9a4', '知识分享': '#f5a623',
+  '职场成长': '#a78bfa', '母婴亲子': '#f472b6', '美妆护肤': '#fb7185',
+  '健康养生': '#34d399', '财经商业': '#fbbf24', '教育学习': '#60a5fa',
+  '游戏娱乐': '#f87171', '美食餐饮': '#fb923c', '旅行户外': '#4ade80',
+  '手工DIY':  '#e879f9', '宠物':     '#86efac', '其他':     '#9ca3af',
+  '未分类':   '#6b7280',
+};
+
+let classifyState = {
+  view: 'overview',   // 'overview' | 'detail'
+  detailType: '',
+  summary: [],
+  detail: [],
+  total: 0,
+  unclassified: 0,
+  running: false,
+  runProgress: null,  // { processed, total }
+  error: '',
+};
+
+async function classifyLoadOverview() {
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/list`);
+    const d = await r.json();
+    if (d.error) { classifyState.error = d.error; return; }
+    classifyState.summary = d.summary || [];
+    classifyState.total = d.total || 0;
+    classifyState.unclassified = d.unclassified || 0;
+    classifyState.error = '';
+  } catch(e) {
+    classifyState.error = e.message;
+  }
+}
+
+async function classifyLoadDetail(type) {
+  classifyState.view = 'detail';
+  classifyState.detailType = type;
+  classifyState.detail = [];
+  classifyRender();
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/detail?type=${encodeURIComponent(type)}`);
+    const d = await r.json();
+    classifyState.detail = Array.isArray(d) ? d : [];
+  } catch(e) {
+    classifyState.detail = [];
+  }
+  classifyRender();
+}
+
+async function classifyRunAI() {
+  if (classifyState.running) return;
+  if (!classifyState.unclassified) { alert('所有建联成功的博主都已分类'); return; }
+  classifyState.running = true;
+  classifyState.runProgress = { processed: 0, total: classifyState.unclassified };
+  classifyRender();
+
+  // 分批处理，每次50个，直到全部完成
+  let totalProcessed = 0;
+  while (true) {
+    try {
+      const r = await fetch(`${window.location.origin}/api/blogger-classify/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 50 })
+      });
+      const d = await r.json();
+      if (d.error) { alert('AI分类失败：' + d.error); break; }
+      totalProcessed += d.processed || 0;
+      classifyState.runProgress = { processed: totalProcessed, total: classifyState.unclassified };
+      classifyRender();
+      if (!d.processed || d.processed < 50) break; // 没有更多未分类的了
+    } catch(e) { alert('请求失败：' + e.message); break; }
+  }
+
+  classifyState.running = false;
+  classifyState.runProgress = null;
+  await classifyLoadOverview();
+  classifyRender();
+}
+
+async function classifyUpdateType(id, currentType) {
+  const types = ['AI科技','生活方式','知识分享','职场成长','母婴亲子','美妆护肤',
+    '健康养生','财经商业','教育学习','游戏娱乐','美食餐饮','旅行户外','手工DIY','宠物','其他'];
+  const newType = prompt(`修改博主类型\n当前：${currentType || '未分类'}\n\n可选类型：\n${types.join(' / ')}\n\n请输入新类型：`, currentType || '');
+  if (!newType || !newType.trim()) return;
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/update-type`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, type: newType.trim() })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      // 本地更新
+      const item = classifyState.detail.find(x => x.id === id);
+      if (item) item.blogger_type = newType.trim();
+      classifyRender();
+    }
+  } catch(e) { alert('修改失败：' + e.message); }
+}
+
+function classifyRender() {
+  const el = document.getElementById('pane-classify');
+  if (!el) return;
+  el.innerHTML = renderClassifyContent();
+}
+
+function renderClassify() {
+  classifyLoadOverview().then(() => classifyRender());
+  classifyRender();
+}
+
+function renderClassifyContent() {
+  const s = classifyState;
+
+  // ── 顶部工具栏 ──
+  const toolbar = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">🏷 博主分类</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">
+          建联成功博主共 <b style="color:var(--text)">${s.total}</b> 位，
+          未分类 <b style="color:${s.unclassified>0?'var(--gold)':'var(--green)'}">${s.unclassified}</b> 位
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${s.view === 'detail' ? `<button onclick="classifyState.view='overview';classifyRender()" style="background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">← 返回概况</button>` : ''}
+        ${s.unclassified > 0 && !s.running ? `<button onclick="classifyRunAI()" style="background:var(--blue);border:none;color:#fff;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer">🤖 AI补全类型（${s.unclassified}位）</button>` : ''}
+        ${s.running ? `
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:140px;height:6px;background:var(--surf2);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${s.runProgress ? Math.round(s.runProgress.processed/s.runProgress.total*100) : 20}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:4px;transition:width .4s"></div>
+            </div>
+            <span style="font-size:11px;color:var(--muted)">分类中 ${s.runProgress?.processed||0}/${s.runProgress?.total||'?'}</span>
+          </div>` : ''}
+        <button onclick="classifyLoadOverview().then(()=>classifyRender())" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
+      </div>
+    </div>`;
+
+  if (s.error) {
+    return `<div style="max-width:1000px">${toolbar}<div style="color:var(--red);font-size:13px">加载失败：${s.error}</div></div>`;
+  }
+
+  // ── 详情视图 ──
+  if (s.view === 'detail') {
+    const color = BLOGGER_TYPE_COLORS[s.detailType] || '#6b7280';
+    const rows = s.detail;
+    return `<div style="max-width:1000px">${toolbar}
+      <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block"></span>
+          <span style="font-size:14px;font-weight:700;color:var(--text)">${s.detailType}</span>
+          <span style="font-size:12px;color:var(--muted)">${rows.length} 位博主</span>
+        </div>
+        ${rows.length === 0 ? `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">加载中...</div>` : `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">博主名</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">账号</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">粉丝量</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">跟进人</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">建联日期</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
+                  <td style="padding:9px 14px;color:var(--text);font-weight:500">
+                    ${r.link ? `<a href="${r.link}" target="_blank" style="color:var(--text);text-decoration:none" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text)'">${r.name || '—'} ↗</a>` : (r.name || '—')}
+                  </td>
+                  <td style="padding:9px 14px;color:var(--muted)">${r.account || '—'}</td>
+                  <td style="padding:9px 14px;color:var(--muted)">${r.followers ? r.followers + '万' : '—'}</td>
+                  <td style="padding:9px 14px;color:var(--muted)">${r.owner || '—'}</td>
+                  <td style="padding:9px 14px;color:var(--muted)">${r.record_date || '—'}</td>
+                  <td style="padding:9px 14px">
+                    <button onclick="classifyUpdateType(${r.id}, '${(r.blogger_type||'').replace(/'/g,"\\'")}') " style="font-size:11px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:2px 8px;cursor:pointer">修改类型</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`}
+      </div>
+    </div>`;
+  }
+
+  // ── 概况视图 ──
+  if (!s.summary.length) {
+    return `<div style="max-width:1000px">${toolbar}<div style="text-align:center;padding:60px;color:var(--muted);font-size:13px">${s.total === 0 ? '暂无建联成功的博主数据' : '加载中...'}</div></div>`;
+  }
+
+  const cards = s.summary.map(item => {
+    const color = BLOGGER_TYPE_COLORS[item.type] || '#6b7280';
+    const barW = Math.max(4, item.pct);
+    return `
+      <div onclick="classifyLoadDetail('${item.type.replace(/'/g,"\\'")}')"
+        style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s"
+        onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${color};flex:0 0 10px"></span>
+          <span style="font-size:14px;font-weight:700;color:var(--text)">${item.type}</span>
+          <span style="margin-left:auto;font-size:20px;font-weight:800;color:${color}">${item.count}</span>
+        </div>
+        <div style="height:4px;background:var(--surf2);border-radius:3px;margin-bottom:10px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${color};border-radius:3px"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${item.pct}% · 点击查看详情</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${item.samples.map(n => `<span style="font-size:11px;background:var(--surf2);border-radius:4px;padding:2px 7px;color:var(--muted)">${n}</span>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div style="max-width:1000px">
+    ${toolbar}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+      ${cards}
+    </div>
+  </div>`;
+}
+
 const TABS = {
   overview:   renderOverview,
   team:       renderTeam,
@@ -6336,6 +6606,7 @@ const TABS = {
   attendance: renderAttendance,
   perf:       renderPerf,
   training:   renderTraining,
+  classify:   renderClassify,
 };
 let rendered = new Set();
 
@@ -6375,6 +6646,7 @@ async function init() {
   document.getElementById("dateBadge").textContent =
     `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
   await loadData();
+  await loadMemberStatus(); // 从数据库 merge 最新成员列表（包括新加入的成员）
   await loadCheckinData();
   await loadChatScripts();
   await loadCompatScores();
