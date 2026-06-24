@@ -22,9 +22,9 @@ from collections import defaultdict
 # ══════════════════════════════════════════
 FEISHU_APP_ID        = os.environ["FEISHU_APP_ID"]
 FEISHU_APP_SECRET    = os.environ["FEISHU_APP_SECRET"]
-FEISHU_USER_TOKEN    = os.environ["FEISHU_USER_TOKEN"]
-FEISHU_REFRESH_TOKEN = os.environ["FEISHU_REFRESH_TOKEN"]
-WIKI_TOKEN           = os.environ["WIKI_TOKEN"]
+FEISHU_USER_TOKEN    = os.environ.get("FEISHU_USER_TOKEN", "")   # 允许为空，启动后自动用 refresh token 续期
+FEISHU_REFRESH_TOKEN = os.environ.get("FEISHU_REFRESH_TOKEN", "")
+WIKI_TOKEN           = os.environ.get("WIKI_TOKEN", "")
 
 SUPABASE_URL         = os.environ["SUPABASE_URL"]
 SUPABASE_KEY         = os.environ["SUPABASE_SERVICE_KEY"]
@@ -612,12 +612,8 @@ def push_serverchan(title, content):
 # ════════════════════════════════════════
 
 def main():
-    if len(sys.argv) > 1:
-        yesterday = date.fromisoformat(sys.argv[1])
-        today     = yesterday + timedelta(days=1)
-    else:
-        today     = date.today()
-        yesterday = today - timedelta(days=1)
+    today     = date.today()
+    yesterday = today - timedelta(days=1)
     print(f"▶ 开始同步  今天:{today}  日报日期:{yesterday}")
 
     user_token        = refresh_user_token()
