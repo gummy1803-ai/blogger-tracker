@@ -32,7 +32,7 @@ SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
 WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
 DEEPSEEK_API_KEY     = os.environ.get("DEEPSEEK_API_KEY", "")
 
-GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
+GITHUB_TOKEN         = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO          = "gummy1803-ai/blogger-tracker"
 
 # 列索引（0-based，A=0）
