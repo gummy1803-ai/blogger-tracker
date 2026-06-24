@@ -106,6 +106,8 @@ def get_app_token():
     return r.json().get("app_access_token", "")
 
 def refresh_user_token():
+    print(f"  [debug] FEISHU_USER_TOKEN={repr(FEISHU_USER_TOKEN[:10] if FEISHU_USER_TOKEN else '')}")
+    print(f"  [debug] FEISHU_REFRESH_TOKEN={repr(FEISHU_REFRESH_TOKEN[:10] if FEISHU_REFRESH_TOKEN else '')}")
     app_token = get_app_token()
     r = requests.post(
         "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
