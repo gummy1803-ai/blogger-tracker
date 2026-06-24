@@ -5204,6 +5204,7 @@ function renderPerf() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       ${isAdmin ? `<button onclick="perfSyncFeishu()" id="perf-sync-btn" style="padding:5px 12px;border-radius:7px;border:1px solid rgba(91,127,255,.4);font-size:12px;cursor:pointer;background:rgba(91,127,255,.08);color:var(--blue)">🔄 同步飞书数据</button>` : ''}
+      <button onclick="perfView='daily';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='daily'?'var(--blue)':'var(--surf2)'};color:${perfView==='daily'?'#fff':'var(--muted)'}">📋 今日日报</button>
       <button onclick="perfView='day';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='day'?'var(--blue)':'var(--surf2)'};color:${perfView==='day'?'#fff':'var(--muted)'}">📅 日打分</button>
       <button onclick="perfView='week';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='week'?'var(--blue)':'var(--surf2)'};color:${perfView==='week'?'#fff':'var(--muted)'}">📆 周汇总</button>
       <button onclick="perfView='month';renderPerf()" style="padding:5px 14px;border-radius:7px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:${perfView==='month'?'var(--blue)':'var(--surf2)'};color:${perfView==='month'?'#fff':'var(--muted)'}">🗓 月累计</button>
@@ -5212,6 +5213,7 @@ function renderPerf() {
   </div>
   ${isAdmin ? `<div id="perf-sync-status" style="font-size:11px;color:var(--muted);min-height:16px;margin-bottom:12px"></div>` : '<div style="margin-bottom:12px"></div>'}
 
+  ${perfView === 'daily' ? renderPerfDailyReport(today) : ''}
   ${perfView === 'day' ? renderPerfDayView(dayData) : ''}
   ${perfView === 'week' ? renderPerfWeekView(perfData, wk) : ''}
   ${perfView === 'month' ? renderPerfMonthView() : ''}
@@ -5230,6 +5232,89 @@ function renderPerf() {
     </div>
   </details>
 </div>`;
+}
+
+function renderPerfDailyReport(today) {
+  const SUCCESS_STATUSES = ['引导到私域了', '二次回访成功'];
+  const CONTACT_STATUSES = ['抖音私信建联', '小红书私信建联', '微信建联', '微信私信建联',
+    '引导到私域了', '二次回访成功', '没引导到私域', '需要且未二次回访'];
+  const TARGET_SUCCESS = 3; // 每日建联成功目标
+
+  const activeMembers = CHECKIN_MEMBERS.filter(m => memberStatusMap[m.name] !== 'inactive');
+
+  const memberData = activeMembers.map(m => {
+    const todayRows = ALL_ROWS.filter(r =>
+      (r.owner || '').trim() === m.name &&
+      r.record_date === today &&
+      !r.is_dup
+    );
+    const contacted = todayRows.filter(r => CONTACT_STATUSES.includes(r.status)).length;
+    const success   = todayRows.filter(r => SUCCESS_STATUSES.includes(r.status)).length;
+    const reached   = success >= TARGET_SUCCESS;
+    const successRate = contacted > 0 ? (success / contacted * 100).toFixed(1) : '0.0';
+    return { name: m.name, contacted, success, successRate, reached, total: todayRows.length };
+  });
+
+  const reachedCount = memberData.filter(m => m.reached).length;
+  const totalSuccess = memberData.reduce((a, m) => a + m.success, 0);
+  const totalContacted = memberData.reduce((a, m) => a + m.contacted, 0);
+
+  const dateStr = new Date(today).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
+
+  return `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">📋 今日工作日报</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${dateStr} · 建联成功目标 ≥ ${TARGET_SUCCESS} 位/人</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div style="text-align:center">
+            <div style="font-size:20px;font-weight:800;color:var(--green)">${reachedCount}</div>
+            <div style="font-size:11px;color:var(--muted)">达标人数</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:20px;font-weight:800;color:var(--red)">${activeMembers.length - reachedCount}</div>
+            <div style="font-size:11px;color:var(--muted)">未达标</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:20px;font-weight:800;color:var(--blue)">${totalSuccess}</div>
+            <div style="font-size:11px;color:var(--muted)">今日总成功</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${memberData.map(m => {
+          const pct = Math.min(100, m.success / TARGET_SUCCESS * 100);
+          const color = m.reached ? 'var(--green)' : m.success > 0 ? 'var(--gold)' : 'var(--red)';
+          const tag = m.reached
+            ? `<span style="font-size:11px;font-weight:700;color:var(--green);background:rgba(67,217,164,.1);border:1px solid rgba(67,217,164,.3);border-radius:5px;padding:2px 8px">✅ 已达标</span>`
+            : `<span style="font-size:11px;font-weight:700;color:var(--red);background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:5px;padding:2px 8px">❌ 未达标（差${TARGET_SUCCESS - m.success}个）</span>`;
+          return `
+            <div style="background:var(--surf2);border-radius:10px;padding:12px 14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:14px;font-weight:600;color:var(--text)">${m.name}</span>
+                  ${tag}
+                </div>
+                <div style="font-size:12px;color:var(--muted)">
+                  已联系 ${m.contacted} 位 · 成功 <b style="color:${color}">${m.success}</b> 位 · 转化率 ${m.successRate}%
+                </div>
+              </div>
+              <div style="height:6px;background:var(--surf);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;transition:width .4s"></div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">${m.success}/${TARGET_SUCCESS} · ${pct.toFixed(0)}%</div>
+            </div>`;
+        }).join('')}
+      </div>
+
+      ${totalContacted === 0 ? `
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;margin-top:8px">
+          今日暂无建联数据（数据来自飞书同步，若刚填写可点击「最后同步」按钮手动同步）
+        </div>` : ''}
+    </div>`;
 }
 
 function renderPerfDayView(dayData) {
@@ -6368,13 +6453,36 @@ function trScreenCertificate(){
 // 🏷 博主分类
 // ══════════════════════════════════════════
 const BLOGGER_TYPE_COLORS = {
-  'AI科技':   '#5b7fff', '生活方式': '#43d9a4', '知识分享': '#f5a623',
-  '职场成长': '#a78bfa', '母婴亲子': '#f472b6', '美妆护肤': '#fb7185',
-  '健康养生': '#34d399', '财经商业': '#fbbf24', '教育学习': '#60a5fa',
-  '游戏娱乐': '#f87171', '美食餐饮': '#fb923c', '旅行户外': '#4ade80',
-  '手工DIY':  '#e879f9', '宠物':     '#86efac', '其他':     '#9ca3af',
+  'AI类':     '#5b7fff',
+  '作家类':   '#43d9a4',
+  '教育类':   '#f5a623',
+  '青年知识类': '#a78bfa',
   '未分类':   '#6b7280',
 };
+
+// 博主分类：可自定义分类列表（存本地，同步到AI补全）
+let classifyCustomTypes = JSON.parse(localStorage.getItem('classifyCustomTypes') || '["AI类","作家类","教育类","青年知识类"]');
+
+function classifySaveTypes() {
+  localStorage.setItem('classifyCustomTypes', JSON.stringify(classifyCustomTypes));
+}
+
+function classifyAddType() {
+  const name = prompt('输入新分类名称：');
+  if (!name || !name.trim()) return;
+  const t = name.trim();
+  if (classifyCustomTypes.includes(t)) { alert('该分类已存在'); return; }
+  classifyCustomTypes.push(t);
+  classifySaveTypes();
+  classifyRender();
+}
+
+function classifyDeleteType(t) {
+  if (!confirm(`确定删除分类「${t}」？已归入该类的博主不会自动更改，需手动重新分类。`)) return;
+  classifyCustomTypes = classifyCustomTypes.filter(x => x !== t);
+  classifySaveTypes();
+  classifyRender();
+}
 
 let classifyState = {
   view: 'overview',   // 'overview' | 'detail'
@@ -6417,6 +6525,44 @@ async function classifyLoadDetail(type) {
   classifyRender();
 }
 
+async function classifyDeleteRow(id, name) {
+  if (!confirm(`确定删除「${name || id}」这条记录吗？\n（会将该条记录标记为"已重复"，不会物理删除数据）`)) return;
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/delete-row?id=${encodeURIComponent(id)}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      classifyState.detail = classifyState.detail.filter(x => String(x.id) !== String(id));
+      classifyRender();
+    } else {
+      alert('删除失败：' + (d.error || '未知错误'));
+    }
+  } catch(e) { alert('删除失败：' + e.message); }
+}
+
+async function classifyDedup() {
+  if (!confirm('确定要删除重复博主记录吗？系统会保留每位博主最新的一条记录（已有分类的优先保留），其余标记为已重复。')) return;
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/dedup`, { method: 'POST' });
+    const d = await r.json();
+    if (d.error) { alert('去重失败：' + d.error); return; }
+    alert(d.message || `✅ 已处理 ${d.deleted} 条重复记录`);
+    await classifyLoadOverview();
+    classifyRender();
+  } catch(e) { alert('去重失败：' + e.message); }
+}
+
+async function classifyReset() {
+  if (!confirm('确定要清空所有博主的分类吗？清空后需要重新点「AI补全类型」来重新分类。')) return;
+  try {
+    const r = await fetch(`${window.location.origin}/api/blogger-classify/reset`, { method: 'POST' });
+    const d = await r.json();
+    if (d.error) { alert('重置失败：' + d.error); return; }
+    alert(`✅ 已清空 ${d.cleared} 位博主的分类，请点「AI补全类型」重新分类`);
+    await classifyLoadOverview();
+    classifyRender();
+  } catch(e) { alert('重置失败：' + e.message); }
+}
+
 async function classifyRunAI() {
   if (classifyState.running) return;
   if (!classifyState.unclassified) { alert('所有建联成功的博主都已分类'); return; }
@@ -6424,21 +6570,22 @@ async function classifyRunAI() {
   classifyState.runProgress = { processed: 0, total: classifyState.unclassified };
   classifyRender();
 
-  // 分批处理，每次50个，直到全部完成
+  // 分批处理，每次50个，直到全部完成（最多跑20批防止意外循环）
   let totalProcessed = 0;
-  while (true) {
+  let maxBatches = 20;
+  while (maxBatches-- > 0) {
     try {
       const r = await fetch(`${window.location.origin}/api/blogger-classify/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 50 })
+        body: JSON.stringify({ limit: 50, types: classifyCustomTypes })
       });
       const d = await r.json();
       if (d.error) { alert('AI分类失败：' + d.error); break; }
       totalProcessed += d.processed || 0;
       classifyState.runProgress = { processed: totalProcessed, total: classifyState.unclassified };
       classifyRender();
-      if (!d.processed || d.processed < 50) break; // 没有更多未分类的了
+      if (!d.processed || d.processed < 50 || (d.remaining !== undefined && d.remaining === 0)) break;
     } catch(e) { alert('请求失败：' + e.message); break; }
   }
 
@@ -6449,21 +6596,24 @@ async function classifyRunAI() {
 }
 
 async function classifyUpdateType(id, currentType) {
-  const types = ['AI科技','生活方式','知识分享','职场成长','母婴亲子','美妆护肤',
-    '健康养生','财经商业','教育学习','游戏娱乐','美食餐饮','旅行户外','手工DIY','宠物','其他'];
-  const newType = prompt(`修改博主类型\n当前：${currentType || '未分类'}\n\n可选类型：\n${types.join(' / ')}\n\n请输入新类型：`, currentType || '');
+  const typeList = classifyCustomTypes.join(' / ');
+  const newType = prompt(`修改博主类型\n当前：${currentType || '未分类'}\n\n可选类型：${typeList}\n（也可以输入新类型名，会自动添加到分类列表）\n\n请输入新类型：`, currentType || '');
   if (!newType || !newType.trim()) return;
+  const trimmed = newType.trim();
+  if (!classifyCustomTypes.includes(trimmed) && trimmed !== '未分类') {
+    if (confirm(`「${trimmed}」不在当前分类列表中，是否同时添加到分类列表？`)) {
+      classifyCustomTypes.push(trimmed);
+      classifySaveTypes();
+    }
+  }
   try {
-    const r = await fetch(`${window.location.origin}/api/blogger-classify/update-type`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, type: newType.trim() })
-    });
+    const updateUrl = `${window.location.origin}/api/blogger-classify/update-type?id=${encodeURIComponent(id)}&type=${encodeURIComponent(trimmed)}`;
+    const r = await fetch(updateUrl, { method: 'POST' });
+    console.log('[classify] update-type url:', updateUrl);
     const d = await r.json();
     if (d.ok) {
-      // 本地更新
       const item = classifyState.detail.find(x => x.id === id);
-      if (item) item.blogger_type = newType.trim();
+      if (item) item.blogger_type = trimmed;
       classifyRender();
     }
   } catch(e) { alert('修改失败：' + e.message); }
@@ -6472,7 +6622,31 @@ async function classifyUpdateType(id, currentType) {
 function classifyRender() {
   const el = document.getElementById('pane-classify');
   if (!el) return;
+  // 构建临时数据 map 供按钮处理函数读取（避免特殊字符转义问题）
+  window._classifyRowMap = {};
+  if (classifyState.detail && classifyState.detail.length) {
+    classifyState.detail.forEach(r => {
+      window._classifyRowMap[r.id] = r;
+    });
+  }
   el.innerHTML = renderClassifyContent();
+  el.onclick = function(e) {
+    const editBtn = e.target.closest('.cl-edit-btn');
+    const delBtn = e.target.closest('.cl-del-btn');
+    if (editBtn) {
+      const id = editBtn.dataset.id;
+      console.log('[classify] edit clicked, id=', id, 'map keys=', Object.keys(window._classifyRowMap).slice(0,3));
+      const row = window._classifyRowMap[id] || {};
+      console.log('[classify] row found=', row);
+      classifyUpdateType(id, row.blogger_type || '');
+    }
+    if (delBtn) {
+      const id = delBtn.dataset.id;
+      console.log('[classify] del clicked, id=', id);
+      const row = window._classifyRowMap[id] || {};
+      classifyDeleteRow(id, row.name || '');
+    }
+  };
 }
 
 function renderClassify() {
@@ -6503,6 +6677,9 @@ function renderClassifyContent() {
             </div>
             <span style="font-size:11px;color:var(--muted)">分类中 ${s.runProgress?.processed||0}/${s.runProgress?.total||'?'}</span>
           </div>` : ''}
+        <button onclick="classifyDedup()" style="background:transparent;border:1px solid rgba(245,166,35,.4);color:var(--gold);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer">🔍 删除重复</button>
+        <button onclick="classifyAddType()" style="background:rgba(67,217,164,.08);border:1px solid rgba(67,217,164,.4);color:var(--green);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer">＋ 添加分类</button>
+        <button onclick="classifyReset()" style="background:transparent;border:1px solid rgba(255,107,107,.4);color:var(--red);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer">🗑 重置分类</button>
         <button onclick="classifyLoadOverview().then(()=>classifyRender())" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer">↺ 刷新</button>
       </div>
     </div>`;
@@ -6546,7 +6723,8 @@ function renderClassifyContent() {
                   <td style="padding:9px 14px;color:var(--muted)">${r.owner || '—'}</td>
                   <td style="padding:9px 14px;color:var(--muted)">${r.record_date || '—'}</td>
                   <td style="padding:9px 14px">
-                    <button onclick="classifyUpdateType(${r.id}, '${(r.blogger_type||'').replace(/'/g,"\\'")}') " style="font-size:11px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:2px 8px;cursor:pointer">修改类型</button>
+                    <button class="cl-edit-btn" data-id="${r.id}" style="font-size:11px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:2px 8px;cursor:pointer">修改类型</button>
+                    <button class="cl-del-btn" data-id="${r.id}" style="font-size:11px;background:transparent;border:1px solid rgba(255,107,107,.4);color:var(--red);border-radius:5px;padding:2px 8px;cursor:pointer">🗑 删除</button>
                   </td>
                 </tr>
               `).join('')}
@@ -6562,6 +6740,21 @@ function renderClassifyContent() {
     return `<div style="max-width:1000px">${toolbar}<div style="text-align:center;padding:60px;color:var(--muted);font-size:13px">${s.total === 0 ? '暂无建联成功的博主数据' : '加载中...'}</div></div>`;
   }
 
+  // 分类管理标签
+  const typeTagsHtml = `
+    <div style="margin-bottom:14px;padding:12px 14px;background:var(--surf);border:1px solid var(--border);border-radius:10px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">当前分类（AI补全时使用这些类别）</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${classifyCustomTypes.map(t => `
+          <span style="display:inline-flex;align-items:center;gap:4px;background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--text)">
+            ${trEscapeHtml(t)}
+            <button onclick="classifyDeleteType('${t.replace(/'/g,"\\'")}') " style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="删除此分类">×</button>
+          </span>
+        `).join('')}
+        <button onclick="classifyAddType()" style="background:none;border:1px dashed var(--border);color:var(--muted);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">＋ 添加</button>
+      </div>
+    </div>
+  `;
   const cards = s.summary.map(item => {
     const color = BLOGGER_TYPE_COLORS[item.type] || '#6b7280';
     const barW = Math.max(4, item.pct);
@@ -6586,6 +6779,7 @@ function renderClassifyContent() {
 
   return `<div style="max-width:1000px">
     ${toolbar}
+    ${typeTagsHtml}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
       ${cards}
     </div>
