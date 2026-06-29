@@ -334,7 +334,7 @@ def upsert_bloggers(records):
     # 去掉内部字段 is_dup
     payload = [{k: v for k, v in r.items() if k != "is_dup"} for r in records]
     r = requests.post(
-        f"{SUPABASE_URL}/rest/v1/bloggers",
+        f"{SUPABASE_URL}/rest/v1/bloggers?on_conflict=link,record_date",
         headers=supa_headers(), json=payload, timeout=15)
     if r.status_code not in (200, 201):
         print(f"  ⚠️ Supabase错误: {r.status_code} {r.text[:200]}")
