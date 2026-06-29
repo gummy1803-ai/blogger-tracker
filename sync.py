@@ -22,9 +22,9 @@ from collections import defaultdict
 # ══════════════════════════════════════════
 FEISHU_APP_ID        = os.environ["FEISHU_APP_ID"]
 FEISHU_APP_SECRET    = os.environ["FEISHU_APP_SECRET"]
-FEISHU_USER_TOKEN    = os.environ.get("FEISHU_USER_TOKEN", "")   # 允许为空，启动后自动用 refresh token 续期
-FEISHU_REFRESH_TOKEN = os.environ.get("FEISHU_REFRESH_TOKEN", "")
-WIKI_TOKEN           = os.environ.get("WIKI_TOKEN", "")
+FEISHU_USER_TOKEN    = os.environ.get("FEISHU_USER_TOKEN", "")   # 保留兼容，实际不再使用
+FEISHU_REFRESH_TOKEN = os.environ.get("FEISHU_REFRESH_TOKEN", "")  # 保留兼容，实际不再使用
+WIKI_TOKEN           = os.environ.get("WIKI_TOKEN", "")  # Wiki 节点 obj_token（静态值）
 
 SUPABASE_URL         = os.environ["SUPABASE_URL"]
 SUPABASE_KEY         = os.environ["SUPABASE_SERVICE_KEY"]
@@ -32,7 +32,7 @@ SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
 WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
 DEEPSEEK_API_KEY     = os.environ.get("DEEPSEEK_API_KEY", "")
 
-GITHUB_TOKEN         = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
 GITHUB_REPO          = "gummy1803-ai/blogger-tracker"
 
 # 列索引（0-based，A=0）
@@ -100,49 +100,35 @@ def update_github_secret(secret_name, secret_value):
 # ════════════════════════════════════════
 
 def get_app_token():
+    """获取 tenant_access_token，每次动态获取，有效期 2 小时，无需手动刷新"""
     r = requests.post(
-        "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
+        "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
         json={"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET}, timeout=10)
-    return r.json().get("app_access_token", "")
-
-def refresh_user_token():
-    print(f"  [debug] FEISHU_USER_TOKEN={repr(FEISHU_USER_TOKEN[:10] if FEISHU_USER_TOKEN else '')}")
-    print(f"  [debug] FEISHU_REFRESH_TOKEN={repr(FEISHU_REFRESH_TOKEN[:10] if FEISHU_REFRESH_TOKEN else '')}")
-    app_token = get_app_token()
-    r = requests.post(
-        "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
-        headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
-        json={"grant_type": "refresh_token", "refresh_token": FEISHU_REFRESH_TOKEN},
-        timeout=10)
     d = r.json()
-    if d.get("code") == 0:
-        data = d["data"]
-        new_user_token    = data["access_token"]
-        new_refresh_token = data["refresh_token"]
-        print(f"  ✓ Token刷新成功，有效期 {data.get('expires_in',0)//3600} 小时")
-        update_github_secret("FEISHU_USER_TOKEN",    new_user_token)
-        update_github_secret("FEISHU_REFRESH_TOKEN", new_refresh_token)
-        return new_user_token
-    else:
-        print(f"  ⚠️ Token刷新失败({d.get('code')}): {d.get('message','')}, 使用原Token")
-        return FEISHU_USER_TOKEN
+    token = d.get("tenant_access_token", "")
+    if not token:
+        raise RuntimeError(f"获取 app_token 失败: {d}")
+    print(f"  ✓ app_token 获取成功（有效期 {d.get('expire', 7200)//3600} 小时）")
+    return token
 
 
 # ════════════════════════════════════════
 #  飞书数据读取
 # ════════════════════════════════════════
 
-def get_spreadsheet_token(user_token):
+def get_spreadsheet_token(token):
+    if not WIKI_TOKEN:
+        raise RuntimeError("WIKI_TOKEN 未配置！请在 GitHub Secrets 中设置 WIKI_TOKEN（飞书 Wiki 页面的 obj_token）")
     url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/get_node?token={WIKI_TOKEN}"
-    r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
     d = r.json()
     if d.get("code") != 0:
-        raise RuntimeError(f"获取wiki节点失败: {d.get('msg','')}")
+        raise RuntimeError(f"获取wiki节点失败: {d.get('msg','')} (code={d.get('code')})")
     return d["data"]["node"]["obj_token"]
 
-def get_all_sheets(user_token, spreadsheet_token):
+def get_all_sheets(token, spreadsheet_token):
     url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
-    r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
     d = r.json()
     if d.get("code") != 0:
         raise RuntimeError(f"获取sheet列表失败: {d}")
@@ -159,10 +145,10 @@ def sheet_title_to_date(title):
     except ValueError:
         return None
 
-def read_sheet_data(user_token, spreadsheet_token, sheet_id):
+def read_sheet_data(token, spreadsheet_token, sheet_id):
     range_str = f"{sheet_id}!A3:K500"
     url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values/{range_str}"
-    r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
     d = r.json()
     if d.get("code") != 0:
         raise RuntimeError(f"读取数据失败: {d}")
@@ -618,7 +604,7 @@ def main():
     yesterday = today - timedelta(days=1)
     print(f"▶ 开始同步  今天:{today}  日报日期:{yesterday}")
 
-    user_token        = refresh_user_token()
+    user_token        = get_app_token()   # 改用 app_token，永久有效
     spreadsheet_token = get_spreadsheet_token(user_token)
     all_sheets        = get_all_sheets(user_token, spreadsheet_token)
     print(f"  共找到 {len(all_sheets)} 个 sheet")

@@ -23,8 +23,9 @@ jobs:
         env:
           FEISHU_APP_ID:          ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET:      ${{ secrets.FEISHU_APP_SECRET }}
-          FEISHU_USER_TOKEN:      ${{ secrets.FEISHU_USER_TOKEN }}
-          FEISHU_REFRESH_TOKEN:   ${{ secrets.FEISHU_REFRESH_TOKEN }}
+          # 以下两项已弃用（改用 app_token），保留仅为兼容
+          # FEISHU_USER_TOKEN:    ${{ secrets.FEISHU_USER_TOKEN }}
+          # FEISHU_REFRESH_TOKEN: ${{ secrets.FEISHU_REFRESH_TOKEN }}
           WIKI_TOKEN:             ${{ secrets.WIKI_TOKEN }}
           SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY:   ${{ secrets.SUPABASE_SERVICE_KEY }}
