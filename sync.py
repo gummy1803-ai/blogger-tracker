@@ -634,8 +634,17 @@ def main():
         if record_date == str(yesterday):
             yesterday_records = records
 
-    # 全量写入 Supabase
-    written = upsert_bloggers(all_records)
+    # 全量写入 Supabase（先去重，避免同批次内 (link, record_date) 重复）
+    seen = set()
+    deduped_records = []
+    for rec in all_records:
+        key = (rec.get("link", "") or rec.get("name", ""), rec.get("record_date", ""))
+        if key not in seen:
+            seen.add(key)
+            deduped_records.append(rec)
+    if len(deduped_records) < len(all_records):
+        print(f"  去重: {len(all_records)} → {len(deduped_records)} 条")
+    written = upsert_bloggers(deduped_records)
     print(f"  Supabase 总写入: {written} 条")
 
     if not yesterday_records:
