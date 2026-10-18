@@ -8,10 +8,20 @@ on:
     - cron: '0 16 * * *'
   workflow_dispatch:
     inputs:
+      target_date:
+        description: '目标日期 YYYY-MM-DD，留空按北京时间计算'
+        required: false
       is_final:
         description: '是否为最终锁表运行'
         required: false
         default: 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: feishu-dup-check
+  cancel-in-progress: false
 
 jobs:
   dup-check:
@@ -23,16 +33,19 @@ jobs:
         with:
           python-version: '3.11'
       - name: 安装依赖
-        run: pip install requests PyNaCl
+        run: pip install requests==2.32.3
+      - name: 模拟数据测试
+        run: python -m unittest discover -s tests -v
       - name: 执行查重
         env:
           FEISHU_APP_ID:        ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET:    ${{ secrets.FEISHU_APP_SECRET }}
-          FEISHU_USER_TOKEN:    ${{ secrets.FEISHU_USER_TOKEN }}
-          FEISHU_REFRESH_TOKEN: ${{ secrets.FEISHU_REFRESH_TOKEN }}
           WIKI_TOKEN:           ${{ secrets.WIKI_TOKEN }}
           WECOM_WEBHOOK:        ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_KEY:       ${{ secrets.SERVERCHAN_KEY }}
-          GITHUB_TOKEN:         ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN:              ${{ vars.DUP_WRITE_ENABLED == 'true' && 'false' || 'true' }}
+          ALLOW_LOCK:           'false' # Enable only after sandbox protection API verification
+          TARGET_DATE:          ${{ inputs.target_date }}
           IS_FINAL:             ${{ github.event.schedule == '0 16 * * *' && 'true' || github.event.inputs.is_final || 'false' }}
         run: python dup_check.py
+

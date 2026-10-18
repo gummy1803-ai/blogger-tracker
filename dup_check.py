@@ -10,18 +10,31 @@
 """
 
 import os, sys, requests, re
-from datetime import date
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
+from urllib.parse import urlsplit, urlunsplit
 from collections import defaultdict
 
-FEISHU_APP_ID        = os.environ["FEISHU_APP_ID"]
-FEISHU_APP_SECRET    = os.environ["FEISHU_APP_SECRET"]
-FEISHU_USER_TOKEN    = os.environ["FEISHU_USER_TOKEN"]
-FEISHU_REFRESH_TOKEN = os.environ["FEISHU_REFRESH_TOKEN"]
-WIKI_TOKEN           = os.environ["WIKI_TOKEN"]
-SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
-WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
-GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
-GITHUB_REPO          = "gummy1803-ai/blogger-tracker"
+FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID", "")
+FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
+WIKI_TOKEN = os.environ.get("WIKI_TOKEN", "")
+SERVERCHAN_KEY = os.environ.get("SERVERCHAN_KEY", "")
+WECOM_WEBHOOK = os.environ.get("WECOM_WEBHOOK", "")
+DRY_RUN = os.environ.get("DRY_RUN", "true").lower() != "false"
+ALLOW_LOCK = os.environ.get("ALLOW_LOCK", "false").lower() == "true"
+BUSINESS_TZ = ZoneInfo("Asia/Shanghai")
+
+
+def business_today():
+    return datetime.now(BUSINESS_TZ).date()
+
+
+def target_date():
+    explicit = os.environ.get("TARGET_DATE", "")
+    if explicit:
+        return date.fromisoformat(explicit)
+    return business_today() - timedelta(days=1 if IS_FINAL else 0)
+
 
 # 列索引
 COL_SEQ     = 0
@@ -40,56 +53,23 @@ IS_FINAL = os.environ.get("IS_FINAL", "false").lower() == "true"
 #  飞书 Token
 # ════════════════════════════════════════
 
+def checked(response):
+    response.raise_for_status()
+    data = response.json()
+    if data.get("code") != 0:
+        raise RuntimeError(f"Feishu API failed: code={data.get('code')}")
+    return data
+
+
 def get_app_token():
-    r = requests.post(
-        "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
-        json={"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET}, timeout=10)
-    return r.json().get("app_access_token", "")
-
-def get_repo_public_key():
-    r = requests.get(
-        f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key",
-        headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"})
-    return r.json()
-
-def encrypt_secret(public_key_b64, secret_value):
-    from base64 import b64encode
-    from nacl import encoding, public
-    pk = public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder)
-    box = public.SealedBox(pk)
-    return b64encode(box.encrypt(secret_value.encode())).decode()
-
-def update_github_secret(secret_name, secret_value):
-    try:
-        pk_data   = get_repo_public_key()
-        key       = pk_data.get("key", "")
-        key_id    = pk_data.get("key_id", "")
-        if not key:
-            return
-        encrypted = encrypt_secret(key, secret_value)
-        requests.put(
-            f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}",
-            headers={"Authorization": f"Bearer {GITHUB_TOKEN}", "X-GitHub-Api-Version": "2022-11-28"},
-            json={"encrypted_value": encrypted, "key_id": key_id})
-    except Exception as e:
-        print(f"  ⚠️ Secret更新异常: {e}")
-
-def refresh_user_token():
-    app_token = get_app_token()
-    r = requests.post(
-        "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
-        headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
-        json={"grant_type": "refresh_token", "refresh_token": FEISHU_REFRESH_TOKEN},
-        timeout=10)
-    d = r.json()
-    if d.get("code") == 0:
-        data = d["data"]
-        new_user_token    = data["access_token"]
-        new_refresh_token = data["refresh_token"]
-        update_github_secret("FEISHU_USER_TOKEN",    new_user_token)
-        update_github_secret("FEISHU_REFRESH_TOKEN", new_refresh_token)
-        return new_user_token
-    return FEISHU_USER_TOKEN
+    if not all((FEISHU_APP_ID, FEISHU_APP_SECRET, WIKI_TOKEN)):
+        raise RuntimeError("Missing FEISHU_APP_ID, FEISHU_APP_SECRET or WIKI_TOKEN")
+    d = checked(requests.post(
+        "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        json={"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET}, timeout=10))
+    if not d.get("tenant_access_token"):
+        raise RuntimeError("Missing tenant_access_token")
+    return d["tenant_access_token"]
 
 
 # ════════════════════════════════════════
@@ -99,7 +79,7 @@ def refresh_user_token():
 def get_spreadsheet_token(user_token):
     url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/get_node?token={WIKI_TOKEN}"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
-    d = r.json()
+    d = checked(r)
     if d.get("code") != 0:
         raise RuntimeError(f"获取wiki节点失败: {d.get('msg','')}")
     return d["data"]["node"]["obj_token"]
@@ -107,7 +87,7 @@ def get_spreadsheet_token(user_token):
 def get_all_sheets(user_token, spreadsheet_token):
     url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
-    d = r.json()
+    d = checked(r)
     if d.get("code") != 0:
         raise RuntimeError(f"获取sheet列表失败: {d}")
     return d["data"]["sheets"]
@@ -118,7 +98,7 @@ def sheet_title_to_date(title):
     if not m:
         return None
     try:
-        return str(date(date.today().year, int(m.group(1)), int(m.group(2))))
+        return str(date(target_date().year, int(m.group(1)), int(m.group(2))))
     except:
         return None
 
@@ -126,38 +106,43 @@ def read_sheet_data(user_token, spreadsheet_token, sheet_id):
     range_str = f"{sheet_id}!A3:K500"
     url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values/{range_str}"
     r = requests.get(url, headers={"Authorization": f"Bearer {user_token}"}, timeout=10)
-    d = r.json()
+    d = checked(r)
     if d.get("code") != 0:
-        return []
-    return d.get("data", {}).get("valueRange", {}).get("values", []) or []
+        raise RuntimeError("Sheet read failed; refusing partial deduplication")
+    values = d["data"]["valueRange"].get("values", []) or []
+    if len(values) >= 498:
+        raise RuntimeError("Read window exhausted; refusing incomplete scan")
+    return values
 
 def get_cell(row, idx, default=""):
-    try:
-        v = row[idx]
-        return str(v).strip() if v is not None else default
-    except IndexError:
+    if idx >= len(row) or row[idx] is None:
         return default
+    value = row[idx]
+    if isinstance(value, dict):
+        return str(value.get("link") or value.get("text") or default).strip()
+    if isinstance(value, list):
+        return next((get_cell([v], 0) for v in value if isinstance(v, dict) and v.get("link")), default)
+    return str(value).strip()
+
 
 def normalize_key(link, account):
-    """提取可用于去重的唯一标识"""
+    """Conservative identities: never collapse users across platforms or lowercase IDs."""
     keys = set()
-    # 从链接提取用户ID
-    for pattern in [r'user/([A-Za-z0-9_\-]+)', r'/([A-Za-z0-9_\-]{8,})']:
-        m = re.search(pattern, link)
-        if m:
-            keys.add(m.group(1).lower())
-    # 抖音号
-    if account:
-        keys.add(account.strip().lower())
-    # 链接本身清理后
-    if link:
-        clean = re.sub(r'[?#].*', '', link).rstrip('/').lower()
-        keys.add(clean)
+    parts = urlsplit(link.strip())
+    host = (parts.hostname or "").lower()
+    if parts.scheme in ("http", "https") and host:
+        keys.add("url:" + urlunsplit(("https", host, parts.path.rstrip("/"), parts.query, "")))
+    # Column F is documented as Douyin account; other platforms need explicit rules.
+    if account and (not host or host == "douyin.com" or host.endswith(".douyin.com")):
+        keys.add("douyin-account:" + account.strip())
     return keys
+
 
 def write_dup_marks(user_token, spreadsheet_token, sheet_id, rows_to_mark):
     """在H列写入"已重复"（1-based行号）"""
     if not rows_to_mark:
+        return 0
+    if DRY_RUN:
         return 0
     value_ranges = []
     for row_num in rows_to_mark:
@@ -173,31 +158,24 @@ def write_dup_marks(user_token, spreadsheet_token, sheet_id, rows_to_mark):
             headers={"Authorization": f"Bearer {user_token}", "Content-Type": "application/json"},
             json={"valueRanges": batch},
             timeout=15)
-        if r.json().get("code") == 0:
-            written += len(batch)
+        checked(r)
+        written += len(batch)
     return written
 
-def lock_sheet(user_token, spreadsheet_token, sheet_id):
-    """锁定工作表（设置保护范围，普通成员只读）"""
-    try:
-        r = requests.post(
-            f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/protected_dimension",
-            headers={"Authorization": f"Bearer {user_token}", "Content-Type": "application/json"},
-            json={
-                "addProtectedDimension": {
-                    "dimension": {
-                        "sheetId":       sheet_id,
-                        "majorDimension": "ROWS",
-                        "startIndex":    0,
-                        "endIndex":      1000,
-                    },
-                    "editors": {"users": [], "groups": []},
-                }
-            },
-            timeout=10)
-        print(f"  锁表: {r.status_code}")
-    except Exception as e:
-        print(f"  ⚠️ 锁表失败: {e}")
+def lock_sheet(user_token, spreadsheet_token, sheet_id, row_count):
+    if DRY_RUN or not ALLOW_LOCK or not IS_FINAL:
+        return False
+    if not isinstance(row_count, int) or row_count <= 0:
+        raise RuntimeError("Missing row count; refusing lock")
+    r = requests.post(
+        f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/protected_dimension",
+        headers={"Authorization": f"Bearer {user_token}", "Content-Type": "application/json"},
+        json={"addProtectedDimension": {
+            "dimension": {"sheetId": sheet_id, "majorDimension": "ROWS",
+                          "startIndex": 0, "endIndex": row_count},
+            "editors": {"users": [], "groups": []}}}, timeout=10)
+    checked(r)
+    return True
 
 
 # ════════════════════════════════════════
@@ -209,6 +187,7 @@ def run_dup_check(user_token, spreadsheet_token, all_sheets):
     跨表查重：按链接和抖音号去重
     返回 (total_marked, dup_report_lines)
     """
+    target = target_date().isoformat()
     # 第一遍：读所有数据，建立去重索引
     key_to_first = {}     # normalized_key → {sheet, row, name, owner, date}
     sheet_records = {}    # sheet_id → [(row_num, keys, name, owner, is_already_dup)]
@@ -216,10 +195,12 @@ def run_dup_check(user_token, spreadsheet_token, all_sheets):
     for sheet in all_sheets:
         title       = sheet.get("title", "").strip()
         record_date = sheet_title_to_date(title)
-        if not record_date:
+        if not record_date or record_date > target:
             continue
 
         sid  = sheet.get("sheetId") or sheet.get("sheet_id", "")
+        if not sid:
+            raise RuntimeError("Missing sheet id")
         rows = read_sheet_data(user_token, spreadsheet_token, sid)
         recs = []
 
@@ -237,6 +218,8 @@ def run_dup_check(user_token, spreadsheet_token, all_sheets):
             name    = get_cell(row, COL_NAME)
             owner   = get_cell(row, COL_OWNER) or "未分配"
             dup_val = get_cell(row, COL_DUP)
+            if dup_val and "已重复" not in dup_val:
+                raise RuntimeError("Nonempty custom H cell; refusing overwrite")
             already_dup = "已重复" in dup_val
 
             keys = normalize_key(link, account)
@@ -258,14 +241,14 @@ def run_dup_check(user_token, spreadsheet_token, all_sheets):
     for record_date, title, sid, row_num, keys, name, owner, already_dup in all_entries:
         is_dup = False
         matched_first = None
-        for key in keys:
+        for key in sorted(keys):
             if key and key in key_to_first:
                 is_dup = True
                 matched_first = key_to_first[key]
                 break
 
         if is_dup:
-            if not already_dup:
+            if not already_dup and record_date == target:
                 to_mark[sid].append(row_num)
                 total_new_dups += 1
                 dup_details.append({
@@ -277,11 +260,10 @@ def run_dup_check(user_token, spreadsheet_token, all_sheets):
                     "first_owner": matched_first["owner"],
                     "first_date":  matched_first["date"],
                 })
-        else:
-            # 首次出现，加入索引
-            for key in keys:
-                if key:
-                    key_to_first[key] = {
+        # Keep aliases on duplicate rows, preserving the original first occurrence.
+        for key in sorted(keys):
+                if key and key not in key_to_first:
+                    key_to_first[key] = matched_first or {
                         "sheet": title, "owner": owner,
                         "date":  record_date, "name": name,
                     }
@@ -313,13 +295,14 @@ def push_serverchan(title, content):
                   data={"title": title, "desp": content.replace("\n", "\n\n")},
                   timeout=10)
 
-def build_dup_report(total_marked, dup_details, is_final):
-    today = date.today()
-    tag   = "【最终查重·表格已锁定】" if is_final else "【定时查重】"
+def build_dup_report(total_marked, dup_details, locked):
+    today = target_date()
+    tag   = "【最终查重·表格已锁定】" if locked else "【定时查重】"
     lines = [
         f"🔍 {tag} {today.month}月{today.day}日",
         "━" * 22,
-        f"  本次新发现重复：{total_marked} 条",
+        f"  本次发现：{len(dup_details)} 条；实际写入：{total_marked} 条",
+        f"  模式：{'只读预演' if DRY_RUN else '写入'}",
     ]
     if dup_details:
         lines += ["", "重复明细："]
@@ -329,11 +312,11 @@ def build_dup_report(total_marked, dup_details, is_final):
                 f"  ← 首次：{d['first_owner']}·{d['first_sheet']}"
             )
         if len(dup_details) > 15:
-            lines.append(f"  ...共 {len(dup_details)} 条，已全部写回H列")
+            lines.append(f"  ...共 {len(dup_details)} 条，请核对执行模式及实际写入数量")
     else:
         lines.append("  ✅ 未发现新增重复")
 
-    if is_final:
+    if locked:
         lines += ["", "📌 表格已锁定，如需修改请联系管理员"]
     return "\n".join(lines)
 
@@ -343,33 +326,36 @@ def build_dup_report(total_marked, dup_details, is_final):
 # ════════════════════════════════════════
 
 def main():
-    today = date.today()
+    today = target_date()
     print(f"▶ 查重开始  {today}  IS_FINAL={IS_FINAL}")
 
-    user_token        = refresh_user_token()
+    user_token        = get_app_token()
     spreadsheet_token = get_spreadsheet_token(user_token)
     all_sheets        = get_all_sheets(user_token, spreadsheet_token)
 
     total_marked, dup_details = run_dup_check(user_token, spreadsheet_token, all_sheets)
     print(f"  新标注重复: {total_marked} 条")
 
-    # 0:00 最后一次：锁定今日工作表
-    if IS_FINAL:
-        today_str = str(today)
-        for sheet in all_sheets:
-            title = sheet.get("title", "").strip()
-            if sheet_title_to_date(title) == today_str:
-                sid = sheet.get("sheetId") or sheet.get("sheet_id", "")
-                lock_sheet(user_token, spreadsheet_token, sid)
-                print(f"  已锁定: {title}")
-                break
+    locked = False
+    if IS_FINAL and ALLOW_LOCK and not DRY_RUN:
+        candidates = [sheet for sheet in all_sheets
+                      if sheet_title_to_date(sheet.get("title", "")) == str(today)]
+        if len(candidates) != 1:
+            raise RuntimeError("Expected exactly one target sheet; refusing lock")
+        sheet = candidates[0]
+        sid = sheet.get("sheetId") or sheet.get("sheet_id", "")
+        locked = lock_sheet(user_token, spreadsheet_token, sid,
+                            sheet.get("grid_properties", {}).get("row_count"))
 
-    report = build_dup_report(total_marked, dup_details, IS_FINAL)
+    report = build_dup_report(total_marked, dup_details, locked)
     print("\n" + report)
 
+    if DRY_RUN:
+        return
     push_wecom(report)
     push_serverchan(f"查重报告·{today.month}/{today.day}", report)
     print("✓ 完成")
 
 if __name__ == "__main__":
     main()
+
