@@ -16,6 +16,7 @@
 import os, sys, requests, re
 from datetime import datetime, timedelta, date
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
 # ══════════════════════════════════════════
 #  配置
@@ -32,7 +33,7 @@ SERVERCHAN_KEY       = os.environ.get("SERVERCHAN_KEY", "")
 WECOM_WEBHOOK        = os.environ.get("WECOM_WEBHOOK", "")
 DEEPSEEK_API_KEY     = os.environ.get("DEEPSEEK_API_KEY", "")
 
-GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
+GITHUB_TOKEN         = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO          = "gummy1803-ai/blogger-tracker"
 
 # 列索引（0-based，A=0）
@@ -141,7 +142,7 @@ def sheet_title_to_date(title):
         return None
     month, day = int(m.group(1)), int(m.group(2))
     try:
-        return str(date(date.today().year, month, day))
+        return str(date(datetime.now(ZoneInfo("Asia/Shanghai")).date().year, month, day))
     except ValueError:
         return None
 
@@ -338,7 +339,7 @@ def upsert_bloggers(records):
         headers=supa_headers(), json=payload, timeout=15)
     if r.status_code not in (200, 201):
         print(f"  ⚠️ Supabase错误: {r.status_code} {r.text[:200]}")
-        return 0
+        raise RuntimeError(f"Supabase upsert failed: HTTP {r.status_code}")
     return len(payload)
 
 def save_daily_report(report_date, records, report_text):
@@ -359,6 +360,7 @@ def save_daily_report(report_date, records, report_text):
     r = requests.post(
         f"{SUPABASE_URL}/rest/v1/daily_reports",
         headers=supa_headers(), json=payload, timeout=10)
+    r.raise_for_status()
     print(f"  日报快照: {r.status_code}")
 
 
@@ -583,6 +585,9 @@ def push_wecom(content):
         WECOM_WEBHOOK,
         json={"msgtype": "text", "text": {"content": content}},
         timeout=10)
+    r.raise_for_status()
+    if r.json().get("errcode") != 0:
+        raise RuntimeError("WeCom push failed")
     print(f"  [企微] {r.status_code}")
 
 def push_serverchan(title, content):
@@ -592,6 +597,9 @@ def push_serverchan(title, content):
         f"https://sctapi.ftqq.com/{SERVERCHAN_KEY}.send",
         data={"title": title, "desp": content.replace("\n", "\n\n")},
         timeout=10)
+    r.raise_for_status()
+    if r.json().get("code") != 0:
+        raise RuntimeError("ServerChan push failed")
     print(f"  [Server酱] {r.status_code}")
 
 
@@ -600,8 +608,8 @@ def push_serverchan(title, content):
 # ════════════════════════════════════════
 
 def main():
-    today     = date.today()
-    yesterday = today - timedelta(days=1)
+    today     = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    yesterday = date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1] else today - timedelta(days=1)
     print(f"▶ 开始同步  今天:{today}  日报日期:{yesterday}")
 
     user_token        = get_app_token()   # 改用 app_token，永久有效
@@ -638,7 +646,7 @@ def main():
     seen = set()
     deduped_records = []
     for rec in all_records:
-        key = (rec.get("link", "") or rec.get("name", ""), rec.get("record_date", ""))
+        key = (rec.get("link", ""), rec.get("record_date", ""))
         if key not in seen:
             seen.add(key)
             deduped_records.append(rec)
@@ -674,3 +682,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
